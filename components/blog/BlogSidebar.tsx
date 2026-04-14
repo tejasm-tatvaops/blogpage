@@ -37,23 +37,32 @@ export function BlogSidebar({ post, relatedPosts, categories }: BlogSidebarProps
   const toc = extractToc(post.content);
 
   return (
-    <aside className="space-y-6">
+    <aside className="space-y-5">
 
-      {/* Table of Contents */}
+      {/* ── Table of Contents ── */}
       {toc.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">
-            In this article
-          </h3>
-          <nav>
-            <ul className="space-y-1.5">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400" aria-hidden>
+              <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">In this article</span>
+          </div>
+          <nav className="px-4 py-3">
+            <ul className="space-y-0.5">
               {toc.map((entry) => (
-                <li key={entry.anchor} className={entry.level === 3 ? "pl-3" : ""}>
+                <li key={entry.anchor}>
                   <a
                     href={`#${entry.anchor}`}
-                    className="block text-sm leading-snug text-slate-600 transition hover:text-slate-900"
+                    className={`group flex items-start gap-2 rounded-lg px-2 py-1.5 transition hover:bg-slate-50 ${
+                      entry.level === 3 ? "pl-5" : ""
+                    }`}
                   >
-                    {entry.text}
+                    <span className="mt-[5px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-slate-300 transition group-hover:bg-sky-400" />
+                    <span className="text-[13px] leading-snug text-slate-600 transition group-hover:text-slate-900">
+                      {entry.text}
+                    </span>
                   </a>
                 </li>
               ))}
@@ -62,21 +71,25 @@ export function BlogSidebar({ post, relatedPosts, categories }: BlogSidebarProps
         </div>
       )}
 
-      {/* Topics / Categories */}
+      {/* ── Topics / Categories ── */}
       {categories.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">
-            Topics
-          </h3>
-          <div className="flex flex-wrap gap-2">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400" aria-hidden>
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+              <line x1="7" y1="7" x2="7.01" y2="7" />
+            </svg>
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Topics</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 px-4 py-3.5">
             {categories.map((cat) => (
               <Link
                 key={cat}
                 href={`/blog?category=${encodeURIComponent(cat)}`}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
                   cat === post.category
-                    ? "bg-slate-900 !text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    ? "bg-slate-900 !text-white shadow-sm"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
                 }`}
               >
                 {cat}
@@ -86,17 +99,21 @@ export function BlogSidebar({ post, relatedPosts, categories }: BlogSidebarProps
         </div>
       )}
 
-      {/* Tags */}
+      {/* ── Tags ── */}
       {post.tags.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">
-            Tags
-          </h3>
-          <div className="flex flex-wrap gap-2">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400" aria-hidden>
+              <circle cx="9" cy="9" r="2" />
+              <path d="M21 15l-5.05-5.05A7 7 0 1 0 9 21a7 7 0 0 0 4.95-2.05" />
+            </svg>
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Tags</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 px-4 py-3.5">
             {post.tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700"
+                className="rounded-md bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-100"
               >
                 #{tag}
               </span>
@@ -105,25 +122,38 @@ export function BlogSidebar({ post, relatedPosts, categories }: BlogSidebarProps
         </div>
       )}
 
-      {/* Related Posts */}
+      {/* ── Related Posts ── */}
       {relatedPosts.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">
-            Related reading
-          </h3>
-          <ul className="space-y-4">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400" aria-hidden>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
+            </svg>
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Related reading</span>
+          </div>
+          <ul className="divide-y divide-slate-100">
             {relatedPosts.slice(0, 4).map((related) => (
               <li key={related.id}>
                 <Link
                   href={`/blog/${related.slug}`}
-                  className="group block"
+                  className="group flex items-start gap-3 px-4 py-3.5 transition hover:bg-slate-50"
                 >
-                  <p className="text-sm font-semibold leading-snug text-slate-800 transition group-hover:text-sky-700 line-clamp-2">
-                    {related.title}
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500 line-clamp-2">
-                    {related.excerpt}
-                  </p>
+                  <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 transition group-hover:bg-sky-100">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 group-hover:text-sky-600 transition" aria-hidden>
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold leading-snug text-slate-800 transition group-hover:text-sky-700 line-clamp-2">
+                      {related.title}
+                    </p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-slate-400 line-clamp-2">
+                      {related.excerpt}
+                    </p>
+                  </div>
                 </Link>
               </li>
             ))}
@@ -131,19 +161,32 @@ export function BlogSidebar({ post, relatedPosts, categories }: BlogSidebarProps
         </div>
       )}
 
-      {/* About TatvaOps */}
-      <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white">
-        <h3 className="mb-2 text-sm font-bold">About TatvaOps</h3>
-        <p className="text-xs leading-5 text-slate-300">
-          TatvaOps helps construction teams estimate smarter — with accurate BOQ workflows,
-          vendor cost benchmarks, and procurement intelligence.
-        </p>
-        <Link
-          href="/blog"
-          className="mt-4 block rounded-lg bg-white/10 px-3 py-2 text-center text-xs font-semibold text-white transition hover:bg-white/20"
-        >
-          Explore all articles →
-        </Link>
+      {/* ── About TatvaOps ── */}
+      <div className="relative overflow-hidden rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-indigo-50 p-5 shadow-sm">
+        <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-sky-200/30" />
+        <div className="pointer-events-none absolute -bottom-4 -left-4 h-16 w-16 rounded-full bg-indigo-200/30" />
+
+        <div className="relative">
+          <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+            TatvaOps
+          </div>
+          <h3 className="text-[15px] font-bold leading-snug text-slate-900">
+            Build smarter, not harder
+          </h3>
+          <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+            Helping construction teams estimate accurately — with BOQ workflows, vendor cost benchmarks, and procurement intelligence.
+          </p>
+          <Link
+            href="/blog"
+            className="mt-4 flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold !text-white transition hover:bg-slate-700"
+          >
+            Explore all articles
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+            </svg>
+          </Link>
+        </div>
       </div>
 
     </aside>

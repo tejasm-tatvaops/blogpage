@@ -63,6 +63,21 @@ const splitByH2Sections = (markdown: string): { intro: string; sections: Markdow
   return { intro: introLines.join("\n").trim(), sections };
 };
 
+const normalizeContent = (markdown: string): string => {
+  const lines = markdown.split("\n");
+  const trimmedStart = lines.findIndex((line) => line.trim().length > 0);
+  if (trimmedStart === -1) return markdown;
+
+  const firstLine = lines[trimmedStart]?.trim() ?? "";
+  if (firstLine.startsWith("# ")) {
+    lines.splice(trimmedStart, 1);
+    if (lines[trimmedStart]?.trim() === "") {
+      lines.splice(trimmedStart, 1);
+    }
+  }
+  return lines.join("\n").trim();
+};
+
 const markdownComponents = {
   a: ({ node: _node, ...props }: ComponentProps<"a"> & { node?: unknown }) => (
     <a
@@ -74,79 +89,45 @@ const markdownComponents = {
 };
 
 export const MarkdownRenderer = memo(function MarkdownRenderer({ content }: MarkdownRendererProps) {
-  const { intro, sections } = splitByH2Sections(content);
-  const shouldCollapseSections = sections.length >= 3;
+  const cleanedContent = normalizeContent(content);
+  const { intro, sections } = splitByH2Sections(cleanedContent);
 
   return (
     <div className="max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-p:leading-8 prose-a:text-slate-900 prose-a:underline prose-a:underline-offset-4 hover:prose-a:text-slate-700 prose-code:rounded prose-code:bg-slate-100 prose-code:px-1 prose-code:py-0.5 prose-pre:overflow-x-auto prose-pre:rounded-xl prose-pre:bg-slate-950 prose-pre:p-4 prose-pre:text-slate-100">
-      {!shouldCollapseSections ? (
+      {intro ? (
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           rehypePlugins={rehypePlugins}
           components={markdownComponents}
         >
-          {content}
+          {intro}
         </ReactMarkdown>
-      ) : (
-        <>
-          {intro ? (
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={rehypePlugins}
-              components={markdownComponents}
+      ) : null}
+
+      <div className="mt-8 space-y-5 not-prose">
+        {sections.map((section, index) => {
+          const isReferences = section.heading.toLowerCase() === "references";
+          return (
+            <section
+              key={`${section.heading}-${index}`}
+              className={`overflow-hidden rounded-xl border ${
+                isReferences ? "border-slate-200 bg-slate-50" : "border-slate-100 bg-white"
+              }`}
             >
-              {intro}
-            </ReactMarkdown>
-          ) : null}
-
-          <div className="mt-8 space-y-4 not-prose">
-            {sections.map((section, index) => {
-              const isReferences = section.heading.toLowerCase() === "references";
-              if (isReferences) {
-                return (
-                  <section
-                    key={`${section.heading}-${index}`}
-                    className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
-                  >
-                    <div className="px-4 py-3 text-sm font-semibold text-slate-900">References</div>
-                    <div className="border-t border-slate-200 px-4 py-4 prose prose-slate max-w-none prose-p:leading-8">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={rehypePlugins}
-                        components={markdownComponents}
-                      >
-                        {section.body}
-                      </ReactMarkdown>
-                    </div>
-                  </section>
-                );
-              }
-
-              return (
-                <details
-                  key={`${section.heading}-${index}`}
-                  open={index === 0}
-                  className="group overflow-hidden rounded-xl border border-slate-200 bg-white"
+              <div className="px-4 py-3 text-sm font-semibold text-slate-900">{section.heading}</div>
+              <div className="border-t border-slate-100 px-4 py-4 prose prose-slate max-w-none prose-p:leading-8">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={rehypePlugins}
+                  components={markdownComponents}
                 >
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-slate-900">
-                    <span>{section.heading}</span>
-                    <span className="text-slate-400 transition group-open:rotate-180">⌄</span>
-                  </summary>
-                  <div className="border-t border-slate-100 px-4 py-4 prose prose-slate max-w-none prose-p:leading-8">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={rehypePlugins}
-                      components={markdownComponents}
-                    >
-                      {section.body}
-                    </ReactMarkdown>
-                  </div>
-                </details>
-              );
-            })}
-          </div>
-        </>
-      )}
+                  {section.body}
+                </ReactMarkdown>
+              </div>
+            </section>
+          );
+        })}
+      </div>
     </div>
   );
 });
