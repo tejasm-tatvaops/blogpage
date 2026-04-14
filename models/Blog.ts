@@ -12,6 +12,7 @@ const blogSchema = new mongoose.Schema(
     category: { type: String, required: true, trim: true, maxlength: 100 },
     published: { type: Boolean, default: false, index: true },
     upvote_count: { type: Number, default: 0, min: 0 },
+    downvote_count: { type: Number, default: 0, min: 0 },
     view_count: { type: Number, default: 0, min: 0 },
     deleted_at: { type: Date, default: null },
   },
