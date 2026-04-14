@@ -1,29 +1,44 @@
-import { headers } from "next/headers";
+import { timingSafeEqual } from "crypto";
 import { redirect } from "next/navigation";
-
-const getAdminSecret = (): string => process.env.ADMIN_BLOG_SECRET ?? "";
+import { getSession } from "./session";
 
 export const isAdminEnabled = (): boolean => process.env.ADMIN_BLOG_ENABLED === "true";
 
+/**
+ * Verify a raw key string against the stored secret using a constant-time
+ * comparison to prevent timing attacks.
+ */
 export const verifyAdminKey = (key?: string | null): boolean => {
-  if (!isAdminEnabled()) {
-    return false;
-  }
-  const secret = getAdminSecret();
-  if (!secret) {
-    return false;
-  }
-  return key === secret;
+  if (!isAdminEnabled()) return false;
+
+  const secret = process.env.ADMIN_BLOG_SECRET ?? "";
+  if (!secret || !key) return false;
+
+  // Lengths must match first (timingSafeEqual requires same-length buffers)
+  if (key.length !== secret.length) return false;
+
+  return timingSafeEqual(Buffer.from(key), Buffer.from(secret));
 };
 
-export const requireAdminPageAccess = (key?: string | null): void => {
-  if (!verifyAdminKey(key)) {
+/**
+ * Server-side page guard. Checks the iron-session cookie.
+ * Call at the top of every admin Server Component.
+ */
+export const requireAdminPageAccess = async (): Promise<void> => {
+  if (!isAdminEnabled()) {
     redirect("/blog");
   }
+  const session = await getSession();
+  if (!session.adminAuthenticated) {
+    redirect("/admin/login");
+  }
 };
 
+/**
+ * API route guard. Returns true when the request carries a valid session.
+ */
 export const requireAdminApiAccess = async (): Promise<boolean> => {
-  const h = await headers();
-  const key = h.get("x-admin-key");
-  return verifyAdminKey(key);
+  if (!isAdminEnabled()) return false;
+  const session = await getSession();
+  return session.adminAuthenticated === true;
 };

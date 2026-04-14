@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiAccess } from "@/lib/adminAuth";
 import { createPost, getPostBySlug } from "@/lib/blogService";
+import { generateBlogFromKeyword } from "@/lib/aiBlogGenerator";
+import { readJsonBody } from "@/lib/adminApi";
 import {
   appendInternalLinks,
   buildGenerationPromptKeyword,
@@ -8,30 +10,24 @@ import {
   locationSlugHint,
   sleep,
 } from "@/lib/seoGenerator";
-
-type GenerateBlogResponse = {
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  tags: string[];
-  category: string;
-};
+import { bulkGenerateLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
+import { logger } from "@/lib/logger";
 
 type BulkPayload = {
   locations?: string[];
   batchSize?: number;
   delayMs?: number;
+  count?: number;
+  random?: boolean;
 };
 
-const getApiBaseUrl = (): string => {
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL;
+const pickRandom = <T>(items: T[], count: number): T[] => {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
   }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  return "http://localhost:3000";
+  return copy.slice(0, Math.max(0, count));
 };
 
 export async function POST(request: Request) {
@@ -40,12 +36,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const ip = getRateLimitKey(request);
+  if (!bulkGenerateLimiter(ip)) {
+    return rateLimitResponse();
+  }
+
   try {
-    const body = (await request.json()) as BulkPayload;
+    const body = await readJsonBody<BulkPayload>(request);
+
     const requestedLocations = Array.isArray(body.locations) ? body.locations : [];
-    const locations = (requestedLocations.length > 0 ? requestedLocations : getAllSeedLocations())
+    const targetCount = Math.max(1, Math.min(body.count ?? 3, 20));
+    const randomize = body.random ?? true;
+    const baseLocations =
+      requestedLocations.length > 0 ? requestedLocations : getAllSeedLocations();
+    const cleanedLocations = baseLocations
       .map((value) => String(value).trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .slice(0, 100); // hard cap
+    const locations =
+      requestedLocations.length > 0
+        ? cleanedLocations.slice(0, targetCount)
+        : randomize
+          ? pickRandom(cleanedLocations, targetCount)
+          : cleanedLocations.slice(0, targetCount);
 
     const batchSize = Math.max(1, Math.min(body.batchSize ?? 3, 8));
     const delayMs = Math.max(200, Math.min(body.delayMs ?? 900, 3000));
@@ -55,7 +68,7 @@ export async function POST(request: Request) {
     const failed: Array<{ location: string; reason: string }> = [];
     const knownSlugs: string[] = [];
 
-    const apiBase = getApiBaseUrl();
+    logger.info({ totalLocations: locations.length, batchSize, delayMs }, "Bulk generation started");
 
     for (let i = 0; i < locations.length; i += batchSize) {
       const batch = locations.slice(i, i + batchSize);
@@ -74,19 +87,10 @@ export async function POST(request: Request) {
             continue;
           }
 
-          const response = await fetch(`${apiBase}/api/generate-blog`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              keyword,
-              internalLinks: ["/blog", "/estimate", ...knownSlugs.slice(0, 3).map((slug) => `/blog/${slug}`)],
-            }),
-          });
-
-          const generated = (await response.json()) as Partial<GenerateBlogResponse> & { error?: string };
-          if (!response.ok || !generated.title || !generated.content || !generated.excerpt) {
-            throw new Error(generated.error || "Failed to generate blog content.");
-          }
+          const generated = await generateBlogFromKeyword(keyword, [
+            "/blog",
+            ...knownSlugs.slice(0, 3).map((slug) => `/blog/${slug}`),
+          ]);
 
           const slugToCheck = generated.slug || suggestedSlug;
           const duplicate = await getPostBySlug(slugToCheck, true);
@@ -110,16 +114,21 @@ export async function POST(request: Request) {
 
           created.push({ id: post.id, slug: post.slug, location });
           knownSlugs.push(post.slug);
+          logger.info({ slug: post.slug, location }, "Bulk post created");
         } catch (error) {
-          failed.push({
-            location,
-            reason: error instanceof Error ? error.message : "Unknown generation failure.",
-          });
+          const reason = error instanceof Error ? error.message : "Unknown generation failure.";
+          logger.error({ location, error }, "Bulk generation item failed");
+          failed.push({ location, reason });
         }
 
         await sleep(delayMs);
       }
     }
+
+    logger.info(
+      { created: created.length, skipped: skipped.length, failed: failed.length },
+      "Bulk generation complete",
+    );
 
     return NextResponse.json(
       {
@@ -134,6 +143,7 @@ export async function POST(request: Request) {
       { status: 200 },
     );
   } catch (error) {
+    logger.error({ error }, "Bulk generation route error");
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Bulk generation failed." },
       { status: 500 },

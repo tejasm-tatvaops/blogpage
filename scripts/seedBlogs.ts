@@ -58,9 +58,9 @@ Most residential teams keep 8-12% based on risk and design maturity.
 ### How often should I refresh rates?
 Refresh key material and labor rates monthly in fast-moving markets.
 
-## Get your construction estimate
+## Continue learning on TatvaOps
 
-Use a BOQ-based workflow and compare vendors before finalizing contracts. [Get your construction estimate](/estimate).`,
+Use a BOQ-based workflow and compare vendors before finalizing contracts. [Read more guides](/blog).`,
     cover_image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1600&q=80",
     author: "TatvaOps Editorial",
     tags: ["bangalore", "construction-cost", "boq", "house-building"],
@@ -110,9 +110,9 @@ At least 3 valid quotes per major package improves decision quality.
 ### Can I reduce cost without reducing quality?
 Yes, by optimizing design repetition, package strategy, and procurement timing.
 
-## Get your construction estimate
+## Continue learning on TatvaOps
 
-Convert assumptions into a rate-validated BOQ and [get your construction estimate](/estimate).`,
+Convert assumptions into a rate-validated BOQ and [read more guides](/blog).`,
     cover_image: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=80",
     author: "TatvaOps Editorial",
     tags: ["hyderabad", "cost-per-sq-ft", "construction-planning", "vendor-rates"],
@@ -161,9 +161,9 @@ Estimator, site engineer, and procurement should jointly validate major packages
 ### What is the most common BOQ mistake?
 Missing scope notes and inconsistent units are common causes of budget drift.
 
-## Get your construction estimate
+## Continue learning on TatvaOps
 
-Start with quantity clarity and convert it into a practical budget. [Get your construction estimate](/estimate).`,
+Start with quantity clarity and convert it into a practical budget. [Read more guides](/blog).`,
     cover_image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1600&q=80",
     author: "TatvaOps Editorial",
     tags: ["boq", "quantity-takeoff", "estimation-basics", "construction"],
@@ -210,9 +210,9 @@ Many teams keep 10% contingency for location-specific uncertainty.
 ### Can vendor discovery reduce cost risk?
 Yes. Better vendor matching improves both pricing and delivery reliability.
 
-## Get your construction estimate
+## Continue learning on TatvaOps
 
-Use locality-aware pricing assumptions and [get your construction estimate](/estimate).`,
+Use locality-aware pricing assumptions and [read more guides](/blog).`,
     cover_image: "https://images.unsplash.com/photo-1429497419816-9ca5cfb4571a?auto=format&fit=crop&w=1600&q=80",
     author: "TatvaOps Editorial",
     tags: ["whitefield", "bangalore", "locality-pricing", "construction-cost"],
@@ -262,9 +262,9 @@ Issue BOQ + clear specification + exclusions format in every RFQ.
 ### What if all quotes are above budget?
 Re-scope, phase procurement, or re-evaluate finish levels before compromise decisions.
 
-## Get your construction estimate
+## Continue learning on TatvaOps
 
-Standardize quote comparison and [get your construction estimate](/estimate).`,
+Standardize quote comparison and [read more guides](/blog).`,
     cover_image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1600&q=80",
     author: "TatvaOps Editorial",
     tags: ["vendor-management", "procurement", "quotation-analysis", "boq"],
@@ -314,9 +314,9 @@ Only if aligned to long-term use-case and resale goals.
 ### How often should budget be reviewed?
 Monthly at minimum; biweekly during active procurement cycles.
 
-## Get your construction estimate
+## Continue learning on TatvaOps
 
-Build your 2026 plan with measurable assumptions and [get your construction estimate](/estimate).`,
+Build your 2026 plan with measurable assumptions and [read more guides](/blog).`,
     cover_image: "https://images.unsplash.com/photo-1460472178825-e5240623afd5?auto=format&fit=crop&w=1600&q=80",
     author: "TatvaOps Editorial",
     tags: ["hyderabad", "2026-budget", "house-construction", "cost-control"],

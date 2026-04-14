@@ -1,10 +1,5 @@
 import mongoose from "mongoose";
-
-const uri = process.env.MONGODB_URI;
-
-if (!uri) {
-  throw new Error("Missing required environment variable: MONGODB_URI");
-}
+import { validateEnv } from "./env";
 
 type MongooseCache = {
   conn: typeof mongoose | null;
@@ -23,14 +18,34 @@ const cache: MongooseCache = globalWithMongoose.mongooseCache ?? {
 globalWithMongoose.mongooseCache = cache;
 
 export const connectToDatabase = async (): Promise<typeof mongoose> => {
+  // Validate all required env vars on first connection attempt
+  validateEnv();
+
   if (cache.conn) {
     return cache.conn;
   }
 
+  const uri = process.env.MONGODB_URI!;
+
   if (!cache.promise) {
-    cache.promise = mongoose.connect(uri, {
-      bufferCommands: false,
-    });
+    cache.promise = mongoose
+      .connect(uri, {
+        bufferCommands: false,
+        maxPoolSize: 10,
+        minPoolSize: 2,
+        serverSelectionTimeoutMS: 5_000,
+        socketTimeoutMS: 30_000,
+        connectTimeoutMS: 10_000,
+        retryWrites: true,
+      })
+      .then((m) => {
+        return m;
+      })
+      .catch((err: unknown) => {
+        // Reset so the next call retries the connection
+        cache.promise = null;
+        throw err;
+      });
   }
 
   cache.conn = await cache.promise;

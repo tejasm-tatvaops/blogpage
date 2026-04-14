@@ -66,7 +66,7 @@ export const appendInternalLinks = (
     "",
     "## Related construction cost guides",
     links || "- [Explore all cost guides](/blog)",
-    "- [Get your construction estimate](/estimate)",
+    "- [Explore more articles](/blog)",
     "",
   ].join("\n");
 

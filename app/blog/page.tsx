@@ -10,6 +10,8 @@ export const revalidate = 300;
 type BlogPageProps = {
   searchParams?: Promise<{
     category?: string;
+    q?: string;
+    sort?: string;
   }>;
 };
 
@@ -33,11 +35,33 @@ export const metadata: Metadata = {
 export default async function BlogPage({ searchParams }: BlogPageProps) {
   const params = await searchParams;
   const category = params?.category?.trim() || undefined;
+  const query = params?.q?.trim() || undefined;
+  const sort = params?.sort === "most_viewed" ? "most_viewed" : "latest";
 
-  const [posts, categories] = await Promise.all([
-    getAllPosts({ category }),
-    getCategories(),
-  ]);
+  try {
+    const [posts, categories] = await Promise.all([
+      getAllPosts({ category, query, sort }),
+      getCategories(),
+    ]);
 
-  return <BlogList posts={posts} categories={categories} activeCategory={category} />;
+    return (
+      <BlogList
+        posts={posts}
+        categories={categories}
+        activeCategory={category}
+        query={query}
+        sort={sort}
+      />
+    );
+  } catch (_error) {
+    return (
+      <BlogList
+        posts={[]}
+        categories={[]}
+        activeCategory={category}
+        query={query}
+        sort={sort}
+      />
+    );
+  }
 }

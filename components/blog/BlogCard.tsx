@@ -40,6 +40,8 @@ export function BlogCard({ post }: BlogCardProps) {
             <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
             <span aria-hidden>•</span>
             <span>{post.author}</span>
+            <span aria-hidden>•</span>
+            <span>{post.view_count.toLocaleString()} views</span>
           </div>
 
           <h2 className="line-clamp-2 text-xl font-bold leading-snug text-slate-900">{post.title}</h2>

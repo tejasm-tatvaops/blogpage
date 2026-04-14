@@ -7,10 +7,9 @@ import type { BlogPost } from "@/lib/blogService";
 
 type AdminBlogTableProps = {
   posts: BlogPost[];
-  adminKey: string;
 };
 
-export function AdminBlogTable({ posts, adminKey }: AdminBlogTableProps) {
+export function AdminBlogTable({ posts }: AdminBlogTableProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -18,24 +17,19 @@ export function AdminBlogTable({ posts, adminKey }: AdminBlogTableProps) {
   const [bulkResult, setBulkResult] = useState<string | null>(null);
 
   const onDelete = async (id: string) => {
-    const confirmed = window.confirm("Delete this post?");
-    if (!confirmed) {
-      return;
-    }
+    const confirmed = window.confirm("Delete this post? This action can be undone by an admin.");
+    if (!confirmed) return;
 
     try {
       setError(null);
       setDeletingId(id);
       const response = await fetch(`/api/admin/blog/${encodeURIComponent(id)}`, {
         method: "DELETE",
-        headers: {
-          "x-admin-key": adminKey,
-        },
       });
 
       const json = (await response.json()) as { error?: string };
       if (!response.ok) {
-        throw new Error(json.error || "Failed to delete post.");
+        throw new Error(json.error ?? "Failed to delete post.");
       }
 
       router.refresh();
@@ -47,6 +41,11 @@ export function AdminBlogTable({ posts, adminKey }: AdminBlogTableProps) {
   };
 
   const onGenerateBulk = async () => {
+    const confirmed = window.confirm(
+      "This will generate 3 random AI blogs. Continue?",
+    );
+    if (!confirmed) return;
+
     try {
       setError(null);
       setBulkResult(null);
@@ -54,11 +53,8 @@ export function AdminBlogTable({ posts, adminKey }: AdminBlogTableProps) {
 
       const response = await fetch("/api/generate-bulk-blogs", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-key": adminKey,
-        },
-        body: JSON.stringify({}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ count: 3, random: true }),
       });
 
       const json = (await response.json()) as {
@@ -68,7 +64,7 @@ export function AdminBlogTable({ posts, adminKey }: AdminBlogTableProps) {
         failedCount?: number;
       };
       if (!response.ok) {
-        throw new Error(json.error || "Bulk generation failed.");
+        throw new Error(json.error ?? "Bulk generation failed.");
       }
 
       setBulkResult(
@@ -82,45 +78,79 @@ export function AdminBlogTable({ posts, adminKey }: AdminBlogTableProps) {
     }
   };
 
+  const onLogout = async () => {
+    await fetch("/api/admin/logout", { method: "POST" });
+    router.push("/admin/login");
+  };
+
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-3xl font-semibold text-slate-900">Admin Blog CMS</h1>
-        <div className="flex items-center gap-2">
+    <section className="mx-auto w-full max-w-6xl px-6 py-12">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Blog CMS</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin/comments"
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            Moderate comments
+          </Link>
           <button
             type="button"
             onClick={onGenerateBulk}
             disabled={isBulkGenerating}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-slate-700 disabled:opacity-50"
           >
-            {isBulkGenerating ? "Generating..." : "Generate Blogs for All Locations"}
+            {isBulkGenerating ? "Generating..." : "Generate Random Blogs"}
           </button>
           <Link
-            href={`/admin/blog/new?key=${encodeURIComponent(adminKey)}`}
-            className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-medium text-white"
+            href="/admin/blog/new"
+            className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-sky-800"
           >
             New post
           </Link>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          >
+            Log out
+          </button>
         </div>
       </div>
 
-      {error && <p className="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {bulkResult && <p className="mb-4 rounded bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{bulkResult}</p>}
+      {error && (
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
+      {bulkResult && (
+        <p className="mb-4 rounded bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          {bulkResult}
+        </p>
+      )}
 
       {posts.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-600">
           No posts found.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Title</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Category</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Date</th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">
+                  Title
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">
+                  Category
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">
+                  Date
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -131,7 +161,9 @@ export function AdminBlogTable({ posts, adminKey }: AdminBlogTableProps) {
                   <td className="px-4 py-3 text-sm">
                     <span
                       className={`rounded-full px-2 py-1 text-xs ${
-                        post.published ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                        post.published
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-amber-100 text-amber-700"
                       }`}
                     >
                       {post.published ? "Published" : "Draft"}
@@ -143,7 +175,7 @@ export function AdminBlogTable({ posts, adminKey }: AdminBlogTableProps) {
                   <td className="px-4 py-3 text-right text-sm">
                     <div className="flex justify-end gap-3">
                       <Link
-                        href={`/admin/blog/edit/${post.id}?key=${encodeURIComponent(adminKey)}`}
+                        href={`/admin/blog/edit/${post.id}`}
                         className="text-sky-700 hover:text-sky-900"
                       >
                         Edit

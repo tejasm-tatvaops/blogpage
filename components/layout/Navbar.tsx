@@ -9,21 +9,21 @@ export function Navbar() {
           <Image
             src="/tatvaops-logo.png"
             alt="TatvaOps"
-            width={156}
-            height={40}
-            className="h-8 w-auto"
+            width={234}
+            height={60}
+            className="h-12 w-auto sm:h-14"
             priority
           />
         </Link>
 
-        <nav className="flex items-center gap-5 text-sm font-medium text-slate-600">
+        <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium text-slate-600">
+          <Link href="/" className="transition hover:text-slate-900">
+            Home
+          </Link>
           <Link href="/blog" className="transition hover:text-slate-900">
             Blog
           </Link>
-          <Link href="/estimate" className="transition hover:text-slate-900">
-            Estimate
-          </Link>
-          <Link href="/admin/blog?key=tatva-admin-2026" className="transition hover:text-slate-900">
+          <Link href="/admin/login" className="transition hover:text-slate-900">
             Admin
           </Link>
         </nav>
