@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:clean": "rm -rf .next && next dev",
+    "dev": "NEXT_DISABLE_DEVTOOLS=1 next dev",
+    "dev:clean": "rm -rf .next && NEXT_DISABLE_DEVTOOLS=1 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "seed": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/seedBlogs.ts",
-    "seed:reset": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/seedBlogs.ts --reset"
+    "seed:reset": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/seedBlogs.ts --reset",
+    "scheduler:daily": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/dailyRandomBlogScheduler.ts"
   },
   "dependencies": {
     "@radix-ui/react-separator": "^1.1.7",
@@ -22,6 +23,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
+    "rehype-sanitize": "^6.0.0",
     "rehype-slug": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "zod": "^4.3.6"
@@ -37,6 +39,6 @@
     "tailwindcss": "^4.1.8",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
-    "typescript": "^5.8.3"
+    "typescript": "5.9.3"
   }
 }

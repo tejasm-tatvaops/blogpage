@@ -12,9 +12,8 @@ export async function POST(request: Request) {
   }
 
   const ip = getRateLimitKey(request);
-  if (!generateBlogLimiter(ip)) {
-    return rateLimitResponse();
-  }
+  const rl = generateBlogLimiter(ip);
+  if (!rl.allowed) return rateLimitResponse(rl);
 
   try {
     const body = await readJsonBody<{ keyword?: string; internalLinks?: string[] }>(request);

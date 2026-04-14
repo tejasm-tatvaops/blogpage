@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BlogPost } from "@/lib/blogService";
 
@@ -21,6 +21,8 @@ type FormState = {
   published: boolean;
 };
 
+const AUTOSAVE_KEY = "admin-blog-form-draft";
+
 const createSlug = (value: string): string =>
   value
     .toLowerCase()
@@ -30,24 +32,41 @@ const createSlug = (value: string): string =>
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 
+const defaultForm = (post?: BlogPost): FormState => ({
+  title: post?.title ?? "",
+  slug: post?.slug ?? "",
+  excerpt: post?.excerpt ?? "",
+  content: post?.content ?? "",
+  cover_image: post?.cover_image ?? "",
+  author: post?.author ?? "TatvaOps Editorial",
+  category: post?.category ?? "",
+  tags: post?.tags.join(", ") ?? "",
+  published: post?.published ?? false,
+});
+
 export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
   const router = useRouter();
   const [keyword, setKeyword] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const generateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const imageFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
 
-  const [form, setForm] = useState<FormState>({
-    title: initialPost?.title ?? "",
-    slug: initialPost?.slug ?? "",
-    excerpt: initialPost?.excerpt ?? "",
-    content: initialPost?.content ?? "",
-    cover_image: initialPost?.cover_image ?? "",
-    author: initialPost?.author ?? "TatvaOps Editorial",
-    category: initialPost?.category ?? "",
-    tags: initialPost?.tags.join(", ") ?? "",
-    published: initialPost?.published ?? false,
+  const [form, setForm] = useState<FormState>(() => {
+    // In create mode, attempt to restore a saved draft from localStorage.
+    if (mode === "create" && typeof window !== "undefined") {
+      try {
+        const saved = window.localStorage.getItem(AUTOSAVE_KEY);
+        if (saved) return JSON.parse(saved) as FormState;
+      } catch {
+        // Ignore parse errors — start fresh.
+      }
+    }
+    return defaultForm(initialPost);
   });
 
   const tagsArray = useMemo(
@@ -59,10 +78,37 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
     [form.tags],
   );
 
+  // Debounced auto-save for create mode only.
+  useEffect(() => {
+    if (mode !== "create") return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(form));
+        setAutoSavedAt(new Date());
+      } catch {
+        // Ignore storage quota errors.
+      }
+    }, 1500);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [form, mode]);
+
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(AUTOSAVE_KEY);
+    } catch {
+      // Ignore.
+    }
+    setAutoSavedAt(null);
+  };
+
   const onGenerate = useCallback(() => {
     if (isGenerating || !keyword.trim()) return;
 
-    // Debounce: ignore clicks within 500 ms of the last one
+    // Debounce: ignore clicks within 500 ms of the last one.
     if (generateTimeoutRef.current) return;
     generateTimeoutRef.current = setTimeout(() => {
       generateTimeoutRef.current = null;
@@ -87,6 +133,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
           content?: string;
           tags?: string[];
           category?: string;
+          cover_image?: string;
         };
 
         if (!response.ok) {
@@ -101,6 +148,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
           content: json.content ?? prev.content,
           tags: (json.tags ?? []).join(", ") || prev.tags,
           category: json.category ?? prev.category,
+          cover_image: json.cover_image ?? prev.cover_image,
         }));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to generate with AI.");
@@ -142,6 +190,8 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
         throw new Error(json.error ?? "Failed to save post.");
       }
 
+      // Clear draft after successful save.
+      clearDraft();
       router.push("/admin/blog");
       router.refresh();
     } catch (err) {
@@ -151,11 +201,59 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
     }
   };
 
+  const onImageFileSelected = (file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose a valid image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image is too large. Maximum size is 5 MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      if (!result) {
+        setError("Failed to read image file.");
+        return;
+      }
+      setError(null);
+      setForm((prev) => ({ ...prev, cover_image: result }));
+    };
+    reader.onerror = () => setError("Failed to read image file.");
+    reader.readAsDataURL(file);
+  };
+
   return (
     <section className="mx-auto w-full max-w-4xl px-6 py-12">
       <h1 className="text-3xl font-bold tracking-tight text-slate-900">
         {mode === "create" ? "Create blog post" : "Edit blog post"}
       </h1>
+
+      {mode === "create" && (
+        <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
+          {autoSavedAt ? (
+            <span>
+              Draft auto-saved at{" "}
+              {autoSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          ) : (
+            <span>Changes are auto-saved as you type</span>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              clearDraft();
+              setForm(defaultForm());
+            }}
+            className="text-red-500 underline hover:text-red-700"
+          >
+            Discard draft
+          </button>
+        </div>
+      )}
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <label className="mb-2 block text-sm font-medium text-slate-700">
@@ -219,13 +317,82 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-sky-500 transition focus:ring-2"
           required
         />
-        <input
-          value={form.cover_image}
-          onChange={(e) => setForm((prev) => ({ ...prev, cover_image: e.target.value }))}
-          placeholder="Cover image URL (https://...)"
-          type="url"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-sky-500 transition focus:ring-2"
-        />
+        <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-slate-700">Cover image</p>
+            {form.cover_image && (
+              <button
+                type="button"
+                onClick={() => setForm((prev) => ({ ...prev, cover_image: "" }))}
+                className="text-xs text-red-600 hover:text-red-800"
+              >
+                Remove image
+              </button>
+            )}
+          </div>
+
+          <input
+            value={form.cover_image}
+            onChange={(e) => setForm((prev) => ({ ...prev, cover_image: e.target.value }))}
+            placeholder="Paste image URL (https://...) or upload below"
+            type="text"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none ring-sky-500 transition focus:ring-2"
+          />
+
+          <input
+            ref={imageFileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => onImageFileSelected(e.target.files?.[0] ?? null)}
+          />
+
+          <button
+            type="button"
+            onClick={() => imageFileInputRef.current?.click()}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+          >
+            Choose image from device
+          </button>
+
+          <div
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setIsDraggingImage(true);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDraggingImage(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setIsDraggingImage(false);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDraggingImage(false);
+              onImageFileSelected(e.dataTransfer.files?.[0] ?? null);
+            }}
+            className={`rounded-lg border-2 border-dashed px-4 py-6 text-center text-sm transition ${
+              isDraggingImage
+                ? "border-sky-400 bg-sky-50 text-sky-700"
+                : "border-slate-300 bg-white text-slate-500"
+            }`}
+          >
+            Drag and drop an image here
+          </div>
+
+          {form.cover_image && (
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+              <img
+                src={form.cover_image}
+                alt="Cover preview"
+                className="h-44 w-full object-cover"
+                onError={() => setError("Cover image preview failed. Check URL or pick another image.")}
+              />
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <input
             value={form.author}

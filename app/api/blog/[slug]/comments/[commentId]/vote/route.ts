@@ -13,7 +13,8 @@ export async function POST(
   { params }: { params: Promise<{ slug: string; commentId: string }> },
 ) {
   const ip = getRateLimitKey(request);
-  if (!upvoteLimiter(ip)) return rateLimitResponse();
+  const rl = upvoteLimiter(ip);
+  if (!rl.allowed) return rateLimitResponse(rl);
 
   try {
     const { slug, commentId } = await params;

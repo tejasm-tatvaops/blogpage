@@ -12,7 +12,8 @@ export async function GET(
   const authorized = await requireAdminApiAccess();
   if (!authorized) return errorResponse(401, "Unauthorized");
 
-  if (!adminApiLimiter(getRateLimitKey(request))) return rateLimitResponse();
+  const rl = adminApiLimiter(getRateLimitKey(request));
+  if (!rl.allowed) return rateLimitResponse(rl);
 
   try {
     const { id } = await params;
@@ -32,7 +33,8 @@ export async function PATCH(
   const authorized = await requireAdminApiAccess();
   if (!authorized) return errorResponse(401, "Unauthorized");
 
-  if (!adminApiLimiter(getRateLimitKey(request))) return rateLimitResponse();
+  const rl = adminApiLimiter(getRateLimitKey(request));
+  if (!rl.allowed) return rateLimitResponse(rl);
 
   try {
     const { id } = await params;
@@ -57,7 +59,8 @@ export async function DELETE(
   const authorized = await requireAdminApiAccess();
   if (!authorized) return errorResponse(401, "Unauthorized");
 
-  if (!adminApiLimiter(getRateLimitKey(request))) return rateLimitResponse();
+  const rl = adminApiLimiter(getRateLimitKey(request));
+  if (!rl.allowed) return rateLimitResponse(rl);
 
   try {
     const { id } = await params;

@@ -33,7 +33,19 @@ const blogWriteSchema = z.object({
     .max(300, "Excerpt too long"),
   cover_image: z
     .string()
-    .url("cover_image must be a valid URL")
+    .refine(
+      (value) => {
+        if (!value) return true;
+        if (value.startsWith("data:image/")) return true;
+        try {
+          const url = new URL(value);
+          return url.protocol === "http:" || url.protocol === "https:";
+        } catch {
+          return false;
+        }
+      },
+      { message: "cover_image must be an http(s) URL or data:image base64 string" },
+    )
     .nullable()
     .optional()
     .or(z.literal("").transform(() => null)),

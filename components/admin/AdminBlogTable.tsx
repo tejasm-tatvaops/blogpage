@@ -2,12 +2,25 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { BlogPost } from "@/lib/blogService";
 
 type AdminBlogTableProps = {
   posts: BlogPost[];
 };
+
+const formatStableDate = (isoDate: string): string => {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+};
+
+const formatCount = (value: number): string => new Intl.NumberFormat("en-US").format(value);
 
 export function AdminBlogTable({ posts }: AdminBlogTableProps) {
   const router = useRouter();
@@ -15,10 +28,25 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
   const [bulkResult, setBulkResult] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return posts.filter((post) => {
+      if (statusFilter === "published" && !post.published) return false;
+      if (statusFilter === "draft" && post.published) return false;
+      if (!q) return true;
+      return (
+        post.title.toLowerCase().includes(q) ||
+        post.category.toLowerCase().includes(q) ||
+        post.tags.some((t) => t.toLowerCase().includes(q))
+      );
+    });
+  }, [posts, search, statusFilter]);
 
   const onDelete = async (id: string) => {
-    const confirmed = window.confirm("Delete this post? This action can be undone by an admin.");
-    if (!confirmed) return;
+    if (deletingId) return;
 
     try {
       setError(null);
@@ -29,6 +57,10 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
 
       const json = (await response.json()) as { error?: string };
       if (!response.ok) {
+        if (response.status === 401) {
+          router.push("/admin/login");
+          return;
+        }
         throw new Error(json.error ?? "Failed to delete post.");
       }
 
@@ -41,10 +73,7 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
   };
 
   const onGenerateBulk = async () => {
-    const confirmed = window.confirm(
-      "This will generate 3 random AI blogs. Continue?",
-    );
-    if (!confirmed) return;
+    if (isBulkGenerating) return;
 
     try {
       setError(null);
@@ -64,6 +93,10 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
         failedCount?: number;
       };
       if (!response.ok) {
+        if (response.status === 401) {
+          router.push("/admin/login");
+          return;
+        }
         throw new Error(json.error ?? "Bulk generation failed.");
       }
 
@@ -127,9 +160,31 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
         </p>
       )}
 
-      {posts.length === 0 ? (
+      {/* Search + filter bar */}
+      <div className="mb-4 flex flex-wrap gap-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by title, category, or tag…"
+          className="w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-sky-500 transition focus:ring-2"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-sky-500 transition focus:ring-2"
+        >
+          <option value="all">All</option>
+          <option value="published">Published</option>
+          <option value="draft">Drafts</option>
+        </select>
+        <span className="self-center text-xs text-slate-500">
+          {filtered.length} / {posts.length} posts
+        </span>
+      </div>
+
+      {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-600">
-          No posts found.
+          {posts.length === 0 ? "No posts found." : "No posts match your filter."}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -145,6 +200,12 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">
                   Status
                 </th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">
+                  Views
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">
+                  Upvotes
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">
                   Date
                 </th>
@@ -154,9 +215,18 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {posts.map((post) => (
-                <tr key={post.id}>
-                  <td className="px-4 py-3 text-sm text-slate-800">{post.title}</td>
+              {filtered.map((post) => (
+                <tr key={post.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-3 text-sm text-slate-800">
+                    <Link
+                      href={`/blog/${post.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                    >
+                      {post.title}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-sm text-slate-600">{post.category}</td>
                   <td className="px-4 py-3 text-sm">
                     <span
@@ -169,8 +239,14 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
                       {post.published ? "Published" : "Draft"}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-right text-sm tabular-nums text-slate-600">
+                    {formatCount(post.view_count)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-sm tabular-nums text-slate-600">
+                    {formatCount(post.upvote_count)}
+                  </td>
                   <td className="px-4 py-3 text-sm text-slate-600">
-                    {new Date(post.created_at).toLocaleDateString()}
+                    {formatStableDate(post.created_at)}
                   </td>
                   <td className="px-4 py-3 text-right text-sm">
                     <div className="flex justify-end gap-3">

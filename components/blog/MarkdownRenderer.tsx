@@ -1,7 +1,8 @@
-import type { ComponentProps } from "react";
+import { memo, type ComponentProps } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 
 type MarkdownRendererProps = {
   content: string;
@@ -11,6 +12,24 @@ type MarkdownSection = {
   heading: string;
   body: string;
 };
+
+// Allow the same set as defaultSchema but also permit id/class on headings
+// so rehype-slug IDs are preserved after sanitization.
+const sanitizeSchema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    "*": [...(defaultSchema.attributes?.["*"] ?? []), "id", "className"],
+    a: [...(defaultSchema.attributes?.["a"] ?? []), "href", "target", "rel"],
+    img: ["src", "alt", "title", "width", "height"],
+    th: ["align"],
+    td: ["align"],
+  },
+};
+
+// Cast needed: react-markdown expects mutable Pluggable[] but our tuple is inferred readonly.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const rehypePlugins = [rehypeSlug, [rehypeSanitize, sanitizeSchema]] as any[];
 
 const splitByH2Sections = (markdown: string): { intro: string; sections: MarkdownSection[] } => {
   const lines = markdown.split("\n");
@@ -54,7 +73,7 @@ const markdownComponents = {
   ),
 };
 
-export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+export const MarkdownRenderer = memo(function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const { intro, sections } = splitByH2Sections(content);
   const shouldCollapseSections = sections.length >= 3;
 
@@ -63,7 +82,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       {!shouldCollapseSections ? (
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
-          rehypePlugins={[rehypeSlug]}
+          rehypePlugins={rehypePlugins}
           components={markdownComponents}
         >
           {content}
@@ -73,7 +92,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
           {intro ? (
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeSlug]}
+              rehypePlugins={rehypePlugins}
               components={markdownComponents}
             >
               {intro}
@@ -81,30 +100,53 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
           ) : null}
 
           <div className="mt-8 space-y-4 not-prose">
-            {sections.map((section, index) => (
-              <details
-                key={`${section.heading}-${index}`}
-                open={index === 0}
-                className="group overflow-hidden rounded-xl border border-slate-200 bg-white"
-              >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-slate-900">
-                  <span>{section.heading}</span>
-                  <span className="text-slate-400 transition group-open:rotate-180">⌄</span>
-                </summary>
-                <div className="border-t border-slate-100 px-4 py-4 prose prose-slate max-w-none prose-p:leading-8">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeSlug]}
-                    components={markdownComponents}
+            {sections.map((section, index) => {
+              const isReferences = section.heading.toLowerCase() === "references";
+              if (isReferences) {
+                return (
+                  <section
+                    key={`${section.heading}-${index}`}
+                    className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
                   >
-                    {section.body}
-                  </ReactMarkdown>
-                </div>
-              </details>
-            ))}
+                    <div className="px-4 py-3 text-sm font-semibold text-slate-900">References</div>
+                    <div className="border-t border-slate-200 px-4 py-4 prose prose-slate max-w-none prose-p:leading-8">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={rehypePlugins}
+                        components={markdownComponents}
+                      >
+                        {section.body}
+                      </ReactMarkdown>
+                    </div>
+                  </section>
+                );
+              }
+
+              return (
+                <details
+                  key={`${section.heading}-${index}`}
+                  open={index === 0}
+                  className="group overflow-hidden rounded-xl border border-slate-200 bg-white"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-slate-900">
+                    <span>{section.heading}</span>
+                    <span className="text-slate-400 transition group-open:rotate-180">⌄</span>
+                  </summary>
+                  <div className="border-t border-slate-100 px-4 py-4 prose prose-slate max-w-none prose-p:leading-8">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={rehypePlugins}
+                      components={markdownComponents}
+                    >
+                      {section.body}
+                    </ReactMarkdown>
+                  </div>
+                </details>
+              );
+            })}
           </div>
         </>
       )}
     </div>
   );
-}
+});

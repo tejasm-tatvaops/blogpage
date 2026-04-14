@@ -1,15 +1,17 @@
 import * as Separator from "@radix-ui/react-separator";
-import Image from "next/image";
 import type { BlogPost } from "@/lib/blogService";
 import type { Comment } from "@/lib/commentService";
 import { calculateReadingTime } from "@/lib/blogService";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { UpvoteButton } from "./UpvoteButton";
+import { DownvoteButton } from "./DownvoteButton";
 import { ShareButtons } from "./ShareButtons";
 import { CommentSection } from "./CommentSection";
 import { BlogSidebar } from "./BlogSidebar";
 import { ViewCount } from "./ViewCount";
 import { ReadingProgressBar } from "./ReadingProgressBar";
+import { buildCoverImageUrl } from "@/lib/coverImage";
+import { CoverImage } from "./CoverImage";
 
 type BlogDetailProps = {
   post: BlogPost;
@@ -27,6 +29,8 @@ const formatDate = (dateString: string): string =>
 
 export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDetailProps) {
   const readingTimeMinutes = calculateReadingTime(post.content);
+  const imageUrl =
+    post.cover_image || buildCoverImageUrl({ title: post.title, category: post.category, tags: post.tags });
 
   return (
     <>
@@ -61,6 +65,7 @@ export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDet
           {/* Quora-style action bar — below meta, above cover image */}
           <div className="mt-5 flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
             <UpvoteButton slug={post.slug} initialCount={post.upvote_count} />
+            <DownvoteButton slug={post.slug} initialCount={post.downvote_count} />
             <Separator.Root
               orientation="vertical"
               className="hidden h-5 w-px bg-slate-200 sm:block"
@@ -82,21 +87,14 @@ export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDet
 
           {/* Cover image */}
           <div className="relative my-7 aspect-[16/9] overflow-hidden rounded-xl bg-slate-100">
-            {post.cover_image ? (
-              <Image
-                src={post.cover_image}
-                alt={post.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 720px"
-                priority
-                unoptimized
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-slate-500">
-                TatvaOps Knowledge Base
-              </div>
-            )}
+            <CoverImage
+              src={imageUrl}
+              alt={post.title}
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 720px"
+              priority
+              fallbackLabel={post.title}
+            />
           </div>
 
           {/* Tags (above content) */}
@@ -119,6 +117,7 @@ export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDet
           {/* Bottom action bar (repeat for long reads) */}
           <div className="mt-10 flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
             <UpvoteButton slug={post.slug} initialCount={post.upvote_count} />
+            <DownvoteButton slug={post.slug} initialCount={post.downvote_count} />
             <Separator.Root
               orientation="vertical"
               className="hidden h-5 w-px bg-slate-200 sm:block"

@@ -5,6 +5,9 @@ import { connectToDatabase } from "./mongodb";
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
 
+// Fields projected for list queries — omits heavy `content` to keep responses lean.
+const LIST_PROJECTION = "-content";
+
 export type BlogPost = {
   id: string;
   title: string;
@@ -18,6 +21,7 @@ export type BlogPost = {
   category: string;
   published: boolean;
   upvote_count: number;
+  downvote_count: number;
   view_count: number;
 };
 
@@ -49,7 +53,7 @@ const toBlogPost = (doc: BlogDocument): BlogPost => ({
   id: doc._id.toString(),
   title: doc.title,
   slug: doc.slug,
-  content: doc.content,
+  content: (doc as unknown as { content?: string }).content ?? "",
   excerpt: doc.excerpt,
   cover_image: doc.cover_image ?? null,
   author: doc.author,
@@ -58,10 +62,31 @@ const toBlogPost = (doc: BlogDocument): BlogPost => ({
   category: doc.category,
   published: doc.published,
   upvote_count: doc.upvote_count ?? 0,
+  downvote_count: doc.downvote_count ?? 0,
   view_count: doc.view_count ?? 0,
 });
 
 const notDeleted = { deleted_at: null };
+
+const buildFilter = ({
+  category,
+  query,
+  includeDrafts = false,
+}: Pick<GetAllPostsParams, "category" | "query" | "includeDrafts">): Record<string, unknown> => {
+  const filter: Record<string, unknown> = { ...notDeleted };
+  if (!includeDrafts) filter.published = true;
+  if (category) filter.category = category;
+  if (query) {
+    const safe = query.trim();
+    if (safe) {
+      // Limit search query length to avoid slow regex on large datasets
+      const capped = safe.slice(0, 100);
+      const regex = new RegExp(capped.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      filter.$or = [{ title: regex }, { excerpt: regex }, { tags: regex }];
+    }
+  }
+  return filter;
+};
 
 export const getAllPosts = async ({
   category,
@@ -75,28 +100,29 @@ export const getAllPosts = async ({
 
   const clampedLimit = Math.min(Math.max(1, limit), MAX_LIMIT);
   const skip = (Math.max(1, page) - 1) * clampedLimit;
-
-  const filter: Record<string, unknown> = { ...notDeleted };
-  if (!includeDrafts) filter.published = true;
-  if (category) filter.category = category;
-  if (query) {
-    const safe = query.trim();
-    if (safe) {
-      const regex = new RegExp(safe.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-      filter.$or = [{ title: regex }, { excerpt: regex }, { tags: regex }, { content: regex }];
-    }
-  }
+  const filter = buildFilter({ category, query, includeDrafts });
 
   const sortBy: Record<string, SortOrder> =
     sort === "most_viewed" ? { view_count: -1, created_at: -1 } : { created_at: -1 };
 
   const docs = (await BlogModel.find(filter)
+    .select(LIST_PROJECTION)
     .sort(sortBy)
     .skip(skip)
     .limit(clampedLimit)
     .lean()) as unknown as BlogDocument[];
 
   return docs.map(toBlogPost);
+};
+
+export const getTotalPostCount = async ({
+  category,
+  query,
+  includeDrafts = false,
+}: Pick<GetAllPostsParams, "category" | "query" | "includeDrafts"> = {}): Promise<number> => {
+  await connectToDatabase();
+  const filter = buildFilter({ category, query, includeDrafts });
+  return BlogModel.countDocuments(filter);
 };
 
 export const getPostById = async (id: string): Promise<BlogPost | null> => {
@@ -122,8 +148,12 @@ export const generateUniqueSlug = async (
   await connectToDatabase();
   const baseSlug = normalizeSlug(rawTitleOrSlug) || "untitled-post";
 
-  // Try the base slug first, then increment: base-2, base-3, …
-  const candidates = [baseSlug, ...Array.from({ length: 10 }, (_, i) => `${baseSlug}-${i + 2}`)];
+  // Try base, then base-2 through base-11, then a timestamp suffix as final fallback.
+  const candidates = [
+    baseSlug,
+    ...Array.from({ length: 10 }, (_, i) => `${baseSlug}-${i + 2}`),
+    `${baseSlug}-${Date.now()}`,
+  ];
 
   for (const candidate of candidates) {
     const existing = await BlogModel.findOne({
@@ -137,6 +167,7 @@ export const generateUniqueSlug = async (
     if (!existing) return candidate;
   }
 
+  // Should never reach here — timestamp suffix guarantees uniqueness.
   throw new Error("Unable to generate a unique slug after multiple attempts.");
 };
 
@@ -244,6 +275,7 @@ export const getRelatedPosts = async (current: BlogPost, limit = 3): Promise<Blo
     ...baseFilter,
     ...(tagFilter ?? categoryFilter),
   })
+    .select(LIST_PROJECTION)
     .sort({ created_at: -1 })
     .limit(limit)
     .lean()) as unknown as BlogDocument[];
@@ -262,6 +294,19 @@ export const incrementUpvote = async (slug: string): Promise<number> => {
 
   if (!updated) throw new Error("Post not found.");
   return (updated as unknown as { upvote_count: number }).upvote_count ?? 0;
+};
+
+/** Atomically increment the downvote count for a post. Returns the new count. */
+export const incrementDownvote = async (slug: string): Promise<number> => {
+  await connectToDatabase();
+  const updated = (await BlogModel.findOneAndUpdate(
+    { slug, published: true, ...notDeleted },
+    { $inc: { downvote_count: 1 } },
+    { new: true },
+  ).lean()) as BlogDocument | null;
+
+  if (!updated) throw new Error("Post not found.");
+  return (updated as unknown as { downvote_count: number }).downvote_count ?? 0;
 };
 
 /** Atomically increment the view count for a published post. Returns new count or null when absent. */

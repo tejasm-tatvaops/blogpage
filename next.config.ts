@@ -15,9 +15,9 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-eval needed by Next.js dev mode; tighten in future
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https://images.unsplash.com",
+      "img-src 'self' data: https://images.unsplash.com https://source.unsplash.com https://picsum.photos",
       "font-src 'self'",
       "connect-src 'self'",
       "frame-ancestors 'none'",
@@ -28,11 +28,16 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Workaround for Next.js 15.5.x bug: generateBuildId is called without null-check.
+  // Returning null tells Next.js to use its nanoid fallback.
+  generateBuildId: async () => null,
   outputFileTracingRoot: path.join(process.cwd()),
 
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "source.unsplash.com" },
+      { protocol: "https", hostname: "picsum.photos" },
     ],
   },
 

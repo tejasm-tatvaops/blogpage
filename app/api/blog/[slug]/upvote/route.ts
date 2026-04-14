@@ -8,12 +8,13 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const ip = getRateLimitKey(request);
-  if (!upvoteLimiter(ip)) return rateLimitResponse();
+  const rl = upvoteLimiter(ip);
+  if (!rl.allowed) return rateLimitResponse(rl);
 
   try {
     const { slug } = await params;
     const newCount = await incrementUpvote(decodeURIComponent(slug));
-    return NextResponse.json({ upvote_count: newCount }, { status: 200 });
+    return NextResponse.json({ upvote_count: newCount }, { status: 200, headers: { "X-RateLimit-Remaining": String(rl.remaining) } });
   } catch (error) {
     logger.error({ error }, "POST /api/blog/[slug]/upvote error");
     return NextResponse.json({ error: "Failed to register upvote." }, { status: 500 });

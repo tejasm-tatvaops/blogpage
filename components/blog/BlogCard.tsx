@@ -1,6 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { BlogPost } from "@/lib/blogService";
+import { buildCoverImageUrl } from "@/lib/coverImage";
+import { CoverImage } from "./CoverImage";
 
 type BlogCardProps = {
   post: BlogPost;
@@ -14,25 +15,20 @@ const formatDate = (dateString: string): string =>
   }).format(new Date(dateString));
 
 export function BlogCard({ post }: BlogCardProps) {
+  const imageUrl = post.cover_image || buildCoverImageUrl({ title: post.title, category: post.category, tags: post.tags });
+
   return (
     <article className="group h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
       <Link href={`/blog/${post.slug}`} className="block h-full">
         <div className="relative h-48 w-full overflow-hidden bg-slate-100">
-          {post.cover_image ? (
-            <Image
-              src={post.cover_image}
-              alt={post.title}
-              fill
-              className="object-cover transition duration-500 group-hover:scale-[1.04]"
-              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-              priority={false}
-              unoptimized
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-slate-500">
-              TatvaOps Insights
-            </div>
-          )}
+          <CoverImage
+            src={imageUrl}
+            alt={post.title}
+            className="object-cover transition duration-500 group-hover:scale-[1.04]"
+            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+            priority={false}
+            fallbackLabel={post.title}
+          />
         </div>
 
         <div className="flex h-[calc(100%-12rem)] flex-col gap-3 p-5">

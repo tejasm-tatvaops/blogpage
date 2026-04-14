@@ -9,7 +9,8 @@ export async function GET(request: Request) {
   const authorized = await requireAdminApiAccess();
   if (!authorized) return errorResponse(401, "Unauthorized");
 
-  if (!adminApiLimiter(getRateLimitKey(request))) return rateLimitResponse();
+  const rl = adminApiLimiter(getRateLimitKey(request));
+  if (!rl.allowed) return rateLimitResponse(rl);
 
   try {
     const url = new URL(request.url);
@@ -31,7 +32,8 @@ export async function POST(request: Request) {
   const authorized = await requireAdminApiAccess();
   if (!authorized) return errorResponse(401, "Unauthorized");
 
-  if (!adminApiLimiter(getRateLimitKey(request))) return rateLimitResponse();
+  const rl = adminApiLimiter(getRateLimitKey(request));
+  if (!rl.allowed) return rateLimitResponse(rl);
 
   try {
     const body = await readJsonBody<unknown>(request);

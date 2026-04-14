@@ -37,9 +37,8 @@ export async function POST(request: Request) {
   }
 
   const ip = getRateLimitKey(request);
-  if (!bulkGenerateLimiter(ip)) {
-    return rateLimitResponse();
-  }
+  const rl = bulkGenerateLimiter(ip);
+  if (!rl.allowed) return rateLimitResponse(rl);
 
   try {
     const body = await readJsonBody<BulkPayload>(request);
@@ -105,7 +104,7 @@ export async function POST(request: Request) {
             slug: slugToCheck,
             excerpt: generated.excerpt,
             content: appendInternalLinks(generated.content, location, knownSlugs),
-            cover_image: null,
+            cover_image: generated.cover_image,
             author: "TatvaOps AI",
             tags: (generated.tags ?? []).slice(0, 10),
             category: generated.category || "Programmatic SEO",
