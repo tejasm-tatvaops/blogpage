@@ -23,6 +23,27 @@ type FormState = {
   publish_at: string; // ISO datetime string or ""
 };
 
+type QualityReport = {
+  seoScore: number;
+  readabilityScore: number;
+  keywordDensity: number;
+  overallScore: number;
+  grade: "A" | "B" | "C" | "D" | "F";
+  suggestions: string[];
+};
+
+type DuplicateCheckResult = {
+  hasDuplicate: boolean;
+  threshold: number;
+  similar: Array<{ slug: string; title: string; score: number }>;
+};
+
+type LinkResult = {
+  content: string;
+  linksAdded: number;
+  linkMap: Array<{ keyword: string; slug: string }>;
+};
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const AUTOSAVE_KEY = "admin-blog-form-draft";
 
@@ -120,6 +141,12 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const [tagInput, setTagInput] = useState("");
   const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const [qualityReport, setQualityReport] = useState<QualityReport | null>(null);
+  const [duplicateReport, setDuplicateReport] = useState<DuplicateCheckResult | null>(null);
+  const [linkResult, setLinkResult] = useState<LinkResult | null>(null);
+  const [isScoring, setIsScoring] = useState(false);
+  const [isCheckingDup, setIsCheckingDup] = useState(false);
+  const [isAutoLinking, setIsAutoLinking] = useState(false);
 
   const generateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -282,6 +309,77 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
       setError(err instanceof Error ? err.message : "Save failed.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const runQualityScore = async () => {
+    if (isScoring || !form.title.trim() || !form.content.trim()) return;
+    setIsScoring(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/admin/blog/score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: form.title,
+          excerpt: form.excerpt,
+          content: form.content,
+        }),
+      });
+      const json = (await response.json()) as QualityReport & { error?: string };
+      if (!response.ok) throw new Error(json.error ?? "Failed to score content.");
+      setQualityReport(json);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Quality scoring failed.");
+    } finally {
+      setIsScoring(false);
+    }
+  };
+
+  const runDuplicateCheck = async () => {
+    if (isCheckingDup || form.content.trim().length < 100) return;
+    setIsCheckingDup(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/admin/blog/check-duplicate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: form.content,
+          excludeSlug: form.slug || undefined,
+        }),
+      });
+      const json = (await response.json()) as DuplicateCheckResult & { error?: string };
+      if (!response.ok) throw new Error(json.error ?? "Duplicate check failed.");
+      setDuplicateReport(json);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Duplicate check failed.");
+    } finally {
+      setIsCheckingDup(false);
+    }
+  };
+
+  const runAutoLinking = async () => {
+    if (isAutoLinking || form.content.trim().length < 50) return;
+    setIsAutoLinking(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/admin/blog/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: form.content,
+          currentSlug: form.slug || undefined,
+        }),
+      });
+      const json = (await response.json()) as LinkResult & { error?: string };
+      if (!response.ok) throw new Error(json.error ?? "Internal linking failed.");
+      setForm((prev) => ({ ...prev, content: json.content ?? prev.content }));
+      setLinkResult(json);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Internal linking failed.");
+    } finally {
+      setIsAutoLinking(false);
     }
   };
 
@@ -508,6 +606,56 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                   <CharCount current={form.content.length} max={150_000} />
                 </div>
               </div>
+              <div className="mb-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={runQualityScore}
+                  disabled={isScoring || !form.title.trim() || !form.content.trim()}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {isScoring ? "Scoring..." : "AI quality score"}
+                </button>
+                <button
+                  type="button"
+                  onClick={runDuplicateCheck}
+                  disabled={isCheckingDup || form.content.trim().length < 100}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {isCheckingDup ? "Checking..." : "Check duplicate"}
+                </button>
+                <button
+                  type="button"
+                  onClick={runAutoLinking}
+                  disabled={isAutoLinking || form.content.trim().length < 50}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {isAutoLinking ? "Linking..." : "Auto internal links"}
+                </button>
+              </div>
+              {qualityReport && (
+                <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                  Grade {qualityReport.grade} ({qualityReport.overallScore}/100): SEO {qualityReport.seoScore},
+                  Readability {qualityReport.readabilityScore}, Keyword {qualityReport.keywordDensity}
+                </div>
+              )}
+              {duplicateReport && (
+                <div
+                  className={`mb-3 rounded-lg border px-3 py-2 text-xs ${
+                    duplicateReport.hasDuplicate
+                      ? "border-amber-300 bg-amber-50 text-amber-800"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  }`}
+                >
+                  {duplicateReport.hasDuplicate
+                    ? "Potential duplicate content detected. Review similar posts before publishing."
+                    : "No strong duplicate matches detected."}
+                </div>
+              )}
+              {linkResult && linkResult.linksAdded > 0 && (
+                <div className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
+                  Added {linkResult.linksAdded} internal links automatically.
+                </div>
+              )}
               <textarea
                 value={form.content}
                 onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}

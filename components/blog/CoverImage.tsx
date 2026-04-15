@@ -33,6 +33,10 @@ export function CoverImage({
   const [displaySrc, setDisplaySrc] = useState(generatedSrc);
 
   useEffect(() => {
+    setDisplaySrc(generatedSrc);
+  }, [generatedSrc]);
+
+  useEffect(() => {
     if (!src) return;
 
     const img = new Image();

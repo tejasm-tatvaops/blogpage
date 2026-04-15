@@ -30,10 +30,10 @@ export function validateEnv(): void {
     throw new Error("SESSION_SECRET must be at least 32 characters long.");
   }
 
-  if (
-    process.env.NODE_ENV === "production" &&
-    (process.env.NEXT_PUBLIC_SITE_URL ?? "").includes("localhost")
-  ) {
+  const isHostedProduction =
+    process.env.NODE_ENV === "production" && process.env.VERCEL_ENV === "production";
+
+  if (isHostedProduction && (process.env.NEXT_PUBLIC_SITE_URL ?? "").includes("localhost")) {
     throw new Error("NEXT_PUBLIC_SITE_URL cannot be localhost in production.");
   }
 

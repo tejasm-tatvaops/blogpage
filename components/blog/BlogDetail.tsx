@@ -10,6 +10,9 @@ import { BlogSidebar } from "./BlogSidebar";
 import { ViewCount } from "./ViewCount";
 import { ReadingProgressBar } from "./ReadingProgressBar";
 import { CoverImage } from "./CoverImage";
+import { AiAssistant } from "./AiAssistant";
+import { BookmarkButton } from "./BookmarkButton";
+import { ReadingTracker } from "./ReadingTracker";
 
 type BlogDetailProps = {
   post: BlogPost;
@@ -147,6 +150,15 @@ export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDet
 
                 <ViewCount slug={post.slug} initialCount={post.view_count} />
               </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <BookmarkButton slug={post.slug} title={post.title} excerpt={post.excerpt} />
+                <UpvoteButton slug={post.slug} initialCount={post.upvote_count} />
+                <DownvoteButton slug={post.slug} initialCount={post.downvote_count} />
+                <div className="ml-auto flex items-center">
+                  <ShareButtons title={post.title} slug={post.slug} />
+                </div>
+              </div>
             </header>
 
             {/* ── Cover image ── */}
@@ -183,6 +195,9 @@ export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDet
             <div className="prose prose-lg max-w-none prose-slate prose-headings:font-bold prose-headings:tracking-tight prose-p:leading-[1.85] prose-a:text-sky-700 prose-a:no-underline prose-a:font-medium hover:prose-a:underline prose-code:rounded-md prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:text-sm prose-code:text-slate-800 prose-pre:overflow-x-auto prose-pre:rounded-2xl prose-pre:bg-slate-950 prose-pre:p-5 prose-pre:text-slate-100 prose-blockquote:not-italic prose-blockquote:border-l-4 prose-blockquote:border-sky-300 prose-blockquote:bg-sky-50/60 prose-blockquote:rounded-r-xl prose-blockquote:py-1 prose-blockquote:text-slate-700 prose-img:rounded-xl prose-img:shadow-md prose-table:text-sm prose-th:bg-slate-50 prose-thead:border-slate-200 prose-tr:border-slate-100">
               <MarkdownRenderer content={mainContent} />
             </div>
+
+            <ReadingTracker slug={post.slug} readingTimeMinutes={readingTimeMinutes} />
+            <AiAssistant slug={post.slug} />
 
             {/* ── Action bar (bottom) ── */}
             <div className="mt-8 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">

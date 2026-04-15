@@ -1,5 +1,6 @@
 import { type SortOrder, isValidObjectId } from "mongoose";
 import { BlogModel, type BlogDocument } from "@/models/Blog";
+import { ViewEventModel } from "@/models/ViewEvent";
 import { connectToDatabase } from "./mongodb";
 
 const DEFAULT_LIMIT = 50;
@@ -338,10 +339,19 @@ export type BlogStats = {
   topByViews: BlogPost[];
   topByUpvotes: BlogPost[];
   recentPosts: BlogPost[];
+  viewsByDay: Array<{ date: string; views: number }>;
+  referrerSources: Array<{ source: string; views: number }>;
 };
+
+const toUtcDay = (date: Date): string => date.toISOString().slice(0, 10);
 
 export const getStats = async (): Promise<BlogStats> => {
   await connectToDatabase();
+  const now = new Date();
+  const daysWindow = 14;
+  const startDate = new Date(now);
+  startDate.setUTCHours(0, 0, 0, 0);
+  startDate.setUTCDate(startDate.getUTCDate() - (daysWindow - 1));
 
   // Single aggregation pipeline replaces four separate queries for the counters.
   type CountResult = {
@@ -352,7 +362,8 @@ export const getStats = async (): Promise<BlogStats> => {
     totalDownvotes: number;
   };
 
-  const [aggregateResult, topByViewsDocs, topByUpvotesDocs, recentDocs] = await Promise.all([
+  const [aggregateResult, topByViewsDocs, topByUpvotesDocs, recentDocs, viewEventsAgg, referrerAgg] =
+    await Promise.all([
     BlogModel.aggregate<CountResult>([
       { $match: { deleted_at: null } },
       {
@@ -381,7 +392,30 @@ export const getStats = async (): Promise<BlogStats> => {
       .sort({ created_at: -1 })
       .limit(10)
       .lean(),
-  ]);
+    ViewEventModel.aggregate<{ _id: string; count: number }>([
+      { $match: { created_at: { $gte: startDate } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$created_at", timezone: "UTC" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]),
+    ViewEventModel.aggregate<{ _id: string; count: number }>([
+      { $match: { created_at: { $gte: startDate } } },
+      {
+        $group: {
+          _id: { $ifNull: ["$referrer_host", "direct"] },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 8 },
+    ]),
+    ]);
 
   const counts: CountResult = aggregateResult[0] ?? {
     totalPosts: 0,
@@ -390,6 +424,19 @@ export const getStats = async (): Promise<BlogStats> => {
     totalUpvotes: 0,
     totalDownvotes: 0,
   };
+
+  const viewsByDateMap = new Map(viewEventsAgg.map((entry) => [entry._id, entry.count]));
+  const viewsByDay = Array.from({ length: daysWindow }, (_, index) => {
+    const date = new Date(startDate);
+    date.setUTCDate(startDate.getUTCDate() + index);
+    const key = toUtcDay(date);
+    return { date: key, views: viewsByDateMap.get(key) ?? 0 };
+  });
+
+  const referrerSources = referrerAgg.map((row) => ({
+    source: row._id || "direct",
+    views: row.count,
+  }));
 
   return {
     totalPosts: counts.totalPosts,
@@ -401,6 +448,8 @@ export const getStats = async (): Promise<BlogStats> => {
     topByViews: (topByViewsDocs as unknown as BlogDocument[]).map(toBlogPost),
     topByUpvotes: (topByUpvotesDocs as unknown as BlogDocument[]).map(toBlogPost),
     recentPosts: (recentDocs as unknown as BlogDocument[]).map(toBlogPost),
+    viewsByDay,
+    referrerSources,
   };
 };
 
@@ -440,4 +489,111 @@ export const incrementViewCount = async (slug: string): Promise<number | null> =
   ).lean()) as BlogDocument | null;
 
   return updated ? ((updated as unknown as { view_count: number }).view_count ?? 0) : null;
+};
+
+export const trackViewEvent = async ({
+  slug,
+  referrerHost,
+  userAgent,
+}: {
+  slug: string;
+  referrerHost?: string | null;
+  userAgent?: string | null;
+}): Promise<void> => {
+  await connectToDatabase();
+  const post = await BlogModel.findOne({ slug, published: true, ...notDeleted }).select("_id").lean();
+  if (!post?._id) return;
+
+  await ViewEventModel.create({
+    slug,
+    post_id: post._id,
+    referrer_host: (referrerHost || "direct").trim().slice(0, 120),
+    user_agent: (userAgent || "").trim().slice(0, 500),
+  });
+};
+
+/**
+ * Trending posts using HackerNews-style time-decay:
+ *   score = (views + upvotes × 3) / (hours_since_publish + 2)^1.5
+ * Only considers posts published within the last 30 days.
+ */
+export const getTrendingPosts = async (limit = 5): Promise<BlogPost[]> => {
+  await connectToDatabase();
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const docs = (await BlogModel.aggregate([
+    {
+      $match: {
+        published: true,
+        deleted_at: null,
+        $or: [{ publish_at: null }, { publish_at: { $lte: new Date() } }],
+        created_at: { $gte: cutoff },
+      },
+    },
+    {
+      $addFields: {
+        age_hours: {
+          $divide: [{ $subtract: [new Date(), "$created_at"] }, 3_600_000],
+        },
+      },
+    },
+    {
+      $addFields: {
+        trending_score: {
+          $divide: [
+            {
+              $add: [
+                { $ifNull: ["$view_count", 0] },
+                { $multiply: [{ $ifNull: ["$upvote_count", 0] }, 3] },
+              ],
+            },
+            { $pow: [{ $add: ["$age_hours", 2] }, 1.5] },
+          ],
+        },
+      },
+    },
+    { $sort: { trending_score: -1 } },
+    { $limit: limit },
+    { $project: { content: 0, versions: 0 } },
+  ])) as unknown as BlogDocument[];
+
+  return docs.map(toBlogPost);
+};
+
+/**
+ * Get all published post slugs, titles, and tags for internal linking /
+ * recommendation lookups. Deliberately lightweight — no content field.
+ */
+export type PostSummary = {
+  id: string;
+  slug: string;
+  title: string;
+  tags: string[];
+  category: string;
+  excerpt: string;
+};
+
+export const getAllPostSummaries = async (): Promise<PostSummary[]> => {
+  await connectToDatabase();
+  const docs = (await BlogModel.find({ published: true, ...notDeleted, ...publishedNow() })
+    .select("slug title tags category excerpt")
+    .sort({ created_at: -1 })
+    .limit(500)
+    .lean()) as unknown as Array<{
+    _id: { toString(): string };
+    slug: string;
+    title: string;
+    tags: string[];
+    category: string;
+    excerpt: string;
+  }>;
+
+  return docs.map((d) => ({
+    id: d._id.toString(),
+    slug: d.slug,
+    title: d.title,
+    tags: d.tags ?? [],
+    category: d.category,
+    excerpt: d.excerpt,
+  }));
 };

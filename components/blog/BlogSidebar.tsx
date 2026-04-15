@@ -2,6 +2,8 @@ import Link from "next/link";
 import GithubSlugger from "github-slugger";
 import type { BlogPost } from "@/lib/blogService";
 import { NewsletterSignup } from "./NewsletterSignup";
+import { TrendingWidget } from "./TrendingWidget";
+import { RecommendationPanel } from "./RecommendationPanel";
 
 type TocEntry = { text: string; anchor: string; level: number };
 
@@ -49,6 +51,8 @@ export function BlogSidebar({
 
   return (
     <aside className="space-y-5">
+      <RecommendationPanel currentPost={post} allPosts={[post, ...relatedPosts]} />
+      <TrendingWidget />
 
       {/* ── Table of Contents ── */}
       {toc.length > 0 && (

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdminPageAccess } from "@/lib/adminAuth";
 import { getStats } from "@/lib/blogService";
+import SendDigestButton from "@/components/admin/SendDigestButton";
 
 export const revalidate = 0;
 
@@ -33,6 +34,7 @@ export default async function AdminStatsPage() {
     { label: "Upvotes", value: fmt(stats.totalUpvotes), color: "bg-indigo-50 text-indigo-700" },
     { label: "Downvotes", value: fmt(stats.totalDownvotes), color: "bg-rose-50 text-rose-700" },
   ];
+  const maxViewsInWindow = Math.max(1, ...stats.viewsByDay.map((item) => item.views));
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -52,7 +54,7 @@ export default async function AdminStatsPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-6 py-8 space-y-8">
+      <div className="mx-auto max-w-6xl space-y-8 px-6 py-8">
 
         {/* ── Stat cards ── */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
@@ -70,6 +72,47 @@ export default async function AdminStatsPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="border-b border-slate-100 px-5 py-3.5">
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                Views trend (14 days)
+              </p>
+            </div>
+            <div className="px-5 py-4">
+              <div className="flex h-44 items-end gap-2">
+                {stats.viewsByDay.map((point) => {
+                  const heightPercent = Math.max(6, Math.round((point.views / maxViewsInWindow) * 100));
+                  return (
+                    <div key={point.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                      <div className="w-full rounded-t bg-sky-500/80" style={{ height: `${heightPercent}%` }} />
+                      <span className="text-[10px] text-slate-400">{point.date.slice(5)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="border-b border-slate-100 px-5 py-3.5">
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                Traffic sources (14 days)
+              </p>
+            </div>
+            <ul className="divide-y divide-slate-100">
+              {stats.referrerSources.map((source) => (
+                <li key={source.source} className="flex items-center justify-between px-5 py-3 text-sm">
+                  <span className="truncate text-slate-700">{source.source}</span>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                    {fmt(source.views)}
+                  </span>
+                </li>
+              ))}
+              {stats.referrerSources.length === 0 && (
+                <li className="px-5 py-6 text-center text-sm text-slate-400">No traffic source data yet</li>
+              )}
+            </ul>
+          </div>
 
           {/* ── Top by views ── */}
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
@@ -133,6 +176,20 @@ export default async function AdminStatsPage() {
                 <li className="px-5 py-6 text-center text-sm text-slate-400">No data yet</li>
               )}
             </ul>
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="border-b border-slate-100 px-5 py-3.5">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+              Newsletter automation
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-600">
+              Send a curated digest to all active subscribers using the latest published posts.
+            </p>
+            <SendDigestButton />
           </div>
         </div>
 
