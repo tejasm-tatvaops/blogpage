@@ -1,4 +1,3 @@
-import * as Separator from "@radix-ui/react-separator";
 import type { BlogPost } from "@/lib/blogService";
 import type { Comment } from "@/lib/commentService";
 import { calculateReadingTime } from "@/lib/blogService";
@@ -10,7 +9,6 @@ import { CommentSection } from "./CommentSection";
 import { BlogSidebar } from "./BlogSidebar";
 import { ViewCount } from "./ViewCount";
 import { ReadingProgressBar } from "./ReadingProgressBar";
-import { buildCoverImageUrl } from "@/lib/coverImage";
 import { CoverImage } from "./CoverImage";
 
 type BlogDetailProps = {
@@ -18,6 +16,70 @@ type BlogDetailProps = {
   relatedPosts: BlogPost[];
   categories: string[];
   comments: Comment[];
+};
+
+type ParsedFaq = {
+  question: string;
+  answer: string;
+};
+
+const parseContentSections = (
+  markdown: string,
+): { mainContent: string; faqs: ParsedFaq[]; references: string[] } => {
+  const lines = markdown.split("\n");
+  const sections: Array<{ heading: string; body: string[] }> = [];
+  let current: { heading: string; body: string[] } | null = null;
+  const intro: string[] = [];
+
+  for (const line of lines) {
+    const h2 = line.match(/^##\s+(.+)$/);
+    if (h2) {
+      if (current) sections.push(current);
+      current = { heading: h2[1].trim(), body: [] };
+      continue;
+    }
+    if (current) current.body.push(line);
+    else intro.push(line);
+  }
+  if (current) sections.push(current);
+
+  const faqSection = sections.find((s) => /^faqs?$/i.test(s.heading));
+  const referencesSection = sections.find((s) => /^references$/i.test(s.heading));
+  const mainSections = sections.filter((s) => !/^faqs?$/i.test(s.heading) && !/^references$/i.test(s.heading));
+
+  const faqs: ParsedFaq[] = [];
+  if (faqSection) {
+    const faqLines = faqSection.body.map((l) => l.trim()).filter(Boolean);
+    let pendingQuestion = "";
+    for (const line of faqLines) {
+      const q = line.match(/^Q\d*[:.)-]?\s*(.+)$/i);
+      if (q) {
+        pendingQuestion = q[1].trim();
+        continue;
+      }
+      const a = line.match(/^A\d*[:.)-]?\s*(.+)$/i);
+      if (a && pendingQuestion) {
+        faqs.push({ question: pendingQuestion, answer: a[1].trim() });
+        pendingQuestion = "";
+      }
+    }
+  }
+
+  const references = (referencesSection?.body ?? [])
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/^[-*]\s+/, "").replace(/^\d+\.\s+/, ""))
+    .filter(Boolean);
+
+  const rebuilt = [
+    intro.join("\n").trim(),
+    ...mainSections.map((section) => `## ${section.heading}\n${section.body.join("\n").trim()}`),
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+    .trim();
+
+  return { mainContent: rebuilt || markdown, faqs, references };
 };
 
 const formatDate = (dateString: string): string =>
@@ -29,8 +91,8 @@ const formatDate = (dateString: string): string =>
 
 export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDetailProps) {
   const readingTimeMinutes = calculateReadingTime(post.content);
-  const imageUrl =
-    post.cover_image || buildCoverImageUrl({ title: post.title, category: post.category, tags: post.tags });
+  const imageUrl = post.cover_image || "";
+  const { mainContent, faqs, references } = parseContentSections(post.content);
 
   const authorInitial = post.author.charAt(0).toUpperCase();
 
@@ -87,26 +149,6 @@ export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDet
               </div>
             </header>
 
-            {/* ── Action bar (top) ── */}
-            <div className="mb-6 flex flex-wrap items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-              <UpvoteButton slug={post.slug} initialCount={post.upvote_count} />
-              <DownvoteButton slug={post.slug} initialCount={post.downvote_count} />
-              <Separator.Root
-                orientation="vertical"
-                className="hidden h-5 w-px bg-slate-200 sm:block"
-                aria-hidden
-              />
-              <div className="flex items-center gap-1.5 text-sm text-slate-500">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-                <span>{comments.length} {comments.length === 1 ? "comment" : "comments"}</span>
-              </div>
-              <div className="ml-auto flex items-center">
-                <ShareButtons title={post.title} slug={post.slug} />
-              </div>
-            </div>
-
             {/* ── Cover image ── */}
             <div
               className="relative mb-6 w-full overflow-hidden rounded-2xl bg-slate-100 shadow-sm"
@@ -115,10 +157,11 @@ export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDet
               <CoverImage
                 src={imageUrl}
                 alt={post.title}
+                category={post.category}
+                tags={post.tags}
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 760px"
                 priority
-                fallbackLabel={post.title}
               />
             </div>
 
@@ -138,7 +181,7 @@ export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDet
 
             {/* ── Article body ── */}
             <div className="prose prose-lg max-w-none prose-slate prose-headings:font-bold prose-headings:tracking-tight prose-p:leading-[1.85] prose-a:text-sky-700 prose-a:no-underline prose-a:font-medium hover:prose-a:underline prose-code:rounded-md prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:text-sm prose-code:text-slate-800 prose-pre:overflow-x-auto prose-pre:rounded-2xl prose-pre:bg-slate-950 prose-pre:p-5 prose-pre:text-slate-100 prose-blockquote:not-italic prose-blockquote:border-l-4 prose-blockquote:border-sky-300 prose-blockquote:bg-sky-50/60 prose-blockquote:rounded-r-xl prose-blockquote:py-1 prose-blockquote:text-slate-700 prose-img:rounded-xl prose-img:shadow-md prose-table:text-sm prose-th:bg-slate-50 prose-thead:border-slate-200 prose-tr:border-slate-100">
-              <MarkdownRenderer content={post.content} />
+              <MarkdownRenderer content={mainContent} />
             </div>
 
             {/* ── Action bar (bottom) ── */}
@@ -165,7 +208,14 @@ export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDet
                Inner div: sticky top-24 is then unambiguous. */}
           <div className="w-full lg:w-[290px] lg:flex-shrink-0 lg:self-start">
             <div className="lg:sticky lg:top-24">
-              <BlogSidebar post={post} relatedPosts={relatedPosts} categories={categories} />
+              <BlogSidebar
+                post={post}
+                relatedPosts={relatedPosts}
+                categories={categories}
+                tocMarkdown={mainContent}
+                faqs={faqs}
+                references={references}
+              />
             </div>
           </div>
 

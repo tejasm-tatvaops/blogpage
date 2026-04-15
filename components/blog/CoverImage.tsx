@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { DEFAULT_BLOG_COVER_IMAGE } from "@/lib/coverImage";
+import { useEffect, useMemo, useState } from "react";
+import { buildCoverImageUrl } from "@/lib/coverImage";
 
 type CoverImageProps = {
   src: string;
@@ -9,13 +9,8 @@ type CoverImageProps = {
   sizes: string;
   priority?: boolean;
   className?: string;
-  fallbackLabel?: string;
-};
-
-const shortLabel = (value: string): string => {
-  const text = value.trim();
-  if (!text) return "Blog cover";
-  return text.length > 70 ? `${text.slice(0, 70).trim()}...` : text;
+  category?: string;
+  tags?: string[];
 };
 
 export function CoverImage({
@@ -24,38 +19,39 @@ export function CoverImage({
   sizes,
   priority = false,
   className = "object-cover",
-  fallbackLabel,
+  category,
+  tags,
 }: CoverImageProps) {
-  const [currentSrc, setCurrentSrc] = useState(src || DEFAULT_BLOG_COVER_IMAGE);
-  const [usedFallback, setUsedFallback] = useState(!src);
-  const label = useMemo(() => shortLabel(fallbackLabel ?? alt), [fallbackLabel, alt]);
+  const generatedSrc = useMemo(
+    () => buildCoverImageUrl({ title: alt, category, tags }),
+    [alt, category, tags],
+  );
+
+  // Always start with the generated fallback so there's never a broken/blank
+  // state. If an external src is provided, preload it silently and swap in
+  // only after it has fully loaded.
+  const [displaySrc, setDisplaySrc] = useState(generatedSrc);
+
+  useEffect(() => {
+    if (!src) return;
+
+    const img = new Image();
+    img.src = src;
+    img.onload = () => setDisplaySrc(src);
+    // on error we just keep the generated fallback — no state change needed
+    return () => {
+      img.onload = null;
+    };
+  }, [src]);
 
   return (
-    <>
-      <img
-        src={currentSrc}
-        alt={alt}
-        className={`absolute inset-0 h-full w-full ${className}`}
-        sizes={sizes}
-        loading={priority ? "eager" : "lazy"}
-        onError={() => {
-          if (currentSrc !== DEFAULT_BLOG_COVER_IMAGE) {
-            setCurrentSrc(DEFAULT_BLOG_COVER_IMAGE);
-            setUsedFallback(true);
-            return;
-          }
-          setUsedFallback(true);
-        }}
-        referrerPolicy="no-referrer"
-      />
-      {usedFallback && (
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-900/10 via-transparent to-transparent" />
-      )}
-      {usedFallback && (
-        <div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-white/80 px-2 py-1 text-[11px] font-medium text-slate-700 backdrop-blur-sm">
-          {label}
-        </div>
-      )}
-    </>
+    <img
+      src={displaySrc}
+      alt={alt}
+      className={`absolute inset-0 h-full w-full ${className}`}
+      sizes={sizes}
+      loading={priority ? "eager" : "lazy"}
+      referrerPolicy="no-referrer"
+    />
   );
 }

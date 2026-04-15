@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { BlogPost } from "@/lib/blogService";
-import { buildCoverImageUrl } from "@/lib/coverImage";
 import { CoverImage } from "./CoverImage";
 
 type BlogCardProps = {
@@ -15,7 +14,7 @@ const formatDate = (dateString: string): string =>
   }).format(new Date(dateString));
 
 export function BlogCard({ post }: BlogCardProps) {
-  const imageUrl = post.cover_image || buildCoverImageUrl({ title: post.title, category: post.category, tags: post.tags });
+  const imageUrl = post.cover_image || "";
 
   return (
     <article className="group h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
@@ -24,10 +23,11 @@ export function BlogCard({ post }: BlogCardProps) {
           <CoverImage
             src={imageUrl}
             alt={post.title}
+            category={post.category}
+            tags={post.tags}
             className="object-cover transition duration-500 group-hover:scale-[1.04]"
             sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
             priority={false}
-            fallbackLabel={post.title}
           />
         </div>
 

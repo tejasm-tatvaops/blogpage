@@ -122,6 +122,12 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Blog CMS</h1>
         <div className="flex flex-wrap items-center gap-2">
           <Link
+            href="/admin/stats"
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            Analytics
+          </Link>
+          <Link
             href="/admin/comments"
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
           >

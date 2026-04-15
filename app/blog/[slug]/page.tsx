@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BlogDetail } from "@/components/blog/BlogDetail";
-import { buildArticleJsonLd, buildFaqJsonLd, extractFaqItems } from "@/lib/blogSeo";
+import { buildArticleJsonLd, buildBreadcrumbJsonLd, buildFaqJsonLd, extractFaqItems } from "@/lib/blogSeo";
 import {
   type BlogPost,
   getAllPosts,
@@ -90,6 +90,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   const faqItems = extractFaqItems(post.content);
   const articleJsonLd = buildArticleJsonLd(post, SITE_URL);
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(post, SITE_URL);
   const faqJsonLd = faqItems.length > 0 ? buildFaqJsonLd(faqItems) : null;
 
   return (
@@ -97,6 +98,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       {faqJsonLd && (
         <script

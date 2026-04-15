@@ -20,6 +20,7 @@ export type BlogPost = {
   tags: string[];
   category: string;
   published: boolean;
+  publish_at: string | null;
   upvote_count: number;
   downvote_count: number;
   view_count: number;
@@ -47,26 +48,42 @@ export type BlogPostWriteInput = {
   tags: string[];
   category: string;
   published: boolean;
+  publish_at?: string | null;
 };
 
-const toBlogPost = (doc: BlogDocument): BlogPost => ({
-  id: doc._id.toString(),
-  title: doc.title,
-  slug: doc.slug,
-  content: (doc as unknown as { content?: string }).content ?? "",
-  excerpt: doc.excerpt,
-  cover_image: doc.cover_image ?? null,
-  author: doc.author,
-  created_at: doc.created_at.toISOString(),
-  tags: doc.tags ?? [],
-  category: doc.category,
-  published: doc.published,
-  upvote_count: doc.upvote_count ?? 0,
-  downvote_count: doc.downvote_count ?? 0,
-  view_count: doc.view_count ?? 0,
-});
+const toBlogPost = (doc: BlogDocument): BlogPost => {
+  const d = doc as unknown as {
+    content?: string;
+    publish_at?: Date | null;
+    upvote_count?: number;
+    downvote_count?: number;
+    view_count?: number;
+  };
+  return {
+    id: doc._id.toString(),
+    title: doc.title,
+    slug: doc.slug,
+    content: d.content ?? "",
+    excerpt: doc.excerpt,
+    cover_image: doc.cover_image ?? null,
+    author: doc.author,
+    created_at: doc.created_at.toISOString(),
+    tags: doc.tags ?? [],
+    category: doc.category,
+    published: doc.published,
+    publish_at: d.publish_at ? d.publish_at.toISOString() : null,
+    upvote_count: d.upvote_count ?? 0,
+    downvote_count: d.downvote_count ?? 0,
+    view_count: d.view_count ?? 0,
+  };
+};
 
 const notDeleted = { deleted_at: null };
+
+// Reusable clause: post is live (publish_at is null or has already passed).
+const publishedNow = () => ({
+  $or: [{ publish_at: null }, { publish_at: { $lte: new Date() } }],
+});
 
 const buildFilter = ({
   category,
@@ -74,15 +91,17 @@ const buildFilter = ({
   includeDrafts = false,
 }: Pick<GetAllPostsParams, "category" | "query" | "includeDrafts">): Record<string, unknown> => {
   const filter: Record<string, unknown> = { ...notDeleted };
-  if (!includeDrafts) filter.published = true;
+  if (!includeDrafts) {
+    filter.published = true;
+    // Exclude posts whose scheduled publish time hasn't arrived yet.
+    Object.assign(filter, publishedNow());
+  }
   if (category) filter.category = category;
   if (query) {
-    const safe = query.trim();
+    const safe = query.trim().slice(0, 200);
     if (safe) {
-      // Limit search query length to avoid slow regex on large datasets
-      const capped = safe.slice(0, 100);
-      const regex = new RegExp(capped.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-      filter.$or = [{ title: regex }, { excerpt: regex }, { tags: regex }];
+      // Use MongoDB full-text search index for accurate, fast results.
+      filter.$text = { $search: safe };
     }
   }
   return filter;
@@ -102,12 +121,17 @@ export const getAllPosts = async ({
   const skip = (Math.max(1, page) - 1) * clampedLimit;
   const filter = buildFilter({ category, query, includeDrafts });
 
-  const sortBy: Record<string, SortOrder> =
-    sort === "most_viewed" ? { view_count: -1, created_at: -1 } : { created_at: -1 };
+  // When a text query is active, rank by relevance score first.
+  // Otherwise fall back to the user-chosen sort.
+  const sortBy: Record<string, SortOrder | { $meta: string }> = filter.$text
+    ? { score: { $meta: "textScore" }, created_at: -1 }
+    : sort === "most_viewed"
+      ? { view_count: -1, created_at: -1 }
+      : { created_at: -1 };
 
   const docs = (await BlogModel.find(filter)
     .select(LIST_PROJECTION)
-    .sort(sortBy)
+    .sort(sortBy as Record<string, SortOrder>)
     .skip(skip)
     .limit(clampedLimit)
     .lean()) as unknown as BlogDocument[];
@@ -185,6 +209,7 @@ export const createPost = async (input: BlogPostWriteInput): Promise<BlogPost> =
     tags: input.tags,
     category: input.category.trim(),
     published: input.published,
+    publish_at: input.publish_at ? new Date(input.publish_at) : null,
     deleted_at: null,
   });
 
@@ -195,6 +220,25 @@ export const updatePost = async (id: string, input: BlogPostWriteInput): Promise
   if (!isValidObjectId(id)) throw new Error("Invalid post id.");
   await connectToDatabase();
   const uniqueSlug = await generateUniqueSlug(input.slug || input.title, id);
+
+  // Snapshot the current version before overwriting (keep last 5).
+  const current = (await BlogModel.findOne({ _id: id, ...notDeleted })
+    .select("title content excerpt")
+    .lean()) as { title?: string; content?: string; excerpt?: string } | null;
+
+  if (current) {
+    await BlogModel.updateOne(
+      { _id: id },
+      {
+        $push: {
+          versions: {
+            $each: [{ title: current.title, content: current.content, excerpt: current.excerpt, saved_at: new Date() }],
+            $slice: -5,
+          },
+        },
+      },
+    );
+  }
 
   const updated = (await BlogModel.findOneAndUpdate(
     { _id: id, ...notDeleted },
@@ -208,6 +252,7 @@ export const updatePost = async (id: string, input: BlogPostWriteInput): Promise
       tags: input.tags,
       category: input.category.trim(),
       published: input.published,
+      publish_at: input.publish_at ? new Date(input.publish_at) : null,
     },
     { new: true, runValidators: true },
   ).lean()) as BlogDocument | null;
@@ -234,7 +279,7 @@ export const getPostBySlug = async (
   const doc = (await BlogModel.findOne({
     slug,
     ...notDeleted,
-    ...(includeDrafts ? {} : { published: true }),
+    ...(includeDrafts ? {} : { published: true, ...publishedNow() }),
   }).lean()) as BlogDocument | null;
   return doc ? toBlogPost(doc) : null;
 };
@@ -247,7 +292,7 @@ export const getPublishedPostBySlug = async (slug: string): Promise<BlogPost | n
 
 export const getCategories = async (): Promise<string[]> => {
   await connectToDatabase();
-  const categories = await BlogModel.distinct("category", { published: true, ...notDeleted });
+  const categories = await BlogModel.distinct("category", { published: true, ...notDeleted, ...publishedNow() });
   return (categories as unknown as string[]).filter(Boolean).sort((a, b) => a.localeCompare(b));
 };
 
@@ -266,7 +311,7 @@ export const calculateReadingTime = (markdown: string): number => {
 export const getRelatedPosts = async (current: BlogPost, limit = 3): Promise<BlogPost[]> => {
   await connectToDatabase();
 
-  const baseFilter = { published: true, _id: { $ne: current.id }, ...notDeleted };
+  const baseFilter = { published: true, _id: { $ne: current.id }, ...notDeleted, ...publishedNow() };
 
   const tagFilter = current.tags.length ? { tags: { $in: current.tags } } : null;
   const categoryFilter = { category: current.category };
@@ -281,6 +326,82 @@ export const getRelatedPosts = async (current: BlogPost, limit = 3): Promise<Blo
     .lean()) as unknown as BlogDocument[];
 
   return docs.map(toBlogPost);
+};
+
+export type BlogStats = {
+  totalPosts: number;
+  publishedPosts: number;
+  draftPosts: number;
+  totalViews: number;
+  totalUpvotes: number;
+  totalDownvotes: number;
+  topByViews: BlogPost[];
+  topByUpvotes: BlogPost[];
+  recentPosts: BlogPost[];
+};
+
+export const getStats = async (): Promise<BlogStats> => {
+  await connectToDatabase();
+
+  // Single aggregation pipeline replaces four separate queries for the counters.
+  type CountResult = {
+    totalPosts: number;
+    publishedPosts: number;
+    totalViews: number;
+    totalUpvotes: number;
+    totalDownvotes: number;
+  };
+
+  const [aggregateResult, topByViewsDocs, topByUpvotesDocs, recentDocs] = await Promise.all([
+    BlogModel.aggregate<CountResult>([
+      { $match: { deleted_at: null } },
+      {
+        $group: {
+          _id: null,
+          totalPosts: { $sum: 1 },
+          publishedPosts: { $sum: { $cond: ["$published", 1, 0] } },
+          totalViews: { $sum: { $ifNull: ["$view_count", 0] } },
+          totalUpvotes: { $sum: { $ifNull: ["$upvote_count", 0] } },
+          totalDownvotes: { $sum: { $ifNull: ["$downvote_count", 0] } },
+        },
+      },
+    ]),
+    BlogModel.find({ ...notDeleted, published: true })
+      .select(LIST_PROJECTION)
+      .sort({ view_count: -1, created_at: -1 })
+      .limit(10)
+      .lean(),
+    BlogModel.find({ ...notDeleted, published: true })
+      .select(LIST_PROJECTION)
+      .sort({ upvote_count: -1, created_at: -1 })
+      .limit(10)
+      .lean(),
+    BlogModel.find({ ...notDeleted, published: true })
+      .select(LIST_PROJECTION)
+      .sort({ created_at: -1 })
+      .limit(10)
+      .lean(),
+  ]);
+
+  const counts: CountResult = aggregateResult[0] ?? {
+    totalPosts: 0,
+    publishedPosts: 0,
+    totalViews: 0,
+    totalUpvotes: 0,
+    totalDownvotes: 0,
+  };
+
+  return {
+    totalPosts: counts.totalPosts,
+    publishedPosts: counts.publishedPosts,
+    draftPosts: counts.totalPosts - counts.publishedPosts,
+    totalViews: counts.totalViews,
+    totalUpvotes: counts.totalUpvotes,
+    totalDownvotes: counts.totalDownvotes,
+    topByViews: (topByViewsDocs as unknown as BlogDocument[]).map(toBlogPost),
+    topByUpvotes: (topByUpvotesDocs as unknown as BlogDocument[]).map(toBlogPost),
+    recentPosts: (recentDocs as unknown as BlogDocument[]).map(toBlogPost),
+  };
 };
 
 /** Atomically increment the upvote count for a post. Returns the new count. */

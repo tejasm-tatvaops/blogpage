@@ -57,6 +57,27 @@ export const buildArticleJsonLd = (post: BlogPost, siteUrl: string) => ({
   keywords: post.tags.join(", "),
 });
 
+export const buildBreadcrumbJsonLd = (post: BlogPost, siteUrl: string) => ({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+    { "@type": "ListItem", position: 2, name: "Blog", item: `${siteUrl}/blog` },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: post.category,
+      item: `${siteUrl}/blog?category=${encodeURIComponent(post.category)}`,
+    },
+    {
+      "@type": "ListItem",
+      position: 4,
+      name: post.title,
+      item: `${siteUrl}/blog/${post.slug}`,
+    },
+  ],
+});
+
 export const buildFaqJsonLd = (faqItems: FaqItem[]) => ({
   "@context": "https://schema.org",
   "@type": "FAQPage",

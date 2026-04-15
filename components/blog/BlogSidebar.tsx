@@ -1,12 +1,17 @@
 import Link from "next/link";
+import GithubSlugger from "github-slugger";
 import type { BlogPost } from "@/lib/blogService";
+import { NewsletterSignup } from "./NewsletterSignup";
 
 type TocEntry = { text: string; anchor: string; level: number };
 
-/** Extract H2 and H3 headings from raw markdown to build a Table of Contents. */
+/** Extract H2 and H3 headings from raw markdown to build a Table of Contents.
+ *  Uses github-slugger — the same library rehype-slug uses — so the anchors
+ *  always match the id attributes on the rendered headings. */
 function extractToc(markdown: string): TocEntry[] {
   const lines = markdown.split("\n");
   const entries: TocEntry[] = [];
+  const slugger = new GithubSlugger();
 
   for (const line of lines) {
     const h2 = line.match(/^## (.+)/);
@@ -15,11 +20,7 @@ function extractToc(markdown: string): TocEntry[] {
     if (!match) continue;
 
     const text = match[1].trim();
-    const anchor = text
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-");
+    const anchor = slugger.slug(text);
 
     entries.push({ text, anchor, level: h2 ? 2 : 3 });
   }
@@ -31,10 +32,20 @@ type BlogSidebarProps = {
   post: BlogPost;
   relatedPosts: BlogPost[];
   categories: string[];
+  tocMarkdown?: string;
+  faqs?: Array<{ question: string; answer: string }>;
+  references?: string[];
 };
 
-export function BlogSidebar({ post, relatedPosts, categories }: BlogSidebarProps) {
-  const toc = extractToc(post.content);
+export function BlogSidebar({
+  post,
+  relatedPosts,
+  categories,
+  tocMarkdown,
+  faqs = [],
+  references = [],
+}: BlogSidebarProps) {
+  const toc = extractToc(tocMarkdown ?? post.content);
 
   return (
     <aside className="space-y-5">
@@ -68,6 +79,54 @@ export function BlogSidebar({ post, relatedPosts, categories }: BlogSidebarProps
               ))}
             </ul>
           </nav>
+        </div>
+      )}
+
+      {/* ── FAQs ── */}
+      {faqs.length > 0 && (
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">FAQs</span>
+          </div>
+          <ul className="divide-y divide-slate-100">
+            {faqs.slice(0, 6).map((faq) => (
+              <li key={faq.question} className="px-4 py-3.5">
+                <p className="text-xs font-semibold text-slate-900">{faq.question}</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">{faq.answer}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* ── References ── */}
+      {references.length > 0 && (
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">References</span>
+          </div>
+          <ul className="space-y-2 px-4 py-3.5">
+            {references.slice(0, 8).map((reference) => {
+              const urlMatch = reference.match(/https?:\/\/[^\s]+/);
+              return (
+                <li key={reference} className="text-xs leading-relaxed text-slate-600">
+                  •{" "}
+                  {urlMatch ? (
+                    <a
+                      href={urlMatch[0]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline break-all"
+                    >
+                      {reference}
+                    </a>
+                  ) : (
+                    reference
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
 
@@ -160,6 +219,9 @@ export function BlogSidebar({ post, relatedPosts, categories }: BlogSidebarProps
           </ul>
         </div>
       )}
+
+      {/* ── Newsletter ── */}
+      <NewsletterSignup />
 
       {/* ── About TatvaOps ── */}
       <div className="relative overflow-hidden rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-indigo-50 p-5 shadow-sm">
