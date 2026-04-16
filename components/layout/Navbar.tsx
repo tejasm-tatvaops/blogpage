@@ -10,9 +10,9 @@ export function Navbar() {
           <Image
             src="/tatvaops-logo.png"
             alt="TatvaOps"
-            width={234}
-            height={60}
-            className="h-12 w-auto sm:h-14"
+            width={286}
+            height={72}
+            className="h-14 w-auto sm:h-16"
             priority
           />
         </Link>
@@ -22,7 +22,10 @@ export function Navbar() {
             Home
           </Link>
           <Link href="/blog" className="transition hover:text-slate-900">
-            Blog
+            Blogs
+          </Link>
+          <Link href="/forums" className="transition hover:text-slate-900">
+            Forums
           </Link>
           <Link
             href="/saved"

@@ -1,5 +1,6 @@
 import type { BlogPost } from "@/lib/blogService";
 import type { Comment } from "@/lib/commentService";
+import { DiscussButton } from "@/components/forums/DiscussButton";
 import { calculateReadingTime } from "@/lib/blogService";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { UpvoteButton } from "./UpvoteButton";
@@ -19,6 +20,7 @@ type BlogDetailProps = {
   relatedPosts: BlogPost[];
   categories: string[];
   comments: Comment[];
+  forumSlug?: string | null;
 };
 
 type ParsedFaq = {
@@ -92,7 +94,7 @@ const formatDate = (dateString: string): string =>
     year: "numeric",
   }).format(new Date(dateString));
 
-export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDetailProps) {
+export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug }: BlogDetailProps) {
   const readingTimeMinutes = calculateReadingTime(post.content);
   const imageUrl = post.cover_image || "";
   const { mainContent, faqs, references } = parseContentSections(post.content);
@@ -206,6 +208,11 @@ export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDet
               </div>
               <UpvoteButton slug={post.slug} initialCount={post.upvote_count} />
               <DownvoteButton slug={post.slug} initialCount={post.downvote_count} />
+              <DiscussButton
+                blogSlug={post.slug}
+                blogTitle={post.title}
+                initialForumSlug={forumSlug}
+              />
               <div className="ml-auto flex items-center">
                 <ShareButtons title={post.title} slug={post.slug} />
               </div>

@@ -47,6 +47,11 @@ export const commentLimiter = createRateLimiter({ limit: 3, windowMs: 60_000 });
 export const upvoteLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 export const downvoteLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 
+// Forum-specific limiters
+export const forumPostLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
+export const forumVoteLimiter = createRateLimiter({ limit: 20, windowMs: 60_000 });
+export const forumCommentLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
+
 /**
  * Returns the best available identifier for rate-limiting a request.
  * Tries CF-Connecting-IP, X-Forwarded-For, then falls back to "anonymous".
