@@ -14,6 +14,7 @@ const forumPostSchema = new mongoose.Schema(
     score: { type: Number, default: 0 },
     comment_count: { type: Number, default: 0, min: 0 },
     view_count: { type: Number, default: 0, min: 0 },
+    is_featured: { type: Boolean, default: false, index: true },
     // Best answer: set by creator, references a Comment _id
     best_comment_id: { type: String, default: null },
     // Blog ↔ Forum integration
@@ -31,6 +32,7 @@ const forumPostSchema = new mongoose.Schema(
 // Feed sort indexes
 forumPostSchema.index({ deleted_at: 1, created_at: -1 });
 forumPostSchema.index({ deleted_at: 1, score: -1, created_at: -1 });
+forumPostSchema.index({ deleted_at: 1, is_featured: -1, score: -1, created_at: -1 });
 forumPostSchema.index({ deleted_at: 1, upvote_count: -1, created_at: -1 });
 forumPostSchema.index({ deleted_at: 1, comment_count: -1, created_at: -1 });
 // Tag filter + score sort

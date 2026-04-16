@@ -1,6 +1,6 @@
 import { isValidObjectId } from "mongoose";
 import { z } from "zod";
-import { ForumPostModel, type ForumPostDocument } from "@/models/ForumPost";
+import { ForumPostModel } from "@/models/ForumPost";
 import { ForumVoteModel } from "@/models/ForumVote";
 import { connectToDatabase } from "./mongodb";
 import { logger } from "./logger";
@@ -20,11 +20,38 @@ export type ForumPost = {
   score: number;
   comment_count: number;
   view_count: number;
+  is_featured: boolean;
   best_comment_id: string | null;
   linked_blog_slug: string | null;
   creator_fingerprint: string | null;
   created_at: string;
   updated_at: string;
+};
+
+/**
+ * Lean document shape returned by Mongoose — all projected-out fields are optional
+ * so toForumPost handles both full and list-projection queries safely.
+ */
+type ForumPostLean = {
+  _id: { toString(): string };
+  title: string;
+  slug: string;
+  content?: string | null;
+  excerpt: string;
+  tags?: string[];
+  author_name?: string;
+  upvote_count?: number;
+  downvote_count?: number;
+  score?: number;
+  comment_count?: number;
+  view_count?: number;
+  is_featured?: boolean;
+  best_comment_id?: string | null;
+  linked_blog_slug?: string | null;
+  creator_fingerprint?: string | null;
+  deleted_at?: Date | null;
+  created_at: Date;
+  updated_at: Date;
 };
 
 export type ForumFeedSort = "hot" | "new" | "top" | "discussed";
@@ -69,11 +96,11 @@ export const forumPostInputSchema = z.object({
 
 const notDeleted = { deleted_at: null };
 
-const toForumPost = (doc: ForumPostDocument): ForumPost => ({
+const toForumPost = (doc: ForumPostLean): ForumPost => ({
   id: doc._id.toString(),
   title: doc.title,
   slug: doc.slug,
-  content: (doc as unknown as { content?: string }).content ?? "",
+  content: doc.content ?? "",
   excerpt: doc.excerpt,
   tags: doc.tags ?? [],
   author_name: doc.author_name ?? "Anonymous",
@@ -82,12 +109,10 @@ const toForumPost = (doc: ForumPostDocument): ForumPost => ({
   score: doc.score ?? 0,
   comment_count: doc.comment_count ?? 0,
   view_count: doc.view_count ?? 0,
-  best_comment_id:
-    (doc as unknown as { best_comment_id?: string | null }).best_comment_id ?? null,
-  linked_blog_slug:
-    (doc as unknown as { linked_blog_slug?: string | null }).linked_blog_slug ?? null,
-  creator_fingerprint:
-    (doc as unknown as { creator_fingerprint?: string | null }).creator_fingerprint ?? null,
+  is_featured: doc.is_featured ?? false,
+  best_comment_id: doc.best_comment_id ?? null,
+  linked_blog_slug: doc.linked_blog_slug ?? null,
+  creator_fingerprint: doc.creator_fingerprint ?? null,
   created_at: doc.created_at.toISOString(),
   updated_at: doc.updated_at.toISOString(),
 });
@@ -115,11 +140,7 @@ export const computeHotScore = (
   return signedLog + timePart;
 };
 
-const recomputeScore = async (postId: string): Promise<void> => {
-  const doc = (await ForumPostModel.findById(postId)
-    .select("upvote_count downvote_count comment_count created_at")
-    .lean()) as unknown as ForumPostDocument | null;
-  if (!doc) return;
+const updateScoreFromDoc = async (postId: string, doc: ForumPostLean): Promise<void> => {
   const score = computeHotScore(
     doc.upvote_count ?? 0,
     doc.downvote_count ?? 0,
@@ -170,6 +191,7 @@ export type GetForumPostsParams = {
   page?: number;
   limit?: number;
   tag?: string;
+  query?: string;
 };
 
 export type ForumFeedResult = {
@@ -184,6 +206,7 @@ export const getForumPosts = async ({
   page = 1,
   limit = 20,
   tag,
+  query,
 }: GetForumPostsParams = {}): Promise<ForumFeedResult> => {
   await connectToDatabase();
 
@@ -193,6 +216,10 @@ export const getForumPosts = async ({
 
   const filter: Record<string, unknown> = { ...notDeleted };
   if (tag) filter.tags = tag;
+  const trimmedQuery = query?.trim();
+  if (trimmedQuery) {
+    filter.title = { $regex: trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
+  }
 
   const sortMap: Record<ForumFeedSort, Record<string, 1 | -1>> = {
     hot: { score: -1, created_at: -1 },
@@ -207,7 +234,7 @@ export const getForumPosts = async ({
       .sort(sortMap[sort])
       .skip(skip)
       .limit(safeLimit)
-      .lean() as unknown as Promise<ForumPostDocument[]>,
+      .lean() as unknown as Promise<ForumPostLean[]>,
     ForumPostModel.countDocuments(filter),
   ]);
 
@@ -224,7 +251,7 @@ export const getForumPostBySlug = async (slug: string): Promise<ForumPost | null
   const doc = (await ForumPostModel.findOne({
     slug,
     ...notDeleted,
-  }).lean()) as unknown as ForumPostDocument | null;
+  }).lean()) as unknown as ForumPostLean | null;
   return doc ? toForumPost(doc) : null;
 };
 
@@ -234,7 +261,7 @@ export const getForumPostById = async (id: string): Promise<ForumPost | null> =>
   const doc = (await ForumPostModel.findOne({
     _id: id,
     ...notDeleted,
-  }).lean()) as unknown as ForumPostDocument | null;
+  }).lean()) as unknown as ForumPostLean | null;
   return doc ? toForumPost(doc) : null;
 };
 
@@ -245,7 +272,7 @@ export const getForumPostByBlogSlug = async (blogSlug: string): Promise<ForumPos
     ...notDeleted,
   })
     .select(LIST_PROJECTION)
-    .lean()) as unknown as ForumPostDocument | null;
+    .lean()) as unknown as ForumPostLean | null;
   return doc ? toForumPost(doc) : null;
 };
 
@@ -270,6 +297,7 @@ export const createForumPost = async (input: ForumPostInput): Promise<ForumPost>
     score: initialScore,
     comment_count: 0,
     view_count: 0,
+    is_featured: false,
     best_comment_id: null,
     linked_blog_slug: input.linked_blog_slug ?? null,
     creator_fingerprint: input.creator_fingerprint ?? null,
@@ -277,12 +305,15 @@ export const createForumPost = async (input: ForumPostInput): Promise<ForumPost>
   });
 
   logger.info({ slug, linked_blog_slug: input.linked_blog_slug }, "Forum post created");
-  return toForumPost(doc.toObject() as unknown as ForumPostDocument);
+  return toForumPost(doc.toObject() as unknown as ForumPostLean);
 };
 
 /**
  * Find-or-create a forum thread linked to a blog post.
- * Safe to call on every blog page render — idempotent via findOneAndUpdate upsert.
+ * Safe to call on every blog page render — idempotent.
+ * Handles concurrent creation races: if two calls both pass the null check
+ * and one wins the insert, the loser catches the duplicate key error and
+ * returns the winner's record instead of throwing.
  */
 export const ensureForumPostForBlog = async (
   blogSlug: string,
@@ -290,17 +321,25 @@ export const ensureForumPostForBlog = async (
 ): Promise<ForumPost> => {
   await connectToDatabase();
 
-  // Check if exists first (avoids slug generation on every call)
   const existing = await getForumPostByBlogSlug(blogSlug);
   if (existing) return existing;
 
-  return createForumPost({
-    title: `Discussion: ${blogTitle}`,
-    content: `This is the discussion thread for the TatvaOps blog post: **${blogTitle}**.\n\nShare your thoughts, questions, or insights about this article below.`,
-    tags: ["discussion", "blog"],
-    author_name: "TatvaOps",
-    linked_blog_slug: blogSlug,
-  });
+  try {
+    return await createForumPost({
+      title: `Discussion: ${blogTitle}`,
+      content: `This is the discussion thread for the TatvaOps blog post: **${blogTitle}**.\n\nShare your thoughts, questions, or insights about this article below.`,
+      tags: ["discussion", "blog"],
+      author_name: "TatvaOps",
+      linked_blog_slug: blogSlug,
+    });
+  } catch (err: unknown) {
+    // Concurrent call won the race — fetch and return the existing record
+    if (typeof err === "object" && err !== null && (err as { code?: number }).code === 11000) {
+      const raced = await getForumPostByBlogSlug(blogSlug);
+      if (raced) return raced;
+    }
+    throw err;
+  }
 };
 
 export const deleteForumPost = async (id: string): Promise<boolean> => {
@@ -314,6 +353,17 @@ export const deleteForumPost = async (id: string): Promise<boolean> => {
     .select("_id")
     .lean();
   return Boolean(result);
+};
+
+export const setForumPostFeatured = async (id: string, isFeatured: boolean): Promise<ForumPost | null> => {
+  await connectToDatabase();
+  if (!isValidObjectId(id)) return null;
+  const updated = (await ForumPostModel.findOneAndUpdate(
+    { _id: id, ...notDeleted },
+    { is_featured: isFeatured },
+    { new: true },
+  ).lean()) as unknown as ForumPostLean | null;
+  return updated ? toForumPost(updated) : null;
 };
 
 // ─── Voting ───────────────────────────────────────────────────────────────────
@@ -332,7 +382,7 @@ export const voteForumPost = async (
   // Resolve post first to get its _id
   const post = (await ForumPostModel.findOne({ slug, ...notDeleted })
     .select("_id upvote_count downvote_count comment_count created_at")
-    .lean()) as unknown as ForumPostDocument | null;
+    .lean()) as unknown as ForumPostLean | null;
   if (!post) return { ok: false, reason: "not_found" };
 
   const postId = post._id.toString();
@@ -355,7 +405,7 @@ export const voteForumPost = async (
     { new: true },
   )
     .select("_id upvote_count downvote_count comment_count created_at")
-    .lean()) as unknown as ForumPostDocument | null;
+    .lean()) as unknown as ForumPostLean | null;
 
   if (!updated) return { ok: false, reason: "not_found" };
 
@@ -379,7 +429,7 @@ export const setBestAnswer = async (
 
   const post = (await ForumPostModel.findOne({ slug, ...notDeleted })
     .select("_id creator_fingerprint")
-    .lean()) as unknown as (ForumPostDocument & { creator_fingerprint?: string | null }) | null;
+    .lean()) as unknown as ForumPostLean | null;
 
   if (!post) return { ok: false, reason: "not_found" };
 
@@ -401,19 +451,29 @@ export const setBestAnswer = async (
 export const incrementForumCommentCount = async (postId: string): Promise<void> => {
   await connectToDatabase();
   if (!isValidObjectId(postId)) return;
-  await ForumPostModel.updateOne({ _id: postId }, { $inc: { comment_count: 1 } });
-  // Recompute hot score since comment weight is factored in
-  await recomputeScore(postId);
+  // Use findOneAndUpdate so we get the updated values in one round trip,
+  // avoiding the separate findById read that recomputeScore used to do.
+  const updated = (await ForumPostModel.findOneAndUpdate(
+    { _id: postId },
+    { $inc: { comment_count: 1 } },
+    { new: true },
+  )
+    .select("upvote_count downvote_count comment_count created_at")
+    .lean()) as unknown as ForumPostLean | null;
+  if (updated) await updateScoreFromDoc(postId, updated);
 };
 
 export const decrementForumCommentCount = async (postId: string): Promise<void> => {
   await connectToDatabase();
   if (!isValidObjectId(postId)) return;
-  await ForumPostModel.updateOne(
+  const updated = (await ForumPostModel.findOneAndUpdate(
     { _id: postId, comment_count: { $gt: 0 } },
     { $inc: { comment_count: -1 } },
-  );
-  await recomputeScore(postId);
+    { new: true },
+  )
+    .select("upvote_count downvote_count comment_count created_at")
+    .lean()) as unknown as ForumPostLean | null;
+  if (updated) await updateScoreFromDoc(postId, updated);
 };
 
 // ─── Views ────────────────────────────────────────────────────────────────────
@@ -426,7 +486,7 @@ export const incrementForumViewCount = async (slug: string): Promise<number | nu
     { new: true },
   )
     .select("view_count")
-    .lean()) as unknown as ForumPostDocument | null;
+    .lean()) as unknown as ForumPostLean | null;
   return updated ? (updated.view_count ?? 0) : null;
 };
 
@@ -438,6 +498,6 @@ export const getTrendingForumPosts = async (limit = 5): Promise<ForumPost[]> => 
     .select(LIST_PROJECTION)
     .sort({ score: -1, created_at: -1 })
     .limit(limit)
-    .lean()) as unknown as ForumPostDocument[];
+    .lean()) as unknown as ForumPostLean[];
   return docs.map(toForumPost);
 };

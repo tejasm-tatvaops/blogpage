@@ -11,6 +11,24 @@ type FeaturedSliderProps = {
 };
 
 const SWIPE_THRESHOLD_PX = 50;
+const FEATURED_LOCAL_POOL = [
+  "/images/construction/site-1.jpg",
+  "/images/construction/site-2.jpg",
+  "/images/construction/site-3.jpg",
+  "/images/construction/site-4.jpg",
+  "/images/construction/site-5.png",
+  "/images/construction/site-6.png",
+  "/images/construction/site-7.png",
+  "/images/construction/tower-1.png",
+  "/images/construction/highrise-1.png",
+];
+const sanitizeFeaturedImageSource = (value?: string | null): string => {
+  const src = (value ?? "").trim().toLowerCase();
+  if (!src) return "";
+  if (src.startsWith("/api/cover-image")) return "";
+  if (src.includes("placeholder") || src.includes("gradient") || src.includes("blog-placeholder")) return "";
+  return value?.trim() ?? "";
+};
 
 export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProps) {
   const slides = useMemo(() => blogs.slice(0, 5), [blogs]);
@@ -65,10 +83,12 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
               <Link href={`/blog/${blog.slug}`} className="block">
                 <div className="relative aspect-[16/9] w-full">
                   <CoverImage
-                    src={blog.cover_image ?? ""}
+                    src={sanitizeFeaturedImageSource(blog.cover_image)}
                     slug={blog.slug}
                     alt={blog.title}
                     className="object-cover"
+                    disablePlaceholderFallback
+                    fallbackSources={FEATURED_LOCAL_POOL}
                     sizes="(max-width: 1280px) 100vw, 1200px"
                     priority={idx === 0}
                   />

@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server";
 import { setBestAnswer } from "@/lib/forumService";
+import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
-
-const FP_COOKIE = "tatvaops_fp";
-
-const getFingerprintFromRequest = (request: Request): string | null => {
-  const cookieHeader = request.headers.get("cookie") ?? "";
-  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${FP_COOKIE}=([^;]+)`));
-  return match?.[1]?.trim() ?? null;
-};
 
 export async function POST(
   request: Request,

@@ -15,12 +15,18 @@ export async function GET(request: Request) {
     const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
     const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") ?? "20")));
     const tag = searchParams.get("tag") ?? undefined;
+    const query = searchParams.get("q") ?? undefined;
 
     const validSorts: ForumFeedSort[] = ["hot", "new", "top", "discussed"];
     const safeSort = validSorts.includes(sort) ? sort : "hot";
 
-    const result = await getForumPosts({ sort: safeSort, page, limit, tag });
-    return NextResponse.json(result, { status: 200 });
+    const result = await getForumPosts({ sort: safeSort, page, limit, tag, query });
+    return NextResponse.json(result, {
+      status: 200,
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+      },
+    });
   } catch (error) {
     logger.error({ error }, "GET /api/forums error");
     return NextResponse.json({ error: "Failed to fetch forum posts." }, { status: 500 });

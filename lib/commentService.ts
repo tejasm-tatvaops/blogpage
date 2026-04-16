@@ -1,6 +1,7 @@
 import { isValidObjectId } from "mongoose";
 import { z } from "zod";
 import { CommentModel, type CommentDocument } from "@/models/Comment";
+import { ForumPostModel } from "@/models/ForumPost";
 import { connectToDatabase } from "./mongodb";
 
 export type Comment = {
@@ -18,6 +19,7 @@ export type Comment = {
 export type AdminComment = {
   id: string;
   post_id: string;
+  comment_type: "blog" | "forum";
   parent_comment_id: string | null;
   author_name: string;
   content: string;
@@ -152,9 +154,11 @@ export const voteComment = async (
 export const getCommentsForAdmin = async ({
   page = 1,
   limit = 100,
+  type = "all",
 }: {
   page?: number;
   limit?: number;
+  type?: "all" | "blog" | "forum";
 } = {}): Promise<AdminComment[]> => {
   await connectToDatabase();
   const safeLimit = Math.min(Math.max(1, limit), 200);
@@ -165,9 +169,26 @@ export const getCommentsForAdmin = async ({
     .limit(safeLimit)
     .lean()) as unknown as CommentDocument[];
 
-  return docs.map((doc) => ({
+  const candidateForumPostIds = Array.from(
+    new Set(docs.map((doc) => doc.post_id).filter((value) => isValidObjectId(value))),
+  );
+  const forumIds = new Set<string>();
+  if (candidateForumPostIds.length > 0) {
+    const forumDocs = await ForumPostModel.find({
+      _id: { $in: candidateForumPostIds },
+      deleted_at: null,
+    })
+      .select("_id")
+      .lean();
+    for (const forumDoc of forumDocs as Array<{ _id: { toString(): string } }>) {
+      forumIds.add(forumDoc._id.toString());
+    }
+  }
+
+  const mapped = docs.map((doc) => ({
     id: doc._id.toString(),
     post_id: doc.post_id,
+    comment_type: forumIds.has(doc.post_id) ? ("forum" as const) : ("blog" as const),
     parent_comment_id: doc.parent_comment_id ?? null,
     author_name: doc.author_name,
     content: doc.content,
@@ -175,6 +196,9 @@ export const getCommentsForAdmin = async ({
     upvote_count: doc.upvote_count ?? 0,
     downvote_count: doc.downvote_count ?? 0,
   }));
+
+  if (type === "all") return mapped;
+  return mapped.filter((comment) => comment.comment_type === type);
 };
 
 export const deleteCommentById = async (commentId: string): Promise<boolean> => {

@@ -16,6 +16,37 @@ const IMAGE_POOLS = {
     "/images/construction/site-2.jpg",
     "/images/construction/site-3.jpg",
     "/images/construction/site-4.jpg",
+    "/images/construction/site-5.png",
+    "/images/construction/site-6.png",
+    "/images/construction/site-7.png",
+    "/images/construction/site-team-1.png",
+    "/images/construction/site-team-2.png",
+    "/images/construction/site-team-3.png",
+    "/images/construction/foundation-1.png",
+    "/images/construction/foundation-2.png",
+    "/images/construction/tower-1.png",
+    "/images/construction/steel-frame-1.png",
+    "/images/construction/city-crane-1.png",
+    "/images/construction/highrise-1.png",
+    "/images/construction/pillar-work-1.png",
+    "/images/construction/sunset-crane-1.png",
+    "/images/construction/welding-1.png",
+    "/images/construction/concrete-mix-1.png",
+    "/images/construction/concrete-mix-2.png",
+    "/images/construction/brick-stack-1.png",
+    "/images/construction/brick-stack-2.png",
+    "/images/construction/brick-carry-1.png",
+    "/images/construction/house-shell-1.png",
+    "/images/construction/interior-renovation-1.png",
+    "/images/construction/modern-house-1.png",
+    "/images/construction/kitchen-install-1.png",
+    "/images/construction/commercial-frame-1.png",
+    "/images/construction/kitchen-cabinets-1.png",
+    "/images/construction/house-exterior-1.png",
+    "/images/construction/roof-frame-1.png",
+    "/images/construction/apartment-exterior-1.png",
+    "/images/construction/kitchen-cabinets-2.png",
+    "/images/construction/kitchen-cabinets-3.png",
   ],
   house: [
     "/images/construction/house-1.jpg",
@@ -26,6 +57,7 @@ const IMAGE_POOLS = {
     "/images/construction/apartment-1.jpg",
     "/images/construction/apartment-2.jpg",
     "/images/construction/apartment-3.jpg",
+    "/images/construction/apartment-4.png",
   ],
   city: {
     bangalore: ["/images/construction/bangalore-1.jpg"],
@@ -36,6 +68,14 @@ const IMAGE_POOLS = {
   },
 };
 const LOCAL_FALLBACK_POOL = IMAGE_POOLS.construction;
+const isTextStyleCoverSource = (value: string): boolean => {
+  const v = value.trim().toLowerCase();
+  if (!v) return true;
+  if (v.startsWith("/api/cover-image")) return true;
+  if (v.includes("placeholder") || v.includes("gradient") || v.includes("dummy")) return true;
+  if (v.includes("blog-placeholder")) return true;
+  return false;
+};
 
 const hashForIndex = (value: string): number => {
   let hash = 0;
@@ -81,7 +121,7 @@ const resolveCardImages = (
 
   for (const post of posts) {
     const provided = (post.cover_image ?? "").trim();
-    if (provided && !used.has(normalizeKey(provided))) {
+    if (provided && !isTextStyleCoverSource(provided) && !used.has(normalizeKey(provided))) {
       result[post.id] = { primary: provided, fallbackPool: [] };
       used.add(normalizeKey(provided));
       continue;
