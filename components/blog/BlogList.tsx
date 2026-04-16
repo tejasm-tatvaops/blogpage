@@ -10,6 +10,100 @@ type BlogListProps = {
   sort: "latest" | "most_viewed";
 };
 
+const IMAGE_POOLS = {
+  construction: [
+    "/images/construction/site-1.jpg",
+    "/images/construction/site-2.jpg",
+    "/images/construction/site-3.jpg",
+    "/images/construction/site-4.jpg",
+  ],
+  house: [
+    "/images/construction/house-1.jpg",
+    "/images/construction/house-2.jpg",
+    "/images/construction/house-3.jpg",
+  ],
+  apartment: [
+    "/images/construction/apartment-1.jpg",
+    "/images/construction/apartment-2.jpg",
+    "/images/construction/apartment-3.jpg",
+  ],
+  city: {
+    bangalore: ["/images/construction/bangalore-1.jpg"],
+    bengaluru: ["/images/construction/bangalore-1.jpg"],
+    chennai: ["/images/construction/chennai-1.jpg"],
+    hyderabad: ["/images/construction/hyderabad-1.jpg"],
+    pune: ["/images/construction/pune-1.jpg"],
+  },
+};
+const LOCAL_FALLBACK_POOL = IMAGE_POOLS.construction;
+
+const hashForIndex = (value: string): number => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
+const normalizeKey = (value: string): string => value.toLowerCase().trim();
+
+const getPostSignal = (post: BlogPost): string =>
+  `${post.title} ${post.category} ${post.tags.join(" ")}`.toLowerCase();
+
+const pickPool = (post: BlogPost): string[] => {
+  const signal = getPostSignal(post);
+  for (const [city, pool] of Object.entries(IMAGE_POOLS.city)) {
+    if (signal.includes(city)) return [...pool, ...IMAGE_POOLS.construction];
+  }
+  if (signal.includes("apartment") || signal.includes("flat")) {
+    return [...IMAGE_POOLS.apartment, ...IMAGE_POOLS.construction];
+  }
+  if (signal.includes("house") || signal.includes("villa")) {
+    return [...IMAGE_POOLS.house, ...IMAGE_POOLS.construction];
+  }
+  if (
+    signal.includes("construction") ||
+    signal.includes("building") ||
+    signal.includes("cost") ||
+    signal.includes("real estate")
+  ) {
+    return IMAGE_POOLS.construction;
+  }
+  return IMAGE_POOLS.construction;
+};
+
+const resolveCardImages = (
+  posts: BlogPost[],
+): Record<string, { primary: string; fallbackPool: string[] }> => {
+  const used = new Set<string>();
+  const result: Record<string, { primary: string; fallbackPool: string[] }> = {};
+
+  for (const post of posts) {
+    const provided = (post.cover_image ?? "").trim();
+    if (provided && !used.has(normalizeKey(provided))) {
+      result[post.id] = { primary: provided, fallbackPool: [] };
+      used.add(normalizeKey(provided));
+      continue;
+    }
+
+    const pool = pickPool(post).filter((image) => image.startsWith("/images/"));
+    const safePool = pool.length > 0 ? pool : LOCAL_FALLBACK_POOL;
+    const start = Math.abs(hashForIndex(`${post.slug}|${post.title}|${post.category}`)) % safePool.length;
+    const ordered = safePool.map((_, offset) => safePool[(start + offset) % safePool.length]);
+
+    const uniquePrimary = ordered.find((image) => !used.has(normalizeKey(image))) ?? ordered[0];
+    used.add(normalizeKey(uniquePrimary));
+
+    result[post.id] = {
+      primary: uniquePrimary,
+      fallbackPool: ordered.filter((image) => image !== uniquePrimary),
+    };
+  }
+
+  return result;
+};
+
 const buildBlogHref = ({
   category,
   query,
@@ -28,6 +122,8 @@ const buildBlogHref = ({
 };
 
 export function BlogList({ posts, categories, activeCategory, query, sort }: BlogListProps) {
+  const resolvedImageMap = resolveCardImages(posts);
+
   return (
     <section className="mx-auto w-full max-w-6xl px-6 py-12">
       <header className="mb-10 flex flex-col gap-6">
@@ -100,7 +196,12 @@ export function BlogList({ posts, categories, activeCategory, query, sort }: Blo
       ) : (
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => (
-            <BlogCard key={post.id} post={post} />
+            <BlogCard
+              key={post.id}
+              post={post}
+              resolvedImageSrc={resolvedImageMap[post.id]?.primary}
+              fallbackImagePool={resolvedImageMap[post.id]?.fallbackPool}
+            />
           ))}
         </div>
       )}

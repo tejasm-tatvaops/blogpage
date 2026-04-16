@@ -10,7 +10,9 @@
     "lint": "next lint",
     "seed": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/seedBlogs.ts",
     "seed:reset": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/seedBlogs.ts --reset",
-    "scheduler:daily": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/dailyRandomBlogScheduler.ts"
+    "scheduler:daily": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/dailyRandomBlogScheduler.ts",
+    "images:backfill": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/generateMissingImages.ts",
+    "generate:images": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/generateBlogImages.ts"
   },
   "dependencies": {
     "@radix-ui/react-separator": "^1.1.7",

@@ -163,8 +163,7 @@ export function BlogDetail({ post, relatedPosts, categories, comments }: BlogDet
 
             {/* ── Cover image ── */}
             <div
-              className="relative mb-6 w-full overflow-hidden rounded-2xl bg-slate-100 shadow-sm"
-              style={{ aspectRatio: "2 / 1" }}
+              className="relative mb-6 aspect-video w-full overflow-hidden rounded-2xl bg-slate-100 shadow-sm"
             >
               <CoverImage
                 src={imageUrl}

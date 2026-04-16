@@ -9,12 +9,17 @@ type ErrorPageProps = {
 
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
   useEffect(() => {
-    // Log structured error info. Replace with Sentry.captureException(error) when integrated.
-    console.error({
-      message: error.message,
-      digest: error.digest,
-      stack: process.env.NODE_ENV !== "production" ? error.stack : undefined,
-    });
+    // Avoid noisy empty-object logs in browser console.
+    // Keep detailed logging only in development.
+    if (process.env.NODE_ENV !== "development") return;
+
+    const message = typeof error?.message === "string" && error.message.trim()
+      ? error.message
+      : "Unhandled client error";
+    const digest = typeof error?.digest === "string" && error.digest.trim() ? error.digest : undefined;
+    const stack = typeof error?.stack === "string" && error.stack.trim() ? error.stack : undefined;
+
+    console.error("[app-error]", { message, digest, stack });
   }, [error]);
 
   return (

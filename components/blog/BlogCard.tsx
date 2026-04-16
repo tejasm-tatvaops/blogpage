@@ -4,6 +4,46 @@ import { CoverImage } from "./CoverImage";
 
 type BlogCardProps = {
   post: BlogPost;
+  resolvedImageSrc?: string;
+  fallbackImagePool?: string[];
+};
+
+const CARD_LOCAL_IMAGE_POOL = [
+  "/images/construction/site-1.jpg",
+  "/images/construction/site-2.jpg",
+  "/images/construction/site-3.jpg",
+  "/images/construction/site-4.jpg",
+];
+
+const hashForIndex = (value: string): number => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
+const resolveCardImage = (post: BlogPost): { primary: string; fallbackPool: string[] } => {
+  const provided = (post.cover_image ?? "").trim();
+  const key = `${post.slug}|${post.category}|${post.tags.join(",")}`;
+  const index = hashForIndex(key) % CARD_LOCAL_IMAGE_POOL.length;
+  const orderedPool = CARD_LOCAL_IMAGE_POOL.map((_, offset) => {
+    const i = (index + offset) % CARD_LOCAL_IMAGE_POOL.length;
+    return CARD_LOCAL_IMAGE_POOL[i];
+  });
+
+  if (provided) {
+    return {
+      primary: provided,
+      fallbackPool: orderedPool,
+    };
+  }
+
+  return {
+    primary: orderedPool[0],
+    fallbackPool: orderedPool.slice(1),
+  };
 };
 
 const formatDate = (dateString: string): string =>
@@ -13,18 +53,22 @@ const formatDate = (dateString: string): string =>
     year: "numeric",
   }).format(new Date(dateString));
 
-export function BlogCard({ post }: BlogCardProps) {
-  const imageUrl = post.cover_image || "";
+export function BlogCard({ post, resolvedImageSrc, fallbackImagePool }: BlogCardProps) {
+  const imageResolution = resolvedImageSrc
+    ? { primary: resolvedImageSrc, fallbackPool: fallbackImagePool ?? [] }
+    : resolveCardImage(post);
 
   return (
     <article className="group h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
       <Link href={`/blog/${post.slug}`} className="block h-full">
-        <div className="relative h-48 w-full overflow-hidden bg-slate-100">
+        <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
           <CoverImage
-            src={imageUrl}
+            src={imageResolution.primary}
+            slug={post.slug}
             alt={post.title}
-            category={post.category}
-            tags={post.tags}
+            disablePlaceholderFallback
+            fallbackSources={imageResolution.fallbackPool}
+            debugId={post.slug}
             className="object-cover transition duration-500 group-hover:scale-[1.04]"
             sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
             priority={false}

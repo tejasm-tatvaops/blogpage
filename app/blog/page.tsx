@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BlogList } from "@/components/blog/BlogList";
+import { FeaturedSlider } from "@/components/blog/FeaturedSlider";
 import { getAllPosts, getCategories } from "@/lib/blogService";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com";
@@ -39,19 +40,25 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   const sort = params?.sort === "most_viewed" ? "most_viewed" : "latest";
 
   try {
-    const [posts, categories] = await Promise.all([
+    const [posts, categories, featuredByViews, featuredLatest] = await Promise.all([
       getAllPosts({ category, query, sort }),
       getCategories(),
+      getAllPosts({ sort: "most_viewed", limit: 5 }),
+      getAllPosts({ sort: "latest", limit: 5 }),
     ]);
+    const featuredBlogs = featuredByViews.length > 0 ? featuredByViews : featuredLatest;
 
     return (
-      <BlogList
-        posts={posts}
-        categories={categories}
-        activeCategory={category}
-        query={query}
-        sort={sort}
-      />
+      <>
+        <FeaturedSlider blogs={featuredBlogs} />
+        <BlogList
+          posts={posts}
+          categories={categories}
+          activeCategory={category}
+          query={query}
+          sort={sort}
+        />
+      </>
     );
   } catch (_error) {
     return (

@@ -1,5 +1,5 @@
 import { logger } from "./logger";
-import { buildCoverImageUrl } from "./coverImage";
+import { resolveBlogCoverImage } from "./imageService";
 
 type GeneratedBlogResponse = {
   title: string;
@@ -115,8 +115,25 @@ const appendReferencesSection = (content: string, references: ReferenceItem[]): 
   return `${trimmedContent}\n\n## References\n\n${lines.join("\n")}`;
 };
 
-const parseAiJson = (text: string): GeneratedBlogResponse => {
-  const parsed = JSON.parse(text) as ParsedAiPayload;
+const extractJsonPayload = (text: string): string => {
+  const trimmed = text.trim();
+
+  // Handle fenced markdown code blocks: ```json ... ```
+  const fencedMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fencedMatch?.[1]) return fencedMatch[1].trim();
+
+  // Fallback: pick first object-like payload if provider wraps extra prose.
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1);
+  }
+
+  return trimmed;
+};
+
+const parseAiJson = (text: string): Omit<GeneratedBlogResponse, "cover_image"> => {
+  const parsed = JSON.parse(extractJsonPayload(text)) as ParsedAiPayload;
   if (!parsed.title || !parsed.excerpt || !parsed.content || !parsed.category) {
     throw new Error("AI response missing required fields.");
   }
@@ -130,11 +147,6 @@ const parseAiJson = (text: string): GeneratedBlogResponse => {
     content: appendReferencesSection(parsed.content, references),
     tags: Array.isArray(parsed.tags) ? parsed.tags.map((t) => String(t)).slice(0, 10) : [],
     category: parsed.category,
-    cover_image: buildCoverImageUrl({
-      title: parsed.title,
-      category: parsed.category,
-      tags: Array.isArray(parsed.tags) ? parsed.tags.map((t) => String(t)) : [],
-    }),
   };
 };
 
@@ -301,7 +313,19 @@ Content goals:
         throw new Error(`${provider.name} returned empty content.`);
       }
 
-      return parseAiJson(content);
+      const parsed = parseAiJson(content);
+      const coverImage =
+        (await resolveBlogCoverImage({
+          title: parsed.title,
+          category: parsed.category,
+          tags: parsed.tags,
+          existingCoverImage: null,
+        })) ?? "";
+
+      return {
+        ...parsed,
+        cover_image: coverImage,
+      };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error("Unknown AI provider error.");
       logger.warn(

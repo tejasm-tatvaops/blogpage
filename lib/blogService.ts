@@ -2,6 +2,7 @@ import { type SortOrder, isValidObjectId } from "mongoose";
 import { BlogModel, type BlogDocument } from "@/models/Blog";
 import { ViewEventModel } from "@/models/ViewEvent";
 import { connectToDatabase } from "./mongodb";
+import { resolveBlogCoverImage } from "./imageService";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
@@ -199,13 +200,20 @@ export const generateUniqueSlug = async (
 export const createPost = async (input: BlogPostWriteInput): Promise<BlogPost> => {
   await connectToDatabase();
   const uniqueSlug = await generateUniqueSlug(input.slug || input.title);
+  const coverImage =
+    (await resolveBlogCoverImage({
+      title: input.title,
+      category: input.category,
+      tags: input.tags,
+      existingCoverImage: input.cover_image ?? null,
+    })) ?? null;
 
   const doc = await BlogModel.create({
     title: input.title.trim(),
     slug: uniqueSlug,
     content: input.content,
     excerpt: input.excerpt.trim(),
-    cover_image: input.cover_image ?? null,
+    cover_image: coverImage,
     author: input.author.trim(),
     tags: input.tags,
     category: input.category.trim(),
@@ -241,6 +249,14 @@ export const updatePost = async (id: string, input: BlogPostWriteInput): Promise
     );
   }
 
+  const coverImage =
+    (await resolveBlogCoverImage({
+      title: input.title,
+      category: input.category,
+      tags: input.tags,
+      existingCoverImage: input.cover_image ?? null,
+    })) ?? null;
+
   const updated = (await BlogModel.findOneAndUpdate(
     { _id: id, ...notDeleted },
     {
@@ -248,7 +264,7 @@ export const updatePost = async (id: string, input: BlogPostWriteInput): Promise
       slug: uniqueSlug,
       content: input.content,
       excerpt: input.excerpt.trim(),
-      cover_image: input.cover_image ?? null,
+      cover_image: coverImage,
       author: input.author.trim(),
       tags: input.tags,
       category: input.category.trim(),

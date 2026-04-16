@@ -1,4 +1,5 @@
-export const DEFAULT_BLOG_COVER_IMAGE = "/images/blog-default.svg";
+export const DEFAULT_BLOG_COVER_IMAGE = "/images/blog-placeholder.svg";
+export const LEGACY_BLOG_COVER_IMAGE = "/images/blog-default.svg";
 
 export const buildCoverImageUrl = ({
   title,

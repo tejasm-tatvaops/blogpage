@@ -17,7 +17,7 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data:",
+      "img-src 'self' data: https:",
       "font-src 'self'",
       "connect-src 'self'",
       "frame-ancestors 'none'",
@@ -34,7 +34,11 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(process.cwd()),
 
   images: {
-    remotePatterns: [],
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "source.unsplash.com" },
+      { protocol: "https", hostname: "picsum.photos" },
+    ],
   },
 
   async headers() {
