@@ -14,6 +14,12 @@ import { getForumPostByBlogSlug } from "@/lib/forumService";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com";
 
+const toAbsoluteUrl = (value: string): string => {
+  if (!value) return value;
+  if (value.startsWith("http://") || value.startsWith("https://")) return value;
+  return `${SITE_URL}${value.startsWith("/") ? value : `/${value}`}`;
+};
+
 type BlogPostPageProps = {
   params: Promise<{ slug: string }>;
 };
@@ -46,6 +52,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   }
 
   const canonicalUrl = `${SITE_URL}/blog/${post.slug}`;
+  const socialImageUrl = post.cover_image ? toAbsoluteUrl(post.cover_image) : undefined;
 
   return {
     title: `${post.title} | TatvaOps Blog`,
@@ -59,13 +66,13 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       siteName: "TatvaOps",
       publishedTime: post.created_at,
       authors: [post.author],
-      images: post.cover_image ? [{ url: post.cover_image, alt: post.title }] : [],
+      images: socialImageUrl ? [{ url: socialImageUrl, alt: post.title }] : [],
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.excerpt,
-      images: post.cover_image ? [post.cover_image] : [],
+      images: socialImageUrl ? [socialImageUrl] : [],
       site: "@tatvaops",
     },
   };

@@ -30,7 +30,7 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
   const [bulkResult, setBulkResult] = useState<string | null>(null);
   const [isAutopopulating, setIsAutopopulating] = useState(false);
   const [autopopulateResult, setAutopopulateResult] = useState<string | null>(null);
-  const [liveActivityEnabled, setLiveActivityEnabled] = useState(false);
+  const [liveActivityEnabled, setLiveActivityEnabled] = useState(true);
   const [togglingLiveActivity, setTogglingLiveActivity] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");

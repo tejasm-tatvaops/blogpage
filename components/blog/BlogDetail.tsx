@@ -158,7 +158,14 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
                 <UpvoteButton slug={post.slug} initialCount={post.upvote_count} />
                 <DownvoteButton slug={post.slug} initialCount={post.downvote_count} />
                 <div className="ml-auto flex items-center">
-                  <ShareButtons title={post.title} slug={post.slug} />
+                  <ShareButtons
+                    title={post.title}
+                    slug={post.slug}
+                    excerpt={post.excerpt}
+                    content={mainContent}
+                    tags={post.tags}
+                    category={post.category}
+                  />
                 </div>
               </div>
             </header>
@@ -216,7 +223,14 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
                 initialForumSlug={forumSlug}
               />
               <div className="ml-auto flex items-center">
-                <ShareButtons title={post.title} slug={post.slug} />
+                <ShareButtons
+                  title={post.title}
+                  slug={post.slug}
+                  excerpt={post.excerpt}
+                  content={mainContent}
+                  tags={post.tags}
+                  category={post.category}
+                />
               </div>
             </div>
 

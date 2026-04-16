@@ -3,6 +3,7 @@ import { getPostBySlug } from "@/lib/blogService";
 import { addComment, commentInputSchema, getComments } from "@/lib/commentService";
 import { commentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
+import { recordUserActivity } from "@/lib/userProfileService";
 
 export async function GET(
   _request: Request,
@@ -47,6 +48,13 @@ export async function POST(
     }
 
     const comment = await addComment(post.id, result.data);
+    void recordUserActivity({
+      request,
+      action: "blog_comment",
+      displayName: result.data.author_name,
+      about: "Reader who contributes thoughts on blog posts, construction workflows, and planning decisions.",
+      lastBlogSlug: post.slug,
+    });
     logger.info({ postId: post.id, slug }, "New comment added");
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error) {

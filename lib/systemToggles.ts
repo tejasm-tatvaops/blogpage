@@ -10,7 +10,7 @@ const globalState = globalThis as typeof globalThis & {
 
 const toggles: SystemToggles =
   globalState.__tatvaopsSystemToggles ?? {
-    liveActivityEnabled: false,
+    liveActivityEnabled: true,
     notificationsEnabled: true,
     personasEnabled: true,
   };

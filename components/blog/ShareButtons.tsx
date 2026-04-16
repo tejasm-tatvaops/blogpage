@@ -5,9 +5,84 @@ import { useState } from "react";
 type ShareButtonsProps = {
   title: string;
   slug: string;
+  excerpt?: string;
+  content?: string;
+  tags?: string[];
+  category?: string;
 };
 
-export function ShareButtons({ title, slug }: ShareButtonsProps) {
+const stripMarkdown = (value: string): string =>
+  value
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/!\[[^\]]*]\([^)]+\)/g, " ")
+    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/[*_~>-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const trimToWords = (value: string, maxWords: number): string => {
+  const words = value.split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return value;
+  return `${words.slice(0, maxWords).join(" ").trim()}...`;
+};
+
+const buildSummary = ({
+  title,
+  excerpt,
+  content,
+  minWords = 100,
+  maxWords = 200,
+}: {
+  title: string;
+  excerpt?: string;
+  content?: string;
+  minWords?: number;
+  maxWords?: number;
+}): string => {
+  const excerptClean = stripMarkdown(excerpt ?? "");
+  const bodyClean = stripMarkdown(content ?? "");
+
+  const parts = [`${title}.`];
+  if (excerptClean) parts.push(excerptClean);
+  if (bodyClean) parts.push(bodyClean);
+
+  const merged = parts.join(" ").replace(/\s+/g, " ").trim();
+  const words = merged.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return title;
+  if (words.length > maxWords) return trimToWords(merged, maxWords);
+  if (words.length >= minWords) return merged;
+
+  const padded = `${merged} ${excerptClean || title} ${bodyClean}`.replace(/\s+/g, " ").trim();
+  return trimToWords(padded, minWords);
+};
+
+const toHashtag = (value: string): string =>
+  `#${value
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}`)
+    .join("")}`;
+
+const buildHashtags = (tags: string[] = [], category?: string): string[] => {
+  const pool = [...tags, category ?? "", "Construction", "TatvaOps"].filter(Boolean);
+  const seen = new Set<string>();
+  const output: string[] = [];
+  for (const item of pool) {
+    const tag = toHashtag(item);
+    if (tag.length <= 1) continue;
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    output.push(tag);
+    if (output.length >= 6) break;
+  }
+  return output;
+};
+
+export function ShareButtons({ title, slug, excerpt, content, tags = [], category }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
 
   const getUrl = () =>
@@ -26,17 +101,25 @@ export function ShareButtons({ title, slug }: ShareButtonsProps) {
   };
 
   const shareTwitter = () => {
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(getUrl())}`;
+    const summary = buildSummary({ title, excerpt, content, minWords: 50, maxWords: 70 });
+    const hashtags = buildHashtags(tags, category).join(" ");
+    const text = trimToWords(`${summary}\n\n${hashtags}`, 45);
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(getUrl())}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const shareLinkedIn = () => {
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getUrl())}`;
+    const summary = buildSummary({ title, excerpt, content });
+    const hashtags = buildHashtags(tags, category).join(" ");
+    const text = `${summary}\n\n${hashtags}\n\n${getUrl()}`;
+    const url = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const shareWhatsApp = () => {
-    const url = `https://wa.me/?text=${encodeURIComponent(`${title} ${getUrl()}`)}`;
+    const summary = buildSummary({ title, excerpt, content });
+    const hashtags = buildHashtags(tags, category).join(" ");
+    const url = `https://wa.me/?text=${encodeURIComponent(`${summary}\n\n${hashtags}\n\n${getUrl()}`)}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
 

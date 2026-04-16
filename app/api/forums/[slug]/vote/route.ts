@@ -4,6 +4,7 @@ import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { forumVoteLimiter, getRateLimitKey, rateLimitResponse, rateLimitHeaders } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { createNotification } from "@/lib/notificationService";
+import { recordUserActivity } from "@/lib/userProfileService";
 
 export async function POST(
   request: Request,
@@ -47,6 +48,13 @@ export async function POST(
         message: `Your post received a ${direction === "up" ? "new upvote" : "new downvote"}.`,
       });
     }
+
+    void recordUserActivity({
+      request,
+      action: "forum_vote",
+      about: "Active community reader who uses voting to surface helpful construction discussions.",
+      lastForumSlug: slug,
+    });
 
     return NextResponse.json(
       { id: result.id, upvote_count: result.upvote_count, downvote_count: result.downvote_count, score: result.score },

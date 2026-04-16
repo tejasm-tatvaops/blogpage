@@ -7,6 +7,7 @@ import {
 } from "@/lib/forumService";
 import { forumPostLimiter, getRateLimitKey, rateLimitResponse, rateLimitHeaders } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
+import { recordUserActivity } from "@/lib/userProfileService";
 
 export async function GET(request: Request) {
   try {
@@ -53,6 +54,13 @@ export async function POST(request: Request) {
     }
 
     const post = await createForumPost(result.data);
+    void recordUserActivity({
+      request,
+      action: "forum_post",
+      displayName: result.data.author_name,
+      about: "Forum contributor sharing construction ideas, questions, and on-ground project experience.",
+      lastForumSlug: post.slug,
+    });
     logger.info({ slug: post.slug }, "Forum post created via API");
     return NextResponse.json(
       { post },

@@ -3,6 +3,7 @@ import { getForumPostBySlug, incrementForumCommentCount } from "@/lib/forumServi
 import { addComment, commentInputSchema, getComments } from "@/lib/commentService";
 import { forumCommentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
+import { recordUserActivity } from "@/lib/userProfileService";
 
 export async function GET(
   _request: Request,
@@ -50,6 +51,13 @@ export async function POST(
     const comment = await addComment(post.id, result.data);
     // Keep comment_count denormalized for fast feed queries
     await incrementForumCommentCount(post.id);
+    void recordUserActivity({
+      request,
+      action: "forum_comment",
+      displayName: result.data.author_name,
+      about: "Community member actively commenting on construction questions, tradeoffs, and project planning topics.",
+      lastForumSlug: post.slug,
+    });
 
     logger.info({ postId: post.id, slug }, "Forum comment added");
     return NextResponse.json({ comment }, { status: 201 });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { incrementViewCount, trackViewEvent } from "@/lib/blogService";
+import { recordUserActivity } from "@/lib/userProfileService";
 
 type ViewRouteProps = {
   params: Promise<{ slug: string }>;
@@ -27,6 +28,11 @@ export async function POST(request: Request, { params }: ViewRouteProps) {
       slug,
       referrerHost: getReferrerHost(request.headers.get("referer")),
       userAgent: request.headers.get("user-agent"),
+    });
+    void recordUserActivity({
+      request,
+      action: "blog_view",
+      lastBlogSlug: slug,
     });
 
     return NextResponse.json(
