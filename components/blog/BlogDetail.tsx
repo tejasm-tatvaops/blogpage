@@ -169,9 +169,11 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
             >
               <CoverImage
                 src={imageUrl}
+                slug={post.slug}
                 alt={post.title}
                 category={post.category}
                 tags={post.tags}
+                disablePlaceholderFallback
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 760px"
                 priority

@@ -68,12 +68,20 @@ const hashForIndex = (value: string): number => {
 
 const isLocalImagePath = (value: string): boolean => value.startsWith("/images/");
 const isBlockedRemoteSource = (value: string): boolean => value.includes("source.unsplash.com");
+const isTextStyleCoverSource = (value: string): boolean => {
+  const v = value.trim().toLowerCase();
+  if (!v) return true;
+  if (v.startsWith("/api/cover-image")) return true;
+  if (v.includes("placeholder") || v.includes("gradient") || v.includes("dummy")) return true;
+  if (v.includes("blog-placeholder")) return true;
+  return false;
+};
 const isLikelyUsableImageSource = (value: string): boolean => {
   const v = value.trim();
   if (!v) return false;
   if (isBlockedRemoteSource(v)) return false;
   if (v.startsWith("/images/")) return true;
-  if (v.startsWith("/api/cover-image")) return true;
+  if (v.startsWith("/api/cover-image")) return false;
   if (v.startsWith("data:image/")) return true;
   if (v.startsWith("https://") || v.startsWith("http://")) return true;
   return false;
@@ -106,17 +114,20 @@ export function CoverImage({
     if (disablePlaceholderFallback) {
       const sanitizedFallbacks = fallbackSources
         .map((value) => value.trim())
-        .filter((value) => isLocalImagePath(value) && isLikelyUsableImageSource(value));
+        .filter((value) => isLocalImagePath(value) && isLikelyUsableImageSource(value) && !isTextStyleCoverSource(value));
       const deterministic = getDeterministicImage(slug || alt);
       const candidate = typeof src === "string" ? src.trim() : "";
-      const primary = isLikelyUsableImageSource(candidate) ? candidate : deterministic;
+      const primary =
+        isLikelyUsableImageSource(candidate) && !isTextStyleCoverSource(candidate)
+          ? candidate
+          : deterministic;
       const chain = [primary, ...sanitizedFallbacks, deterministic].filter(Boolean) as string[];
       return chain.length > 0 ? chain : [deterministic];
     }
     return [src?.trim(), generatedSrc, DEFAULT_BLOG_COVER_IMAGE, LEGACY_BLOG_COVER_IMAGE]
       .filter(Boolean)
       .map((value) => String(value).trim())
-      .filter((value) => isLikelyUsableImageSource(value)) as string[];
+      .filter((value) => isLikelyUsableImageSource(value) && !isTextStyleCoverSource(value)) as string[];
   }, [alt, disablePlaceholderFallback, fallbackSources, generatedSrc, slug, src]);
   const [sourceIndex, setSourceIndex] = useState(0);
 
