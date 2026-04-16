@@ -18,6 +18,15 @@ export function useActivityPolling<T>({
   const [hasNewActivity, setHasNewActivity] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
   const versionRef = useRef<number | null>(null);
+  const fetcherRef = useRef(fetcher);
+  const getVersionRef = useRef(getVersion);
+  const onDataRef = useRef(onData);
+
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+    getVersionRef.current = getVersion;
+    onDataRef.current = onData;
+  }, [fetcher, getVersion, onData]);
 
   useEffect(() => {
     let cancelled = false;
@@ -25,14 +34,14 @@ export function useActivityPolling<T>({
       if (cancelled) return;
       try {
         setIsPolling(true);
-        const data = await fetcher();
+        const data = await fetcherRef.current();
         if (cancelled) return;
-        const version = getVersion(data);
+        const version = getVersionRef.current(data);
         if (versionRef.current != null && version > versionRef.current) {
           setHasNewActivity(true);
         }
         versionRef.current = version;
-        onData(data);
+        onDataRef.current(data);
       } finally {
         if (!cancelled) setIsPolling(false);
       }
@@ -44,7 +53,7 @@ export function useActivityPolling<T>({
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [fetcher, getVersion, intervalMs, onData]);
+  }, [intervalMs]);
 
   return {
     hasNewActivity,

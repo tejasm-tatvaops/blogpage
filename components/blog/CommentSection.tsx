@@ -4,6 +4,7 @@ import { type FormEvent, useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Comment } from "@/lib/commentService";
 import { useActivityPolling } from "@/lib/activityPolling";
+import { getAvatarForIdentity } from "@/lib/avatar";
 
 type CommentSectionProps = {
   slug: string;
@@ -64,7 +65,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   }, [totalCommentCount]);
 
   const { hasNewActivity, clearNewActivity } = useActivityPolling<{ comments: Comment[] }>({
-    intervalMs: 12_000,
+    intervalMs: 30_000,
     fetcher: pollComments,
     getVersion: (payload) => totalCommentCount(payload.comments),
     onData: onPollData,
@@ -306,9 +307,12 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
           {sortedComments.map((c) => (
             <div key={c.id} className="flex gap-3">
               {/* Avatar */}
-              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-600">
-                {c.author_name.charAt(0).toUpperCase()}
-              </div>
+              <img
+                src={getAvatarForIdentity(`blog-comment:${c.author_name}|${c.id}`)}
+                alt={`${c.author_name} avatar`}
+                className="h-9 w-9 flex-shrink-0 rounded-full border border-slate-200 bg-slate-100 object-cover"
+                loading="lazy"
+              />
               <div className="flex-1">
                 <div className="flex flex-wrap items-baseline gap-2">
                   <span className="text-sm font-semibold text-slate-900">{c.author_name}</span>

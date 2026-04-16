@@ -32,10 +32,20 @@ export function NotificationBell() {
   };
 
   useEffect(() => {
+    let inFlight = false;
+    const run = async () => {
+      if (inFlight || document.visibilityState !== "visible") return;
+      inFlight = true;
+      try {
+        await loadNotifications();
+      } finally {
+        inFlight = false;
+      }
+    };
     const interval = window.setInterval(() => {
-      void loadNotifications();
-    }, 15_000);
-    void loadNotifications();
+      void run();
+    }, 45_000);
+    void run();
     return () => window.clearInterval(interval);
   }, []);
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { UserDirectory } from "@/components/users/UserDirectory";
-import { getUserProfiles } from "@/lib/userProfileService";
+import { getPlatformViewTotals, getUserProfiles } from "@/lib/userProfileService";
 
 export const metadata: Metadata = {
   title: "Users | TatvaOps",
@@ -13,6 +13,9 @@ export const revalidate = 0;
 
 export default async function UsersPage() {
   noStore();
-  const users = await getUserProfiles(1000).catch(() => []);
-  return <UserDirectory users={users} />;
+  const [users, totals] = await Promise.all([
+    getUserProfiles(1000).catch(() => []),
+    getPlatformViewTotals().catch(() => ({ blogViews: 0, forumViews: 0 })),
+  ]);
+  return <UserDirectory users={users} totals={totals} />;
 }

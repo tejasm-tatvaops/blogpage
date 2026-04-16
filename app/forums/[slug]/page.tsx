@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ForumVoteBar } from "@/components/forums/ForumVoteBar";
 import { ForumCommentSection } from "@/components/forums/ForumCommentSection";
+import { ForumViewCount } from "@/components/forums/ForumViewCount";
 import { MarkdownRenderer } from "@/components/blog/MarkdownRenderer";
 import { getForumPostBySlug } from "@/lib/forumService";
 import { getComments } from "@/lib/commentService";
@@ -116,7 +117,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
         <span aria-hidden>·</span>
         <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
         <span aria-hidden>·</span>
-        <span>{post.view_count.toLocaleString()} views</span>
+        <ForumViewCount slug={post.slug} initialCount={post.view_count} />
       </div>
 
       {/* Engagement bar */}
@@ -133,13 +134,6 @@ export default async function ForumThreadPage({ params }: PageProps) {
       <article className="prose prose-slate max-w-none">
         <MarkdownRenderer content={post.content} />
       </article>
-
-      {/* Per-session view tracker */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `(function(){var k='fv_'+${JSON.stringify(post.slug)};if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');fetch('/api/forums/'+encodeURIComponent(${JSON.stringify(post.slug)}),{method:'POST'});}})();`,
-        }}
-      />
 
       {/* Discussion */}
       <ForumCommentSection

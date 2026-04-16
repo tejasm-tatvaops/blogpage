@@ -7,6 +7,7 @@ import { ForumVoteModel } from "@/models/ForumVote";
 import { ViewEventModel } from "@/models/ViewEvent";
 import { BlogModel } from "@/models/Blog";
 import { FAKE_USERS } from "@/lib/fakeUsers";
+import { getAvatarForIdentity } from "@/lib/avatar";
 
 export type UserProfile = {
   id: string;
@@ -22,6 +23,11 @@ export type UserProfile = {
   last_forum_slug: string | null;
   created_at: string;
   last_seen_at: string;
+};
+
+export type PlatformViewTotals = {
+  blogViews: number;
+  forumViews: number;
 };
 
 const backfillState = globalThis as typeof globalThis & {
@@ -82,8 +88,7 @@ const getIdentity = (request: Request): { identityKey: string; fingerprintId: st
   };
 };
 
-const buildAvatarUrl = (seed: string): string =>
-  `https://api.dicebear.com/9.x/personas/svg?seed=${encodeURIComponent(seed)}`;
+const buildAvatarUrl = (seed: string): string => getAvatarForIdentity(seed);
 
 const buildDisplayName = (identityKey: string): string => {
   const clean = identityKey.replace(/[^a-zA-Z0-9]/g, "").slice(-6).toUpperCase();
@@ -448,4 +453,16 @@ export const getUserProfiles = async (limit = 120): Promise<UserProfile[]> => {
     .lean();
 
   return docs.map((doc) => toUserProfile(doc as never));
+};
+
+export const getPlatformViewTotals = async (): Promise<PlatformViewTotals> => {
+  await connectToDatabase();
+  const [blogAgg, forumAgg] = await Promise.all([
+    BlogModel.aggregate([{ $match: { deleted_at: null } }, { $group: { _id: null, total: { $sum: { $ifNull: ["$view_count", 0] } } } }]),
+    ForumPostModel.aggregate([{ $match: { deleted_at: null } }, { $group: { _id: null, total: { $sum: { $ifNull: ["$view_count", 0] } } } }]),
+  ]);
+  return {
+    blogViews: Number((blogAgg[0] as { total?: number } | undefined)?.total ?? 0),
+    forumViews: Number((forumAgg[0] as { total?: number } | undefined)?.total ?? 0),
+  };
 };

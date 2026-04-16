@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Comment } from "@/lib/commentService";
 import { getOrCreateFingerprint } from "@/lib/personalization";
 import { useActivityPolling } from "@/lib/activityPolling";
+import { getAvatarForIdentity } from "@/lib/avatar";
 
 type ForumCommentSectionProps = {
   slug: string;
@@ -71,7 +72,7 @@ export function ForumCommentSection({
     });
   }, [totalCommentCount]);
   const { hasNewActivity, clearNewActivity } = useActivityPolling<{ comments: Comment[] }>({
-    intervalMs: 12_000,
+    intervalMs: 30_000,
     fetcher: pollComments,
     getVersion: (payload) => totalCommentCount(payload.comments),
     onData: onPollData,
@@ -247,9 +248,12 @@ export function ForumCommentSection({
     const isBest = c.id === bestCommentId;
     return (
       <div key={c.id} className={`flex gap-3 ${isBest && !isReply ? "rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 -mx-3" : ""}`}>
-        <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ${isBest ? "bg-emerald-100 text-emerald-700" : "bg-indigo-100 text-indigo-700"}`}>
-          {c.author_name.charAt(0).toUpperCase()}
-        </div>
+        <img
+          src={getAvatarForIdentity(`forum-comment:${c.author_name}|${c.id}`)}
+          alt={`${c.author_name} avatar`}
+          className={`h-9 w-9 flex-shrink-0 rounded-full border object-cover ${isBest ? "border-emerald-200 bg-emerald-50" : "border-indigo-200 bg-indigo-50"}`}
+          loading="lazy"
+        />
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-slate-900">{c.author_name}</span>

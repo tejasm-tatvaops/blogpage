@@ -3,11 +3,17 @@ import type { UserProfile } from "@/lib/userProfileService";
 
 type UserDirectoryProps = {
   users: UserProfile[];
+  totals?: {
+    blogViews: number;
+    forumViews: number;
+  };
 };
 
 const formatNumber = (value: number): string => new Intl.NumberFormat("en-US").format(value);
 
-export function UserDirectory({ users }: UserDirectoryProps) {
+export function UserDirectory({ users, totals }: UserDirectoryProps) {
+  const safeTotals = totals ?? { blogViews: 0, forumViews: 0 };
+
   return (
     <section className="mx-auto w-full max-w-[1500px] px-6 py-12">
       <header className="mb-10 max-w-3xl">
@@ -17,6 +23,17 @@ export function UserDirectory({ users }: UserDirectoryProps) {
           reading, comments, forum discussions, and community activity.
         </p>
       </header>
+
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-slate-400">Blog Views (DB)</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{formatNumber(safeTotals.blogViews)}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-slate-400">Forum Views (DB)</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{formatNumber(safeTotals.forumViews)}</p>
+        </div>
+      </div>
 
       {users.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-8 py-14 text-center text-slate-600">

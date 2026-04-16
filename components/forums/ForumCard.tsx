@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ForumPost } from "@/lib/forumService";
+import { getAvatarForIdentity } from "@/lib/avatar";
 
 type ForumCardProps = {
   post: ForumPost;
@@ -17,28 +18,8 @@ const formatCount = (n: number): string => {
   return String(n);
 };
 
-const AVATAR_POOL = [
-  "https://api.dicebear.com/9.x/personas/svg?seed=atlas",
-  "https://api.dicebear.com/9.x/personas/svg?seed=nova",
-  "https://api.dicebear.com/9.x/personas/svg?seed=kai",
-  "https://api.dicebear.com/9.x/personas/svg?seed=maya",
-  "https://api.dicebear.com/9.x/personas/svg?seed=rio",
-  "https://api.dicebear.com/9.x/personas/svg?seed=zara",
-  "https://api.dicebear.com/9.x/personas/svg?seed=leo",
-  "https://api.dicebear.com/9.x/personas/svg?seed=arya",
-];
-
-const hashForIndex = (value: string): number => {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-};
-
 export function ForumCard({ post }: ForumCardProps) {
-  const avatarSrc = AVATAR_POOL[hashForIndex(`${post.author_name}|${post.id}`) % AVATAR_POOL.length]!;
+  const avatarSrc = getAvatarForIdentity(`${post.author_name}|${post.id}`);
 
   return (
     <article className="group">
