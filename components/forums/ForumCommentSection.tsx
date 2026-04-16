@@ -54,20 +54,22 @@ export function ForumCommentSection({
     return (await response.json()) as { comments: Comment[] };
   }, [slug]);
   const onPollData = useCallback((payload: { comments: Comment[] }) => {
-    const previousCount = totalCommentCount(comments);
-    const incomingCount = totalCommentCount(payload.comments);
-    if (incomingCount > previousCount) {
-      const incoming = payload.comments[0];
-      const typingName = incoming?.persona_name ?? incoming?.author_name ?? "Someone";
-      setTypingUsers([typingName]);
-      window.setTimeout(() => {
-        setComments(payload.comments);
-        setTypingUsers([]);
-      }, 1200 + Math.floor(Math.random() * 1100));
-      return;
-    }
-    setComments(payload.comments);
-  }, [comments, totalCommentCount]);
+    setComments((prev) => {
+      const previousCount = totalCommentCount(prev);
+      const incomingCount = totalCommentCount(payload.comments);
+      if (incomingCount > previousCount) {
+        const incoming = payload.comments[0];
+        const typingName = incoming?.persona_name ?? incoming?.author_name ?? "Someone";
+        setTypingUsers([typingName]);
+        window.setTimeout(() => {
+          setComments(payload.comments);
+          setTypingUsers([]);
+        }, 1200 + Math.floor(Math.random() * 1100));
+        return prev;
+      }
+      return payload.comments;
+    });
+  }, [totalCommentCount]);
   const { hasNewActivity, clearNewActivity } = useActivityPolling<{ comments: Comment[] }>({
     intervalMs: 12_000,
     fetcher: pollComments,

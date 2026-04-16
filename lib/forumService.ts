@@ -155,7 +155,7 @@ const updateScoreFromDoc = async (postId: string, doc: ForumPostLean): Promise<v
 
 // ─── Slug helpers ─────────────────────────────────────────────────────────────
 
-const generateSlug = (title: string): string =>
+export const generateForumSlug = (title: string): string =>
   title
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
@@ -165,7 +165,7 @@ const generateSlug = (title: string): string =>
     .slice(0, 200);
 
 const generateUniqueForumSlug = async (title: string): Promise<string> => {
-  const base = generateSlug(title) || "post";
+  const base = generateForumSlug(title) || "post";
   let candidate = base;
   let attempt = 0;
   while (true) {
@@ -176,7 +176,7 @@ const generateUniqueForumSlug = async (title: string): Promise<string> => {
   }
 };
 
-const generateExcerpt = (content: string): string => {
+export const generateForumExcerpt = (content: string): string => {
   const plain = content
     .replace(/#{1,6}\s+/g, "")
     .replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1")
@@ -284,7 +284,7 @@ export const getForumPostByBlogSlug = async (blogSlug: string): Promise<ForumPos
 export const createForumPost = async (input: ForumPostInput): Promise<ForumPost> => {
   await connectToDatabase();
   const slug = await generateUniqueForumSlug(input.title);
-  const excerpt = generateExcerpt(input.content);
+  const excerpt = generateForumExcerpt(input.content);
   const now = new Date();
   const initialScore = computeHotScore(0, 0, 0, now);
 

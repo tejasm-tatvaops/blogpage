@@ -115,7 +115,7 @@ const appendReferencesSection = (content: string, references: ReferenceItem[]): 
   return `${trimmedContent}\n\n## References\n\n${lines.join("\n")}`;
 };
 
-const extractJsonPayload = (text: string): string => {
+export const extractJsonPayload = (text: string): string => {
   const trimmed = text.trim();
 
   // Handle fenced markdown code blocks: ```json ... ```
