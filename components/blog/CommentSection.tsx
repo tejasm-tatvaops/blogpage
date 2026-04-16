@@ -1,8 +1,9 @@
 "use client";
 
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Comment } from "@/lib/commentService";
+import { useActivityPolling } from "@/lib/activityPolling";
 
 type CommentSectionProps = {
   slug: string;
@@ -28,6 +29,44 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [votingCommentId, setVotingCommentId] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+
+  const totalCommentCount = useCallback(
+    (list: Comment[]) => list.reduce((count, c) => count + 1 + c.replies.length, 0),
+    [],
+  );
+
+  const pollComments = useCallback(async () => {
+      const response = await fetch(`/api/blog/${encodeURIComponent(slug)}/comments`, {
+        method: "GET",
+        cache: "no-store",
+      });
+      if (!response.ok) return { comments: [] as Comment[] };
+      return (await response.json()) as { comments: Comment[] };
+    }, [slug]);
+
+  const onPollData = useCallback((payload: { comments: Comment[] }) => {
+    const previousCount = totalCommentCount(comments);
+    const incomingCount = totalCommentCount(payload.comments);
+    if (incomingCount > previousCount) {
+      const incoming = payload.comments[0];
+      const typingName = incoming?.persona_name ?? incoming?.author_name ?? "Someone";
+      setTypingUsers([typingName]);
+      window.setTimeout(() => {
+        setComments(payload.comments);
+        setTypingUsers([]);
+      }, 1300 + Math.floor(Math.random() * 1200));
+      return;
+    }
+    setComments(payload.comments);
+  }, [comments, totalCommentCount]);
+
+  const { hasNewActivity, clearNewActivity } = useActivityPolling<{ comments: Comment[] }>({
+    intervalMs: 12_000,
+    fetcher: pollComments,
+    getVersion: (payload) => totalCommentCount(payload.comments),
+    onData: onPollData,
+  });
 
   const sortedComments = useMemo(() => {
     const clone = comments.map((c) => ({
@@ -172,6 +211,19 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
       <h2 className="mb-6 text-xl font-bold text-slate-900">
         {comments.length > 0 ? `${comments.length} Comment${comments.length > 1 ? "s" : ""}` : "Comments"}
       </h2>
+
+      {hasNewActivity && (
+        <button
+          type="button"
+          onClick={() => clearNewActivity()}
+          className="mb-4 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+        >
+          New activity detected
+        </button>
+      )}
+      {typingUsers.length > 0 && (
+        <div className="mb-3 text-xs font-medium text-slate-500">{typingUsers.join(", ")} is typing...</div>
+      )}
 
       <div className="mb-5 flex items-center gap-2">
         <button

@@ -2,13 +2,16 @@ import { isValidObjectId } from "mongoose";
 import { z } from "zod";
 import { CommentModel, type CommentDocument } from "@/models/Comment";
 import { ForumPostModel } from "@/models/ForumPost";
+import { createNotification } from "@/lib/notificationService";
 import { connectToDatabase } from "./mongodb";
 
 export type Comment = {
   id: string;
   parent_comment_id: string | null;
   author_name: string;
+  persona_name: string | null;
   content: string;
+  is_ai_generated: boolean;
   created_at: string;
   upvote_count: number;
   downvote_count: number;
@@ -22,7 +25,9 @@ export type AdminComment = {
   comment_type: "blog" | "forum";
   parent_comment_id: string | null;
   author_name: string;
+  persona_name: string | null;
   content: string;
+  is_ai_generated: boolean;
   created_at: string;
   upvote_count: number;
   downvote_count: number;
@@ -34,7 +39,9 @@ const toComment = (doc: CommentDocument): Comment => ({
   id: doc._id.toString(),
   parent_comment_id: doc.parent_comment_id ?? null,
   author_name: doc.author_name,
+  persona_name: doc.persona_name ?? null,
   content: doc.content,
+  is_ai_generated: doc.is_ai_generated ?? false,
   created_at: doc.created_at.toISOString(),
   upvote_count: doc.upvote_count ?? 0,
   downvote_count: doc.downvote_count ?? 0,
@@ -54,6 +61,8 @@ export const commentInputSchema = z.object({
     .max(2000, "Comment too long")
     .trim(),
   parent_comment_id: z.string().optional().nullable(),
+  is_ai_generated: z.boolean().optional().default(false),
+  persona_name: z.string().max(120).optional().nullable(),
 });
 
 export type CommentInput = z.infer<typeof commentInputSchema>;
@@ -116,12 +125,44 @@ export const addComment = async (postId: string, input: CommentInput): Promise<C
     post_id: postId,
     parent_comment_id: parentId,
     author_name: input.author_name,
+    persona_name: input.persona_name ?? null,
     content: input.content,
+    is_ai_generated: input.is_ai_generated ?? false,
     upvote_count: 0,
     downvote_count: 0,
     deleted_at: null,
   });
-  return toComment(doc.toObject() as unknown as CommentDocument);
+  const created = toComment(doc.toObject() as unknown as CommentDocument);
+
+  if (parentId) {
+    const parent = (await CommentModel.findById(parentId).select("author_name").lean()) as
+      | { author_name?: string }
+      | null;
+    const parentAuthor = parent?.author_name?.trim();
+    if (parentAuthor && parentAuthor !== input.author_name) {
+      await createNotification({
+        type: "reply",
+        post_id: postId,
+        comment_id: created.id,
+        recipient_key: `author:${parentAuthor.toLowerCase()}`,
+        message: `${input.author_name} replied to your comment.`,
+      });
+    }
+  } else {
+    const forumPost = (await ForumPostModel.findById(postId)
+      .select("creator_fingerprint")
+      .lean()) as { creator_fingerprint?: string | null } | null;
+    if (forumPost?.creator_fingerprint) {
+      await createNotification({
+        type: "comment",
+        post_id: postId,
+        comment_id: created.id,
+        recipient_key: `fp:${forumPost.creator_fingerprint}`,
+        message: `${input.author_name} commented on a post you are watching.`,
+      });
+    }
+  }
+  return created;
 };
 
 export const voteComment = async (
@@ -191,7 +232,9 @@ export const getCommentsForAdmin = async ({
     comment_type: forumIds.has(doc.post_id) ? ("forum" as const) : ("blog" as const),
     parent_comment_id: doc.parent_comment_id ?? null,
     author_name: doc.author_name,
+    persona_name: doc.persona_name ?? null,
     content: doc.content,
+    is_ai_generated: doc.is_ai_generated ?? false,
     created_at: doc.created_at.toISOString(),
     upvote_count: doc.upvote_count ?? 0,
     downvote_count: doc.downvote_count ?? 0,

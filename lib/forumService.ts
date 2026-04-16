@@ -21,6 +21,7 @@ export type ForumPost = {
   comment_count: number;
   view_count: number;
   is_featured: boolean;
+  is_trending: boolean;
   best_comment_id: string | null;
   linked_blog_slug: string | null;
   creator_fingerprint: string | null;
@@ -46,6 +47,7 @@ type ForumPostLean = {
   comment_count?: number;
   view_count?: number;
   is_featured?: boolean;
+  is_trending?: boolean;
   best_comment_id?: string | null;
   linked_blog_slug?: string | null;
   creator_fingerprint?: string | null;
@@ -110,6 +112,7 @@ const toForumPost = (doc: ForumPostLean): ForumPost => ({
   comment_count: doc.comment_count ?? 0,
   view_count: doc.view_count ?? 0,
   is_featured: doc.is_featured ?? false,
+  is_trending: doc.is_trending ?? false,
   best_comment_id: doc.best_comment_id ?? null,
   linked_blog_slug: doc.linked_blog_slug ?? null,
   creator_fingerprint: doc.creator_fingerprint ?? null,
@@ -298,6 +301,7 @@ export const createForumPost = async (input: ForumPostInput): Promise<ForumPost>
     comment_count: 0,
     view_count: 0,
     is_featured: false,
+    is_trending: false,
     best_comment_id: null,
     linked_blog_slug: input.linked_blog_slug ?? null,
     creator_fingerprint: input.creator_fingerprint ?? null,
@@ -369,7 +373,14 @@ export const setForumPostFeatured = async (id: string, isFeatured: boolean): Pro
 // ─── Voting ───────────────────────────────────────────────────────────────────
 
 export type VoteResult =
-  | { ok: true; id: string; upvote_count: number; downvote_count: number; score: number }
+  | {
+      ok: true;
+      id: string;
+      upvote_count: number;
+      downvote_count: number;
+      score: number;
+      creator_fingerprint: string | null;
+    }
   | { ok: false; reason: "not_found" | "already_voted" };
 
 export const voteForumPost = async (
@@ -381,7 +392,7 @@ export const voteForumPost = async (
 
   // Resolve post first to get its _id
   const post = (await ForumPostModel.findOne({ slug, ...notDeleted })
-    .select("_id upvote_count downvote_count comment_count created_at")
+    .select("_id upvote_count downvote_count comment_count created_at creator_fingerprint")
     .lean()) as unknown as ForumPostLean | null;
   if (!post) return { ok: false, reason: "not_found" };
 
@@ -404,7 +415,7 @@ export const voteForumPost = async (
     { $inc: { [field]: 1 } },
     { new: true },
   )
-    .select("_id upvote_count downvote_count comment_count created_at")
+    .select("_id upvote_count downvote_count comment_count created_at creator_fingerprint")
     .lean()) as unknown as ForumPostLean | null;
 
   if (!updated) return { ok: false, reason: "not_found" };
@@ -415,7 +426,14 @@ export const voteForumPost = async (
   const newScore = computeHotScore(up, down, comments, updated.created_at);
   await ForumPostModel.updateOne({ _id: updated._id }, { score: newScore });
 
-  return { ok: true, id: postId, upvote_count: up, downvote_count: down, score: newScore };
+  return {
+    ok: true,
+    id: postId,
+    upvote_count: up,
+    downvote_count: down,
+    score: newScore,
+    creator_fingerprint: updated.creator_fingerprint ?? null,
+  };
 };
 
 // ─── Best Answer ──────────────────────────────────────────────────────────────
@@ -494,10 +512,16 @@ export const incrementForumViewCount = async (slug: string): Promise<number | nu
 
 export const getTrendingForumPosts = async (limit = 5): Promise<ForumPost[]> => {
   await connectToDatabase();
-  const docs = (await ForumPostModel.find({ ...notDeleted })
+  const docs = (await ForumPostModel.find({ ...notDeleted, is_trending: true })
     .select(LIST_PROJECTION)
     .sort({ score: -1, created_at: -1 })
     .limit(limit)
     .lean()) as unknown as ForumPostLean[];
   return docs.map(toForumPost);
+};
+
+export const setForumPostTrending = async (postId: string, trending: boolean): Promise<void> => {
+  await connectToDatabase();
+  if (!isValidObjectId(postId)) return;
+  await ForumPostModel.updateOne({ _id: postId }, { is_trending: trending });
 };

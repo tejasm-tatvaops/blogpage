@@ -15,6 +15,7 @@ const forumPostSchema = new mongoose.Schema(
     comment_count: { type: Number, default: 0, min: 0 },
     view_count: { type: Number, default: 0, min: 0 },
     is_featured: { type: Boolean, default: false, index: true },
+    is_trending: { type: Boolean, default: false, index: true },
     // Best answer: set by creator, references a Comment _id
     best_comment_id: { type: String, default: null },
     // Blog ↔ Forum integration

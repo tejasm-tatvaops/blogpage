@@ -9,3 +9,13 @@ export const getFingerprintFromRequest = (request: Request): string | null => {
   const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${FP_COOKIE}=([^;]+)`));
   return match?.[1]?.trim() ?? null;
 };
+
+export const getNotificationRecipientKey = (request: Request): string => {
+  const fp = getFingerprintFromRequest(request);
+  if (fp) return `fp:${fp}`;
+  const ip =
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "anonymous";
+  return `ip:${ip}`;
+};

@@ -39,6 +39,11 @@ export function ForumCard({ post }: ForumCardProps) {
         <h2 className="line-clamp-2 text-lg font-bold leading-snug text-slate-900 transition group-hover:text-indigo-700">
           {post.title}
         </h2>
+        {post.is_trending && (
+          <span className="mt-2 inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-bold text-orange-700">
+            🔥 Trending
+          </span>
+        )}
 
         {/* Excerpt */}
         <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">{post.excerpt}</p>

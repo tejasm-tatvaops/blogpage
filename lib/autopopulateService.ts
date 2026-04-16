@@ -6,6 +6,8 @@ import { CommentModel } from "@/models/Comment";
 import { connectToDatabase } from "./mongodb";
 import { logger } from "./logger";
 import { pickDistinctFakeUsers } from "./fakeUsers";
+import type { Activity } from "./activityQueue";
+import { buildPersonaInstruction, isPersonaEnabled, maybeApplyTypos, pickPersona } from "./personas";
 
 // ─── AI helpers (mirrors aiBlogGenerator.ts pattern) ───────────────────────
 
@@ -59,9 +61,11 @@ const buildPrompt = (
   excerpt: string,
   context: "blog" | "forum",
   commentCount: number,
+  personaInstruction: string,
 ): string => `You are simulating authentic human engagement on a construction-tech platform called TatvaOps.
 
 Generate ${commentCount} realistic comment(s) for the following ${context} post. Comments must feel like they were written by different real professionals in construction, civil engineering, BOQ, vendor procurement, or project management.
+${personaInstruction}
 
 Post title: "${title}"
 Post excerpt: "${excerpt.slice(0, 400)}"
@@ -78,7 +82,7 @@ Return ONLY a valid JSON array (no markdown, no prose) matching this schema exac
 ]
 
 Rules:
-- Vary comment lengths: some short (1 sentence), some 2–3 sentences, occasionally longer
+- Comment length mix: 40% short, 40% medium, 20% detailed
 - Vary tones naturally across the ${commentCount} comment(s)
 - Replies array: 0–2 items per comment, only on some comments
 - No spam, no generic filler like "great post" unless paired with specific detail
@@ -260,11 +264,18 @@ const processPost = async (
 
   logger.info({ postId: post.id, title: post.title, count }, "autopopulate: generating comments");
 
-  const prompt = buildPrompt(post.title, post.excerpt, post.type, count);
+  const persona = pickPersona();
+  const promptWithPersona = buildPrompt(
+    post.title,
+    post.excerpt,
+    post.type,
+    count,
+    isPersonaEnabled() ? buildPersonaInstruction(persona) : "Write in a neutral professional voice.",
+  );
 
   let aiComments: AiComment[];
   try {
-    aiComments = await callAI(prompt);
+    aiComments = await callAI(promptWithPersona);
   } catch (err) {
     logger.error({ postId: post.id, error: (err as Error).message }, "autopopulate: AI call failed");
     return { commentsCreated: 0, repliesCreated: 0 };
@@ -283,8 +294,10 @@ const processPost = async (
     try {
       const created = await addComment(post.id, {
         author_name: author.name,
-        content: aiComment.content,
+        content: maybeApplyTypos(aiComment.content),
         parent_comment_id: null,
+        is_ai_generated: true,
+        persona_name: isPersonaEnabled() ? persona.name : null,
       });
       parentId = created.id;
       commentsCreated++;
@@ -322,8 +335,10 @@ const processPost = async (
       try {
         const createdReply = await addComment(post.id, {
           author_name: replyAuthor.name,
-          content: reply.content,
+          content: maybeApplyTypos(reply.content),
           parent_comment_id: parentId,
+          is_ai_generated: true,
+          persona_name: isPersonaEnabled() ? persona.name : null,
         });
         repliesCreated++;
 
@@ -424,4 +439,92 @@ export const populateForums = async (limit = 20): Promise<AutopopulateStats> => 
 
   logger.info(stats, "autopopulate: forum run complete");
   return stats;
+};
+
+type ActivityDraftTarget = {
+  postId: string;
+  postType: "blog" | "forum";
+  title: string;
+  excerpt: string;
+};
+
+const ACTIVITY_DRAFT_CACHE_TTL_MS = 20 * 60 * 1000;
+const activityDraftCache = new Map<string, { expiresAt: number; drafts: AiComment[] }>();
+
+export const preGenerateActivityDrafts = async (
+  targets: ActivityDraftTarget[],
+): Promise<Activity[]> => {
+  const now = Date.now();
+  const activities: Activity[] = [];
+  const users = pickDistinctFakeUsers(60);
+  let userIdx = 0;
+
+  for (const target of targets.slice(0, 3)) {
+    const cacheKey = `${target.postType}:${target.postId}`;
+    let drafts = activityDraftCache.get(cacheKey)?.drafts;
+
+    if (!drafts || (activityDraftCache.get(cacheKey)?.expiresAt ?? 0) <= now) {
+      try {
+        const persona = pickPersona();
+        const prompt = buildPrompt(
+          target.title,
+          target.excerpt,
+          target.postType,
+          2,
+          isPersonaEnabled() ? buildPersonaInstruction(persona) : "Write in a neutral professional voice.",
+        );
+        drafts = await callAI(prompt);
+        activityDraftCache.set(cacheKey, {
+          drafts,
+          expiresAt: now + ACTIVITY_DRAFT_CACHE_TTL_MS,
+        });
+      } catch (error) {
+        logger.warn(
+          { target: cacheKey, error: error instanceof Error ? error.message : String(error) },
+          "activity drafts AI fallback engaged",
+        );
+        drafts = [
+          {
+            content: "Interesting breakdown. Has anyone validated this with recent site execution costs?",
+            tone: "question",
+            replies: [{ content: "We tested similar assumptions last quarter and got close estimates." }],
+          },
+        ];
+      }
+    }
+
+    for (const draft of drafts.slice(0, 2)) {
+      const author = users[userIdx % users.length]?.name ?? "Site Engineer";
+      userIdx += 1;
+      const baseDue = now + 20_000 + Math.floor(Math.random() * 40_000);
+      activities.push({
+        id: `${cacheKey}-${userIdx}-comment`,
+        type: "comment",
+        postId: target.postId,
+        postType: target.postType,
+        content: draft.content,
+        authorName: author,
+        isAiGenerated: true,
+        dueAt: baseDue,
+        createdAt: now,
+        attempts: 0,
+      });
+
+      if (draft.replies[0]?.content) {
+        const voteDue = baseDue + 45_000 + Math.floor(Math.random() * 60_000);
+        activities.push({
+          id: `${cacheKey}-${userIdx}-vote`,
+          type: "vote",
+          postId: target.postId,
+          postType: target.postType,
+          direction: "up",
+          dueAt: voteDue,
+          createdAt: now,
+          attempts: 0,
+        });
+      }
+    }
+  }
+
+  return activities;
 };

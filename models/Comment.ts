@@ -5,9 +5,11 @@ const commentSchema = new mongoose.Schema(
     post_id: { type: String, required: true, index: true },
     parent_comment_id: { type: String, default: null, index: true },
     author_name: { type: String, required: true, trim: true, maxlength: 80 },
+    persona_name: { type: String, default: null, trim: true, maxlength: 120 },
     content: { type: String, required: true, trim: true, maxlength: 2000 },
     upvote_count: { type: Number, default: 0, min: 0 },
     downvote_count: { type: Number, default: 0, min: 0 },
+    is_ai_generated: { type: Boolean, default: false, index: true },
     deleted_at: { type: Date, default: null },
   },
   {

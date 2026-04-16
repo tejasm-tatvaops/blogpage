@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Comment } from "@/lib/commentService";
 import { getOrCreateFingerprint } from "@/lib/personalization";
+import { useActivityPolling } from "@/lib/activityPolling";
 
 type ForumCommentSectionProps = {
   slug: string;
@@ -38,6 +39,41 @@ export function ForumCommentSection({
   const [votingCommentId, setVotingCommentId] = useState<string | null>(null);
   const [bestCommentId, setBestCommentId] = useState<string | null>(initialBestId);
   const [markingBest, setMarkingBest] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+
+  const totalCommentCount = useCallback(
+    (list: Comment[]) => list.reduce((count, c) => count + 1 + c.replies.length, 0),
+    [],
+  );
+  const pollComments = useCallback(async () => {
+    const response = await fetch(`/api/forums/${encodeURIComponent(slug)}/comments`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    if (!response.ok) return { comments: [] as Comment[] };
+    return (await response.json()) as { comments: Comment[] };
+  }, [slug]);
+  const onPollData = useCallback((payload: { comments: Comment[] }) => {
+    const previousCount = totalCommentCount(comments);
+    const incomingCount = totalCommentCount(payload.comments);
+    if (incomingCount > previousCount) {
+      const incoming = payload.comments[0];
+      const typingName = incoming?.persona_name ?? incoming?.author_name ?? "Someone";
+      setTypingUsers([typingName]);
+      window.setTimeout(() => {
+        setComments(payload.comments);
+        setTypingUsers([]);
+      }, 1200 + Math.floor(Math.random() * 1100));
+      return;
+    }
+    setComments(payload.comments);
+  }, [comments, totalCommentCount]);
+  const { hasNewActivity, clearNewActivity } = useActivityPolling<{ comments: Comment[] }>({
+    intervalMs: 12_000,
+    fetcher: pollComments,
+    getVersion: (payload) => totalCommentCount(payload.comments),
+    onData: onPollData,
+  });
 
   // Is the current visitor the post creator?
   const isCreator =
@@ -333,6 +369,19 @@ export function ForumCommentSection({
           ))}
         </div>
       </div>
+
+      {hasNewActivity && (
+        <button
+          type="button"
+          onClick={() => clearNewActivity()}
+          className="mb-4 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+        >
+          New activity detected
+        </button>
+      )}
+      {typingUsers.length > 0 && (
+        <div className="mb-3 text-xs font-medium text-slate-500">{typingUsers.join(", ")} is typing...</div>
+      )}
 
       {/* Comment form */}
       <form onSubmit={onSubmit} className="mb-10 rounded-2xl border border-slate-200 bg-slate-50 p-5">

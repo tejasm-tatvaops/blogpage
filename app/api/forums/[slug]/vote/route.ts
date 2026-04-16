@@ -3,6 +3,7 @@ import { voteForumPost } from "@/lib/forumService";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { forumVoteLimiter, getRateLimitKey, rateLimitResponse, rateLimitHeaders } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
+import { createNotification } from "@/lib/notificationService";
 
 export async function POST(
   request: Request,
@@ -36,6 +37,15 @@ export async function POST(
         return NextResponse.json({ error: "You have already voted on this post." }, { status: 409 });
       }
       return NextResponse.json({ error: "Post not found." }, { status: 404 });
+    }
+
+    if (result.creator_fingerprint && result.creator_fingerprint !== fingerprintId) {
+      await createNotification({
+        type: "vote",
+        post_id: result.id,
+        recipient_key: `fp:${result.creator_fingerprint}`,
+        message: `Your post received a ${direction === "up" ? "new upvote" : "new downvote"}.`,
+      });
     }
 
     return NextResponse.json(

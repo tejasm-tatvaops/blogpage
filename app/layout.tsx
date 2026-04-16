@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Script from "next/script";
 import { Navbar } from "@/components/layout/Navbar";
 import { UnhandledRejectionGuard } from "@/components/system/UnhandledRejectionGuard";
+import { ensureActivityRunnerStarted } from "@/lib/activityRunner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  ensureActivityRunnerStarted();
   return (
     <html lang="en">
       <body>

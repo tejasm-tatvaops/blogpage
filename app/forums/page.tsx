@@ -88,6 +88,7 @@ export default function ForumsPage() {
 
   // Apply personalisation boost client-side for hot feed only
   const displayPosts = sort === "hot" ? applyPersonalisationBoost(posts) : posts;
+  const trendingPosts = displayPosts.filter((post) => post.is_trending).slice(0, 3);
 
   const handleTagClick = (tag: string | null) => {
     if (tag) recordTagClick(tag);
@@ -184,6 +185,22 @@ export default function ForumsPage() {
         <ForumListSkeleton count={PAGE_SIZE} />
       ) : (
         <>
+          {trendingPosts.length > 0 && (
+            <section className="mb-6 rounded-2xl border border-orange-200 bg-orange-50/50 p-4">
+              <h3 className="mb-2 text-sm font-bold text-orange-800">Trending now</h3>
+              <div className="space-y-2">
+                {trendingPosts.map((post) => (
+                  <Link
+                    key={post.id}
+                    href={`/forums/${post.slug}`}
+                    className="block rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-orange-100/40"
+                  >
+                    🔥 {post.title}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
           <ForumList posts={displayPosts} />
 
           {page < totalPages && (

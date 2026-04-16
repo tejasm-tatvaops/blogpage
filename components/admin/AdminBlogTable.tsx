@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import type { BlogPost } from "@/lib/blogService";
 
 type AdminBlogTableProps = {
@@ -30,8 +30,28 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
   const [bulkResult, setBulkResult] = useState<string | null>(null);
   const [isAutopopulating, setIsAutopopulating] = useState(false);
   const [autopopulateResult, setAutopopulateResult] = useState<string | null>(null);
+  const [liveActivityEnabled, setLiveActivityEnabled] = useState(false);
+  const [togglingLiveActivity, setTogglingLiveActivity] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadStatus = async () => {
+      try {
+        const response = await fetch("/api/admin/activity/toggle", { method: "GET" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { enabled?: boolean };
+        if (!cancelled) setLiveActivityEnabled(payload.enabled === true);
+      } catch {
+        // ignore non-critical status fetch failures
+      }
+    };
+    void loadStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -150,6 +170,27 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
     router.push("/admin/login");
   };
 
+  const onToggleLiveActivity = async () => {
+    if (togglingLiveActivity) return;
+    const next = !liveActivityEnabled;
+    try {
+      setError(null);
+      setTogglingLiveActivity(true);
+      const response = await fetch("/api/admin/activity/toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: next }),
+      });
+      const payload = (await response.json()) as { error?: string; enabled?: boolean };
+      if (!response.ok) throw new Error(payload.error ?? "Failed to update live activity state.");
+      setLiveActivityEnabled(payload.enabled === true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to toggle live activity.");
+    } finally {
+      setTogglingLiveActivity(false);
+    }
+  };
+
   return (
     <section className="mx-auto w-full max-w-6xl px-6 py-12">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -180,6 +221,20 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
             className="rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-violet-800 disabled:opacity-50"
           >
             {isAutopopulating ? "Populating..." : "AutoPopulate Content"}
+          </button>
+          <button
+            type="button"
+            onClick={onToggleLiveActivity}
+            disabled={togglingLiveActivity}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold !text-white transition disabled:opacity-50 ${
+              liveActivityEnabled ? "bg-emerald-700 hover:bg-emerald-800" : "bg-slate-500 hover:bg-slate-600"
+            }`}
+          >
+            {togglingLiveActivity
+              ? "Updating..."
+              : liveActivityEnabled
+                ? "Live Activity: ON"
+                : "Live Activity: OFF"}
           </button>
           <button
             type="button"
