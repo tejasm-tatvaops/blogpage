@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <section className="mx-auto w-full max-w-6xl px-6 py-12 md:py-16">
+    <section className="mx-auto w-full max-w-[1500px] px-6 py-12 md:py-16">
       <div className="overflow-hidden rounded-3xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-indigo-50 p-8 text-slate-900 shadow-sm md:p-12">
         <p className="mb-4 inline-flex rounded-full border border-sky-200 bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">
           TatvaOps Platform

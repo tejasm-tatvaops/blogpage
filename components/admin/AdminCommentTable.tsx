@@ -43,7 +43,7 @@ export function AdminCommentTable({ comments, initialType = "all" }: AdminCommen
   };
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-6 py-12">
+    <section className="mx-auto w-full max-w-[1500px] px-6 py-12">
       <div className="mb-6 flex items-center justify-between gap-3">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Comment Moderation</h1>
         <Link

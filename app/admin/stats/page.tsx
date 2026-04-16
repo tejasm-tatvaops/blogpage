@@ -39,7 +39,7 @@ export default async function AdminStatsPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
+        <div className="mx-auto flex max-w-[1500px] items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href="/admin/blog"
@@ -54,7 +54,7 @@ export default async function AdminStatsPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl space-y-8 px-6 py-8">
+      <div className="mx-auto max-w-[1500px] space-y-8 px-6 py-8">
 
         {/* ── Stat cards ── */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">

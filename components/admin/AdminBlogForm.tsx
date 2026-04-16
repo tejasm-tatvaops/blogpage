@@ -419,7 +419,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
 
       {/* ── Top bar ── */}
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 py-3">
+        <div className="mx-auto flex max-w-[1500px] items-center gap-4 px-6 py-3">
           {/* Back */}
           <button
             type="button"
@@ -497,7 +497,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-6 py-8">
+      <div className="mx-auto max-w-[1500px] px-6 py-8">
 
         {/* ── AI Generator bar ── */}
         <div className="mb-8 overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 shadow-sm">

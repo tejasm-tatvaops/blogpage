@@ -114,7 +114,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
             className="flex h-screen flex-col items-center justify-center px-4 py-20 md:px-8"
             style={{ scrollSnapAlign: "start" }}
           >
-            <div className="w-full max-w-6xl overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#070b2a] via-[#060a25] to-[#030617] shadow-2xl">
+            <div className="w-full max-w-[1500px] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#070b2a] via-[#060a25] to-[#030617] shadow-2xl">
               <div className="grid grid-cols-1 md:grid-cols-[1.4fr_0.6fr]">
                 <div className="p-6 sm:p-8 md:p-12">
                   {/* Tags */}

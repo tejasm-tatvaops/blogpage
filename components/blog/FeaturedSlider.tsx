@@ -56,7 +56,7 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
   if (total === 0) return null;
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-6 pt-10">
+    <section className="mx-auto w-full max-w-[1500px] px-6 pt-10">
       <div
         className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 shadow-xl"
         onMouseEnter={() => setIsHovered(true)}
