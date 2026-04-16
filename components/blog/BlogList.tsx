@@ -198,6 +198,12 @@ export function BlogList({ posts, categories, activeCategory, query, sort }: Blo
           >
             Search
           </button>
+          <Link
+            href="/admin/blog/new"
+            className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-sky-800"
+          >
+            New post
+          </Link>
         </form>
 
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 pb-6">

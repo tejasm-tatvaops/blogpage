@@ -102,7 +102,7 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
       setBulkResult(null);
       setIsBulkGenerating(true);
 
-      const response = await fetch("/api/generate-bulk-blogs", {
+      const response = await fetch("/api/admin/generate-blogs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ count: 3, random: true }),

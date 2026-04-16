@@ -23,6 +23,7 @@ const PAGE_SIZE = 20;
 export default function ForumsPage() {
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [sort, setSort] = useState<ForumFeedSort>("hot");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -83,12 +84,17 @@ export default function ForumsPage() {
     void fetchPosts(sort, nextPage, activeTag, true);
   };
 
-  // All unique tags from current posts for quick filtering
-  const allTags = [...new Set(posts.flatMap((p) => p.tags))].slice(0, 20);
-
   // Apply personalisation boost client-side for hot feed only
-  const displayPosts = sort === "hot" ? applyPersonalisationBoost(posts) : posts;
+  const displayPostsBase = sort === "hot" ? applyPersonalisationBoost(posts) : posts;
+  const query = search.trim().toLowerCase();
+  const displayPosts = query
+    ? displayPostsBase.filter((post) => {
+        const signal = `${post.title} ${post.excerpt} ${post.tags.join(" ")}`.toLowerCase();
+        return signal.includes(query);
+      })
+    : displayPostsBase;
   const trendingPosts = displayPosts.filter((post) => post.is_trending).slice(0, 3);
+  const topTags = [...new Set(displayPosts.flatMap((p) => p.tags))].slice(0, 10);
 
   const handleTagClick = (tag: string | null) => {
     if (tag) recordTagClick(tag);
@@ -96,7 +102,7 @@ export default function ForumsPage() {
   };
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-3xl px-4 py-10">
+    <main className="mx-auto min-h-screen w-full max-w-[1380px] px-4 py-10 md:px-6">
       {/* Header */}
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -130,93 +136,121 @@ export default function ForumsPage() {
         </div>
       </div>
 
-      {/* Sort tabs */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        {SORT_OPTIONS.map(({ value, label, icon }) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setSort(value)}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-              sort === value
-                ? "bg-slate-900 !text-white shadow-sm"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-            }`}
-          >
-            <span aria-hidden>{icon} </span>
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tag pills */}
-      {allTags.length > 0 && (
-        <div className="mb-6 flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => setActiveTag(null)}
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${
-              !activeTag
-                ? "bg-indigo-600 !text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            All
-          </button>
-          {allTags.map((tag) => (
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {SORT_OPTIONS.map(({ value, label, icon }) => (
             <button
-              key={tag}
+              key={value}
               type="button"
-              onClick={() => handleTagClick(tag)}
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${
-                activeTag === tag
-                  ? "bg-indigo-600 !text-white"
-                  : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+              onClick={() => setSort(value)}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
+                sort === value
+                  ? "bg-slate-900 !text-white shadow-sm"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
-              #{tag}
+              <span aria-hidden>{icon} </span>
+              {label}
             </button>
           ))}
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search threads..."
+            className="ml-auto w-full min-w-[220px] rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 outline-none ring-indigo-500 transition focus:ring-2 sm:w-72"
+          />
         </div>
-      )}
 
-      {/* Feed */}
-      {loading ? (
-        <ForumListSkeleton count={PAGE_SIZE} />
-      ) : (
-        <>
-          {trendingPosts.length > 0 && (
-            <section className="mb-6 rounded-2xl border border-orange-200 bg-orange-50/50 p-4">
-              <h3 className="mb-2 text-sm font-bold text-orange-800">Trending now</h3>
-              <div className="space-y-2">
-                {trendingPosts.map((post) => (
-                  <Link
-                    key={post.id}
-                    href={`/forums/${post.slug}`}
-                    className="block rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-orange-100/40"
+        {activeTag && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-slate-500">
+              Filtering by <span className="text-indigo-700">#{activeTag}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setActiveTag(null)}
+              className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 transition hover:bg-slate-200"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <section>
+          {loading ? (
+            <ForumListSkeleton count={PAGE_SIZE} />
+          ) : (
+            <>
+              {trendingPosts.length > 0 && (
+                <section className="mb-6 rounded-2xl border border-orange-200 bg-orange-50/50 p-4">
+                  <h3 className="mb-2 text-sm font-bold text-orange-800">Trending now</h3>
+                  <div className="space-y-2">
+                    {trendingPosts.map((post) => (
+                      <Link
+                        key={post.id}
+                        href={`/forums/${post.slug}`}
+                        className="block rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-orange-100/40"
+                      >
+                        🔥 {post.title}
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
+              <ForumList posts={displayPosts} />
+
+              {page < totalPages && (
+                <div className="mt-8 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
                   >
-                    🔥 {post.title}
-                  </Link>
+                    {loadingMore ? "Loading…" : "Load more"}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+
+        <aside className="space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-900">Trending tags</h3>
+            {topTags.length === 0 ? (
+              <p className="mt-2 text-xs text-slate-500">No tags yet.</p>
+            ) : (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {topTags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => handleTagClick(tag)}
+                    className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                  >
+                    #{tag}
+                  </button>
                 ))}
               </div>
-            </section>
-          )}
-          <ForumList posts={displayPosts} />
+            )}
+          </div>
 
-          {page < totalPages && (
-            <div className="mt-8 flex justify-center">
-              <button
-                type="button"
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
-              >
-                {loadingMore ? "Loading…" : "Load more"}
-              </button>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-900">Quick actions</h3>
+            <div className="mt-3 space-y-2">
+              <Link href="/forums/new" className="block rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                Start a new thread
+              </Link>
+              <Link href="/blog" className="block rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                Read related blog posts
+              </Link>
             </div>
-          )}
-        </>
-      )}
+          </div>
+        </aside>
+      </div>
 
       {/* Swipe overlay */}
       {swipeMode && posts.length > 0 && (

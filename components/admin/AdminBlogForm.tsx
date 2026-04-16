@@ -47,6 +47,23 @@ type LinkResult = {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const AUTOSAVE_KEY = "admin-blog-form-draft";
 
+const normalizeTags = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value
+      .map((tag) => String(tag).trim().toLowerCase())
+      .filter(Boolean)
+      .slice(0, 10);
+  }
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((tag) => tag.trim().toLowerCase())
+      .filter(Boolean)
+      .slice(0, 10);
+  }
+  return [];
+};
+
 const createSlug = (value: string): string =>
   value
     .toLowerCase()
@@ -83,7 +100,7 @@ const defaultForm = (post?: BlogPost): FormState => ({
   cover_image: post?.cover_image ?? "",
   author: post?.author ?? "TatvaOps Editorial",
   category: post?.category ?? "",
-  tags: post?.tags ?? [],
+  tags: normalizeTags(post?.tags),
   published: post?.published ?? false,
   publish_at: toDatetimeLocal(post?.publish_at),
 });
@@ -157,7 +174,15 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
     if (mode === "create" && typeof window !== "undefined") {
       try {
         const saved = window.localStorage.getItem(AUTOSAVE_KEY);
-        if (saved) return JSON.parse(saved) as FormState;
+        if (saved) {
+          const parsed = JSON.parse(saved) as Partial<FormState>;
+          const base = defaultForm(initialPost);
+          return {
+            ...base,
+            ...parsed,
+            tags: normalizeTags(parsed.tags),
+          };
+        }
       } catch {
         // start fresh
       }
@@ -193,20 +218,24 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
   // ── Tag helpers ──
   const addTag = (raw: string) => {
     const tag = raw.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
-    if (!tag || form.tags.includes(tag) || form.tags.length >= 10) return;
-    setForm((prev) => ({ ...prev, tags: [...prev.tags, tag] }));
+    const currentTags = normalizeTags(form.tags);
+    if (!tag || currentTags.includes(tag) || currentTags.length >= 10) return;
+    setForm((prev) => ({ ...prev, tags: [...normalizeTags(prev.tags), tag] }));
   };
 
   const removeTag = (tag: string) =>
-    setForm((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }));
+    setForm((prev) => ({ ...prev, tags: normalizeTags(prev.tags).filter((t) => t !== tag) }));
 
   const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
       addTag(tagInput);
       setTagInput("");
-    } else if (e.key === "Backspace" && tagInput === "" && form.tags.length > 0) {
-      removeTag(form.tags[form.tags.length - 1]);
+    } else if (e.key === "Backspace" && tagInput === "") {
+      const currentTags = normalizeTags(form.tags);
+      if (currentTags.length > 0) {
+        removeTag(currentTags[currentTags.length - 1]!);
+      }
     }
   };
 
@@ -243,7 +272,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
           slug: json.slug ?? createSlug(json.title ?? prev.title),
           excerpt: json.excerpt ?? prev.excerpt,
           content: json.content ?? prev.content,
-          tags: json.tags ?? prev.tags,
+          tags: normalizeTags(json.tags ?? prev.tags),
           category: json.category ?? prev.category,
           cover_image: json.cover_image ?? prev.cover_image,
         }));
@@ -282,6 +311,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
     try {
       const payload = {
         ...form,
+        tags: normalizeTags(form.tags),
         published: publishOverride !== undefined ? publishOverride : form.published,
         slug: form.slug || createSlug(form.title),
         publish_at: form.publish_at ? new Date(form.publish_at).toISOString() : null,
@@ -388,7 +418,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
     <div className="min-h-screen bg-slate-50">
 
       {/* ── Top bar ── */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-sm">
+      <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 py-3">
           {/* Back */}
           <button

@@ -226,11 +226,9 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
             </div>
           </article>
 
-          {/* ── Sidebar column ──
-               Outer div: self-start stops the flex item from stretching to article height.
-               Inner div: sticky top-24 is then unambiguous. */}
+          {/* ── Sidebar column ── */}
           <div className="w-full lg:w-[290px] lg:flex-shrink-0 lg:self-start">
-            <div className="lg:sticky lg:top-24">
+            <div>
               <BlogSidebar
                 post={post}
                 relatedPosts={relatedPosts}

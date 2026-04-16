@@ -70,7 +70,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
   return (
     <div className="fixed inset-0 z-50 bg-slate-950">
       {/* Top bar */}
-      <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-5 py-4">
+      <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-5 py-4 md:px-8">
         <span className="text-sm font-semibold text-white/70">
           {activeIndex + 1} / {posts.length}
         </span>
@@ -111,67 +111,99 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
           <div
             key={post.id}
             data-slide={i}
-            className="flex h-screen flex-col items-center justify-center px-6 py-20"
+            className="flex h-screen flex-col items-center justify-center px-4 py-20 md:px-8"
             style={{ scrollSnapAlign: "start" }}
           >
-            <div className="w-full max-w-lg">
-              {/* Tags */}
-              {post.tags.length > 0 && (
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {post.tags.slice(0, 3).map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full bg-indigo-500/20 px-2.5 py-0.5 text-xs font-medium text-indigo-300"
-                    >
-                      #{tag}
+            <div className="w-full max-w-6xl overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#070b2a] via-[#060a25] to-[#030617] shadow-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-[1.4fr_0.6fr]">
+                <div className="p-6 sm:p-8 md:p-12">
+                  {/* Tags */}
+                  {post.tags.length > 0 && (
+                    <div className="mb-5 flex flex-wrap gap-2">
+                      {post.tags.slice(0, 5).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-indigo-500/20 px-2.5 py-0.5 text-xs font-medium text-indigo-300"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Title */}
+                  <h2 className="mb-4 text-3xl font-extrabold leading-tight text-white sm:text-4xl md:text-5xl">
+                    {post.title}
+                  </h2>
+
+                  {/* Excerpt */}
+                  <p className="mb-7 max-w-3xl text-base leading-8 text-slate-300 sm:text-lg">
+                    {post.excerpt}
+                  </p>
+
+                  {/* Stats row */}
+                  <div className="mb-8 flex flex-wrap items-center gap-5 text-sm text-slate-300">
+                    <span className="inline-flex items-center gap-1.5">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-indigo-400">
+                        <path d="M12 19V5M5 12l7-7 7 7" />
+                      </svg>
+                      <span className="font-semibold text-white">{formatCount(post.upvote_count)}</span>
                     </span>
-                  ))}
+                    <span className="inline-flex items-center gap-1.5">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
+                      {formatCount(post.comment_count)} replies
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      {formatCount(post.view_count)} views
+                    </span>
+                  </div>
+
+                  {/* CTA */}
+                  <div className="flex flex-wrap gap-3">
+                    <Link
+                      href={`/forums/${post.slug}`}
+                      className="flex-1 rounded-xl bg-indigo-600 px-5 py-3 text-center text-sm font-semibold !text-white transition hover:bg-indigo-500 sm:text-base"
+                    >
+                      Read full post →
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => scrollTo(i + 1)}
+                      disabled={i === posts.length - 1}
+                      className="rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white disabled:opacity-30 sm:text-base"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
-              )}
 
-              {/* Title */}
-              <h2 className="mb-4 text-2xl font-bold leading-tight text-white sm:text-3xl">
-                {post.title}
-              </h2>
+                <div className="border-t border-white/10 bg-black/20 p-6 md:border-l md:border-t-0 md:p-8">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Thread info</p>
+                  <div className="mt-4 space-y-3 text-sm text-slate-300">
+                    <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
+                      <span>Author</span>
+                      <span className="font-medium text-white">{post.author_name}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
+                      <span>Score</span>
+                      <span className="font-medium text-white">{formatCount(post.upvote_count - post.downvote_count)}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
+                      <span>Replies</span>
+                      <span className="font-medium text-white">{formatCount(post.comment_count)}</span>
+                    </div>
+                  </div>
 
-              {/* Excerpt */}
-              <p className="mb-6 text-base leading-7 text-slate-300/80 line-clamp-4">
-                {post.excerpt}
-              </p>
-
-              {/* Stats row */}
-              <div className="mb-8 flex items-center gap-5 text-sm text-slate-400">
-                <span className="inline-flex items-center gap-1.5">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-indigo-400">
-                    <path d="M12 19V5M5 12l7-7 7 7" />
-                  </svg>
-                  <span className="font-semibold text-white">{formatCount(post.upvote_count)}</span>
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                  {formatCount(post.comment_count)} replies
-                </span>
-                <span className="ml-auto text-xs">{post.author_name}</span>
-              </div>
-
-              {/* CTA */}
-              <div className="flex gap-3">
-                <Link
-                  href={`/forums/${post.slug}`}
-                  className="flex-1 rounded-xl bg-indigo-600 py-3 text-center text-sm font-semibold !text-white transition hover:bg-indigo-500"
-                >
-                  Read full post →
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => scrollTo(i + 1)}
-                  disabled={i === posts.length - 1}
-                  className="rounded-xl border border-white/20 px-4 py-3 text-sm font-semibold text-white/70 transition hover:border-white/40 hover:text-white disabled:opacity-30"
-                >
-                  Next
-                </button>
+                  <p className="mt-6 text-xs text-slate-500">
+                    Swipe/scroll to move to the next card. Press <span className="text-slate-300">Esc</span> to close.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

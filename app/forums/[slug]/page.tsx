@@ -119,8 +119,8 @@ export default async function ForumThreadPage({ params }: PageProps) {
         <span>{post.view_count.toLocaleString()} views</span>
       </div>
 
-      {/* Sticky engagement bar */}
-      <div className="sticky top-[73px] z-10 -mx-4 mb-8 border-y border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm">
+      {/* Engagement bar */}
+      <div className="-mx-4 mb-8 border-y border-slate-200 bg-white px-4 py-3">
         <ForumVoteBar
           slug={post.slug}
           initialUpvotes={post.upvote_count}
