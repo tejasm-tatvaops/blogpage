@@ -3,6 +3,9 @@ import Link from "next/link";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 
 export function Navbar() {
+  const navPillClass =
+    "inline-flex items-center rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-900 hover:shadow";
+
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
@@ -17,19 +20,19 @@ export function Navbar() {
           />
         </Link>
 
-        <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium text-slate-600">
-          <Link href="/" className="transition hover:text-slate-900">
+        <nav className="flex flex-wrap items-center gap-2">
+          <Link href="/" className={navPillClass}>
             Home
           </Link>
-          <Link href="/blog" className="transition hover:text-slate-900">
+          <Link href="/blog" className={navPillClass}>
             Blogs
           </Link>
-          <Link href="/forums" className="transition hover:text-slate-900">
+          <Link href="/forums" className={navPillClass}>
             Forums
           </Link>
           <Link
             href="/saved"
-            className="inline-flex items-center gap-1 transition hover:text-slate-900"
+            className={`${navPillClass} gap-1.5`}
             aria-label="Saved articles"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -38,7 +41,7 @@ export function Navbar() {
             Saved
           </Link>
           <NotificationBell />
-          <Link href="/admin/login" className="transition hover:text-slate-900">
+          <Link href="/admin/login" className={navPillClass}>
             Admin
           </Link>
         </nav>
