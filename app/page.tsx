@@ -31,12 +31,6 @@ export default function HomePage() {
               >
                 Join Forums
               </Link>
-              <Link
-                href="/admin/blog"
-                className="inline-flex min-w-[150px] items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                Open CMS
-              </Link>
             </div>
           </div>
 
@@ -108,7 +102,7 @@ export default function HomePage() {
         <div>
           <h3 className="text-xl font-bold text-slate-900">Start with what you need now</h3>
           <p className="mt-2 text-sm text-slate-600">
-            Read practical guides, jump into active discussions, or go straight to CMS operations.
+            Read practical guides and jump into active discussions.
           </p>
         </div>
         <div className="mt-4 flex flex-wrap gap-3 md:mt-0">
@@ -123,12 +117,6 @@ export default function HomePage() {
             className="inline-flex min-w-[140px] items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Go to Forums
-          </Link>
-          <Link
-            href="/admin/blog"
-            className="inline-flex min-w-[140px] items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Manage Content
           </Link>
         </div>
       </div>
