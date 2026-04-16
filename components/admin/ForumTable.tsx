@@ -41,6 +41,8 @@ export function ForumTable() {
   const [tagFilter, setTagFilter] = useState("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [featureUpdatingId, setFeatureUpdatingId] = useState<string | null>(null);
+  const [isAutopopulating, setIsAutopopulating] = useState(false);
+  const [autopopulateResult, setAutopopulateResult] = useState<string | null>(null);
 
   const queryTags = useMemo(() => {
     const tags = new Set<string>();
@@ -142,6 +144,37 @@ export function ForumTable() {
     }
   };
 
+  const onAutopopulate = async () => {
+    if (isAutopopulating) return;
+    try {
+      setError(null);
+      setAutopopulateResult(null);
+      setIsAutopopulating(true);
+      const response = await fetch("/api/admin/autopopulate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: "forums", limit: 20 }),
+      });
+      const json = (await response.json()) as {
+        error?: string;
+        postsProcessed?: number;
+        commentsCreated?: number;
+        repliesCreated?: number;
+      };
+      if (!response.ok) {
+        if (response.status === 401) { router.push("/admin/login"); return; }
+        throw new Error(json.error ?? "AutoPopulate failed.");
+      }
+      setAutopopulateResult(
+        `Processed ${json.postsProcessed ?? 0} posts · ${json.commentsCreated ?? 0} comments · ${json.repliesCreated ?? 0} replies`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "AutoPopulate failed.");
+    } finally {
+      setIsAutopopulating(false);
+    }
+  };
+
   return (
     <section className="mx-auto w-full max-w-6xl px-6 py-12">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -159,10 +192,23 @@ export function ForumTable() {
           >
             Moderate forum comments
           </Link>
+          <button
+            type="button"
+            onClick={onAutopopulate}
+            disabled={isAutopopulating}
+            className="rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-violet-800 disabled:opacity-50"
+          >
+            {isAutopopulating ? "Populating..." : "AutoPopulate Content"}
+          </button>
         </div>
       </div>
 
       {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {autopopulateResult && (
+        <p className="mb-4 rounded bg-violet-50 px-3 py-2 text-sm text-violet-700">
+          AutoPopulate complete — {autopopulateResult}
+        </p>
+      )}
 
       <div className="mb-4 flex flex-wrap gap-3">
         <input

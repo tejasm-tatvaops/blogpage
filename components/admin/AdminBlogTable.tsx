@@ -28,6 +28,8 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
   const [bulkResult, setBulkResult] = useState<string | null>(null);
+  const [isAutopopulating, setIsAutopopulating] = useState(false);
+  const [autopopulateResult, setAutopopulateResult] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
 
@@ -111,6 +113,38 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
     }
   };
 
+  const onAutopopulate = async () => {
+    if (isAutopopulating) return;
+    try {
+      setError(null);
+      setAutopopulateResult(null);
+      setIsAutopopulating(true);
+      const response = await fetch("/api/admin/autopopulate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: "blogs", limit: 20 }),
+      });
+      const json = (await response.json()) as {
+        error?: string;
+        postsProcessed?: number;
+        commentsCreated?: number;
+        repliesCreated?: number;
+      };
+      if (!response.ok) {
+        if (response.status === 401) { router.push("/admin/login"); return; }
+        throw new Error(json.error ?? "AutoPopulate failed.");
+      }
+      setAutopopulateResult(
+        `Processed ${json.postsProcessed ?? 0} posts · ${json.commentsCreated ?? 0} comments · ${json.repliesCreated ?? 0} replies`,
+      );
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "AutoPopulate failed.");
+    } finally {
+      setIsAutopopulating(false);
+    }
+  };
+
   const onLogout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
     router.push("/admin/login");
@@ -141,6 +175,14 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
           </Link>
           <button
             type="button"
+            onClick={onAutopopulate}
+            disabled={isAutopopulating}
+            className="rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-violet-800 disabled:opacity-50"
+          >
+            {isAutopopulating ? "Populating..." : "AutoPopulate Content"}
+          </button>
+          <button
+            type="button"
             onClick={onGenerateBulk}
             disabled={isBulkGenerating}
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-slate-700 disabled:opacity-50"
@@ -169,6 +211,11 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
       {bulkResult && (
         <p className="mb-4 rounded bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
           {bulkResult}
+        </p>
+      )}
+      {autopopulateResult && (
+        <p className="mb-4 rounded bg-violet-50 px-3 py-2 text-sm text-violet-700">
+          AutoPopulate complete — {autopopulateResult}
         </p>
       )}
 
