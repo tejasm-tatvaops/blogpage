@@ -5,6 +5,7 @@ import { emitFeedEvent } from "@/lib/feedObservability";
 import { recordAuthorAffinity, recordInterest } from "@/lib/personaService";
 import { invalidateFeedCache } from "@/lib/feedCache";
 import { getPostBySlug } from "@/lib/blogService";
+import { getForumPostBySlug, registerForumDwellSignal } from "@/lib/forumService";
 
 const bodySchema = z.object({
   eventType: z.enum(["post_clicked", "post_liked", "dwell_time", "skip"]),
@@ -43,6 +44,10 @@ export async function POST(request: Request) {
     body.postSlug && (!body.author || body.eventType === "post_clicked" || body.eventType === "post_liked" || body.eventType === "skip")
       ? await getPostBySlug(body.postSlug).catch(() => null)
       : null;
+  const forumPostForSignals =
+    !postForSignals && body.postSlug
+      ? await getForumPostBySlug(body.postSlug).catch(() => null)
+      : null;
   const authorKey =
     safeAuthorKey ??
     postForSignals?.author.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-") ??
@@ -53,7 +58,7 @@ export async function POST(request: Request) {
     eventType: body.eventType,
     postSlug: body.postSlug,
     tags: body.tags ?? postForSignals?.tags ?? [],
-    category: body.category ?? postForSignals?.category ?? null,
+    category: body.category ?? postForSignals?.category ?? forumPostForSignals?.tags?.[0] ?? null,
     dwellMs: body.dwellMs,
     experimentId: body.experimentId,
     variantId: body.variantId,
@@ -66,8 +71,8 @@ export async function POST(request: Request) {
   if (body.eventType === "post_clicked" || body.eventType === "post_liked") {
     await recordInterest({
       identityKey,
-      tags: body.tags ?? postForSignals?.tags ?? [],
-      category: body.category ?? postForSignals?.category,
+      tags: body.tags ?? postForSignals?.tags ?? forumPostForSignals?.tags ?? [],
+      category: body.category ?? postForSignals?.category ?? forumPostForSignals?.tags?.[0],
       action: body.eventType === "post_liked" ? "like" : "view",
     });
     if (authorKey) {
@@ -84,8 +89,8 @@ export async function POST(request: Request) {
     const isFastSkip = body.eventType === "skip" && (body.dwellMs ?? 0) > 0 && (body.dwellMs ?? 0) < 2000;
     await recordInterest({
       identityKey,
-      tags: body.tags ?? postForSignals?.tags ?? [],
-      category: body.category ?? postForSignals?.category,
+      tags: body.tags ?? postForSignals?.tags ?? forumPostForSignals?.tags ?? [],
+      category: body.category ?? postForSignals?.category ?? forumPostForSignals?.tags?.[0],
       action: body.eventType === "skip" ? (isFastSkip ? "fast_skip" : "skip") : "low_dwell",
     });
     if (authorKey) {
@@ -96,6 +101,13 @@ export async function POST(request: Request) {
       });
     }
     await invalidateFeedCache(identityKey);
+    if (forumPostForSignals?.slug) {
+      await registerForumDwellSignal({
+        slug: forumPostForSignals.slug,
+        dwellMs: body.dwellMs,
+        isSkip: body.eventType === "skip",
+      });
+    }
   }
 
   return NextResponse.json({ ok: true });

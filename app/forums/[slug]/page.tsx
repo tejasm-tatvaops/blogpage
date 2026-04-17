@@ -119,11 +119,29 @@ export default async function ForumThreadPage({ params }: PageProps) {
       {/* Meta */}
       <div className="mb-6 flex flex-wrap items-center gap-3 text-sm text-slate-500">
         <span className="font-medium text-slate-700">{post.author_name}</span>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+          {post.author_reputation_tier}
+        </span>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+          🧠 {Math.round((post.quality_score ?? 0) * 100)}%
+        </span>
+        <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+          🔥 {Math.round((post.engagement_score ?? 0) * 100)}%
+        </span>
         <span aria-hidden>·</span>
         <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
         <span aria-hidden>·</span>
         <ForumViewCount slug={post.slug} initialCount={post.view_count} />
       </div>
+      {post.badges.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {post.badges.map((badge) => (
+            <span key={badge} className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
+              {badge === "Top Thinker" ? "🧠 Top Thinker" : badge === "Hot Contributor" ? "🔥 Hot Contributor" : "💬 Discussion Starter"}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Engagement bar */}
       <div className="-mx-4 mb-8 border-y border-slate-200 bg-white px-4 py-3">

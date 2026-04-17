@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { UserDirectory } from "@/components/users/UserDirectory";
+import { requireAdminPageAccess } from "@/lib/adminAuth";
 import { getPlatformViewTotals, getUserProfileViewTotals, getUserProfiles } from "@/lib/userProfileService";
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, fallback:
   ]);
 
 export default async function UsersPage() {
+  await requireAdminPageAccess();
   noStore();
   const now = Date.now();
   const cached = usersPageState.__tatvaUsersPageCache;

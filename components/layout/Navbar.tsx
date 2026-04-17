@@ -30,9 +30,6 @@ export function Navbar() {
           <Link href="/forums" className={navPillClass}>
             Forums
           </Link>
-          <Link href="/users" className={navPillClass}>
-            Users
-          </Link>
           <Link
             href="/saved"
             className={`${navPillClass} gap-1.5`}

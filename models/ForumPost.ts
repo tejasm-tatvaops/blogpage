@@ -8,12 +8,21 @@ const forumPostSchema = new mongoose.Schema(
     excerpt: { type: String, required: true, trim: true, maxlength: 300 },
     tags: { type: [String], default: [], index: true },
     author_name: { type: String, default: "Anonymous", trim: true, maxlength: 80 },
+    author_reputation_tier: { type: String, default: "member", trim: true, maxlength: 20 },
     upvote_count: { type: Number, default: 0, min: 0 },
     downvote_count: { type: Number, default: 0, min: 0 },
     // Reddit-style hot score: stored for fast index sort
     score: { type: Number, default: 0 },
     comment_count: { type: Number, default: 0, min: 0 },
     view_count: { type: Number, default: 0, min: 0 },
+    quality_score: { type: Number, default: 0, min: 0, max: 1, index: true },
+    engagement_score: { type: Number, default: 0, min: 0, max: 1, index: true },
+    final_rank_score: { type: Number, default: 0, min: 0, max: 1, index: true },
+    dwell_penalty_score: { type: Number, default: 0, min: 0 },
+    reply_depth_score: { type: Number, default: 0, min: 0 },
+    comment_quality_boost_score: { type: Number, default: 0, min: 0, max: 1 },
+    gamification_score: { type: Number, default: 0, index: true },
+    badges: { type: [String], default: [] },
     is_featured: { type: Boolean, default: false, index: true },
     is_trending: { type: Boolean, default: false, index: true },
     // Best answer: set by creator, references a Comment _id
@@ -33,6 +42,7 @@ const forumPostSchema = new mongoose.Schema(
 // Feed sort indexes
 forumPostSchema.index({ deleted_at: 1, created_at: -1 });
 forumPostSchema.index({ deleted_at: 1, score: -1, created_at: -1 });
+forumPostSchema.index({ deleted_at: 1, final_rank_score: -1, created_at: -1 });
 forumPostSchema.index({ deleted_at: 1, is_featured: -1, score: -1, created_at: -1 });
 forumPostSchema.index({ deleted_at: 1, upvote_count: -1, created_at: -1 });
 forumPostSchema.index({ deleted_at: 1, comment_count: -1, created_at: -1 });

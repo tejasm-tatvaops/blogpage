@@ -32,6 +32,10 @@ export type UserProfile = {
   last_forum_slug: string | null;
   reputation_score: number;
   reputation_tier: string;
+  forum_badges: string[];
+  forum_posting_streak_days: number;
+  forum_quality_streak_days: number;
+  forum_last_posted_at: string | null;
   interest_tags: Record<string, number>;
   behavior_type: UserBehaviorType;
   writing_tone: UserWritingTone;
@@ -94,6 +98,10 @@ const toUserProfile = (doc: {
   last_forum_slug?: string | null;
   reputation_score?: number;
   reputation_tier?: string;
+  forum_badges?: string[];
+  forum_posting_streak_days?: number;
+  forum_quality_streak_days?: number;
+  forum_last_posted_at?: Date | null;
   interest_tags?: Record<string, number>;
   behavior_type?: UserBehaviorType;
   writing_tone?: UserWritingTone;
@@ -125,6 +133,10 @@ const toUserProfile = (doc: {
   last_forum_slug: doc.last_forum_slug ?? null,
   reputation_score: doc.reputation_score ?? 0,
   reputation_tier: doc.reputation_tier ?? "member",
+  forum_badges: Array.isArray(doc.forum_badges) ? doc.forum_badges : [],
+  forum_posting_streak_days: doc.forum_posting_streak_days ?? 0,
+  forum_quality_streak_days: doc.forum_quality_streak_days ?? 0,
+  forum_last_posted_at: doc.forum_last_posted_at ? doc.forum_last_posted_at.toISOString() : null,
   interest_tags: (doc.interest_tags as Record<string, number> | undefined) ?? {},
   behavior_type: doc.behavior_type ?? "casual",
   writing_tone: doc.writing_tone ?? "casual",

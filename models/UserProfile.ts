@@ -82,6 +82,10 @@ const userProfileSchema = new mongoose.Schema(
       default: "member",
       index: true,
     },
+    forum_badges: { type: [String], default: [] },
+    forum_posting_streak_days: { type: Number, default: 0, min: 0 },
+    forum_quality_streak_days: { type: Number, default: 0, min: 0 },
+    forum_last_posted_at: { type: Date, default: null },
 
     // ── Navigation breadcrumbs ────────────────────────────────────────────────
     last_blog_slug: { type: String, default: null, trim: true },

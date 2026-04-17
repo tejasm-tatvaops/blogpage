@@ -199,6 +199,43 @@ function ActivityBadges({ user }: { user: UserProfile }) {
   );
 }
 
+function ForumGamification({ user }: { user: UserProfile }) {
+  const badges = (user.forum_badges ?? []).slice(0, 3);
+  if (badges.length === 0 && (user.forum_posting_streak_days ?? 0) <= 0 && (user.forum_quality_streak_days ?? 0) <= 0) {
+    return null;
+  }
+
+  const badgeLabel = (badge: string): string => {
+    if (badge === "Top Thinker") return "🧠 Top Thinker";
+    if (badge === "Hot Contributor") return "🔥 Hot Contributor";
+    if (badge === "Discussion Starter") return "💬 Discussion Starter";
+    return badge;
+  };
+
+  return (
+    <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Reputation highlights</p>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {badges.map((badge) => (
+          <span key={badge} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
+            {badgeLabel(badge)}
+          </span>
+        ))}
+        {(user.forum_posting_streak_days ?? 0) > 0 ? (
+          <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
+            📅 {user.forum_posting_streak_days}d posting streak
+          </span>
+        ) : null}
+        {(user.forum_quality_streak_days ?? 0) > 0 ? (
+          <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
+            ⭐ {user.forum_quality_streak_days}d quality streak
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps) {
   const initialTotals = totals ?? { blogViews: 0, forumViews: 0 };
   const initialUserTotals = userTotals ?? { blogViews: 0, forumViews: 0 };
@@ -215,6 +252,10 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "blog_views" | "forum_activity">("recent");
   const [photosOnly, setPhotosOnly] = useState(false);
+  const [tierFilter, setTierFilter] = useState<"all" | "elite" | "expert" | "contributor" | "member">("all");
+  const [segmentFilter, setSegmentFilter] = useState<"all" | "expert" | "contributor" | "reader" | "explorer">("all");
+  const [activeOnly, setActiveOnly] = useState(false);
+  const [gamifiedOnly, setGamifiedOnly] = useState(false);
   const [booting, setBooting] = useState(true);
   const [syncedAt, setSyncedAt] = useState<string>("");
 
@@ -343,11 +384,20 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
     const q = query.trim().toLowerCase();
     const filtered = resolvedUsers.filter((user) => {
       if (photosOnly && !isRealPhotoAvatar(user.avatar_url)) return false;
+      if (tierFilter !== "all" && user.reputation_tier !== tierFilter) return false;
+      const segment = getBehaviorSegment(user).label.toLowerCase() as "expert" | "contributor" | "reader" | "explorer";
+      if (segmentFilter !== "all" && segment !== segmentFilter) return false;
+      if (activeOnly && !user.is_active_now) return false;
+      if (gamifiedOnly && (user.forum_badges?.length ?? 0) === 0 && (user.forum_quality_streak_days ?? 0) <= 0) {
+        return false;
+      }
       if (!q) return true;
       return (
         user.display_name.toLowerCase().includes(q) ||
         user.about.toLowerCase().includes(q) ||
-        Object.keys(user.interest_tags).some((t) => t.includes(q))
+        Object.keys(user.interest_tags).some((t) => t.includes(q)) ||
+        user.reputation_tier.toLowerCase().includes(q) ||
+        (user.forum_badges ?? []).some((badge) => badge.toLowerCase().includes(q))
       );
     });
 
@@ -362,7 +412,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
       return new Date(b.last_seen_at).getTime() - new Date(a.last_seen_at).getTime();
     });
     return sorted;
-  }, [resolvedUsers, query, sortBy, photosOnly]);
+  }, [resolvedUsers, query, sortBy, photosOnly, tierFilter, segmentFilter, activeOnly, gamifiedOnly]);
 
   const safeTotals = resolvedTotals ?? { blogViews: 0, forumViews: 0 };
   const safeUserTotals = resolvedUserTotals ?? { blogViews: 0, forumViews: 0 };
@@ -447,6 +497,28 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           <option value="blog_views">Most blog views</option>
           <option value="forum_activity">Most forum active</option>
         </select>
+        <select
+          value={tierFilter}
+          onChange={(e) => setTierFilter(e.target.value as "all" | "elite" | "expert" | "contributor" | "member")}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+        >
+          <option value="all">All reputation</option>
+          <option value="elite">Elite</option>
+          <option value="expert">Expert</option>
+          <option value="contributor">Contributor</option>
+          <option value="member">Member</option>
+        </select>
+        <select
+          value={segmentFilter}
+          onChange={(e) => setSegmentFilter(e.target.value as "all" | "expert" | "contributor" | "reader" | "explorer")}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+        >
+          <option value="all">All segments</option>
+          <option value="expert">Expert</option>
+          <option value="contributor">Contributor</option>
+          <option value="reader">Reader</option>
+          <option value="explorer">Explorer</option>
+        </select>
         <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600">
           <input
             type="checkbox"
@@ -455,6 +527,25 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           />
           Real photos only
         </label>
+        <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={activeOnly}
+            onChange={(e) => setActiveOnly(e.target.checked)}
+          />
+          Active now
+        </label>
+        <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={gamifiedOnly}
+            onChange={(e) => setGamifiedOnly(e.target.checked)}
+          />
+          Has reputation highlights
+        </label>
+        <span className="ml-auto rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+          Showing {formatNumber(visibleUsers.length)} users
+        </span>
       </div>
 
       {helpfulUsers.length > 0 && (
@@ -521,10 +612,15 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
                   <p className="mt-1 text-xs text-slate-400">
                     {context.role} • {context.city} • {context.years} yrs exp
                   </p>
+                  <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">
+                    <span>Reputation</span>
+                    <span className="rounded-full bg-white/20 px-2 py-0.5">{formatNumber(user.reputation_score)}</span>
+                  </div>
                 </div>
               </div>
 
               <InterestTags tags={user.interest_tags} />
+              <ForumGamification user={user} />
               <ActivityBadges user={user} />
 
               <div className="mt-4 grid grid-cols-3 gap-2">

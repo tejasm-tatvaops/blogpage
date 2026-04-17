@@ -19,6 +19,13 @@ const formatCount = (n: number): string => {
   return String(n);
 };
 
+const reputationTone: Record<string, string> = {
+  elite: "bg-amber-100 text-amber-700",
+  expert: "bg-violet-100 text-violet-700",
+  contributor: "bg-sky-100 text-sky-700",
+  member: "bg-slate-100 text-slate-600",
+};
+
 export function ForumCard({ post }: ForumCardProps) {
   const avatarSrc = getAvatarForIdentity(`${post.author_name}|${post.id}`);
 
@@ -61,6 +68,14 @@ export function ForumCard({ post }: ForumCardProps) {
                 Trending
               </span>
             )}
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${reputationTone[post.author_reputation_tier] ?? reputationTone.member}`}>
+              {post.author_reputation_tier}
+            </span>
+            {(post.badges ?? []).slice(0, 2).map((badge) => (
+              <span key={badge} className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
+                {badge === "Top Thinker" ? "🧠 Top Thinker" : badge === "Hot Contributor" ? "🔥 Hot Contributor" : "💬 Discussion Starter"}
+              </span>
+            ))}
           </div>
 
           <h2 className="line-clamp-2 text-[1.72rem] font-bold leading-snug text-slate-900 transition group-hover:text-indigo-700">
@@ -69,6 +84,12 @@ export function ForumCard({ post }: ForumCardProps) {
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{post.excerpt}</p>
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+              🧠 Quality {Math.round((post.quality_score ?? 0) * 100)}%
+            </span>
+            <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+              🔥 Engagement {Math.round((post.engagement_score ?? 0) * 100)}%
+            </span>
             <span className="font-medium text-slate-700">{post.author_name}</span>
             <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
 

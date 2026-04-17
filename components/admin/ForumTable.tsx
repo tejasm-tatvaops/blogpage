@@ -218,19 +218,43 @@ export function ForumTable() {
     <section className="mx-auto w-full max-w-[1500px] px-6 py-12">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Forums</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/admin/blog"
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            Blog CMS
-          </Link>
-          <Link
-            href="/admin/comments?type=forum"
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            Moderate forum comments
-          </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2">
+            <span className="px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Content</span>
+            <Link
+              href="/admin/blog"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Blogs
+            </Link>
+            <Link
+              href="/admin/forums"
+              className="rounded-lg border border-slate-300 bg-slate-900 px-4 py-2 text-sm font-medium !text-white transition hover:bg-slate-800"
+            >
+              Forums
+            </Link>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2">
+            <span className="px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">System</span>
+            <Link
+              href="/users"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Users
+            </Link>
+            <Link
+              href="/admin/stats"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Analytics
+            </Link>
+            <Link
+              href="/admin/comments?type=forum"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Moderate forum comments
+            </Link>
+          </div>
           <button
             type="button"
             onClick={onAutopopulate}

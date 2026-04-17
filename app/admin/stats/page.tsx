@@ -40,17 +40,37 @@ export default async function AdminStatsPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between">
+        <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
+            <h1 className="text-sm font-semibold text-slate-800">Analytics</h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Content</span>
             <Link
               href="/admin/blog"
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-              Back
+              Blogs
             </Link>
-            <span className="h-5 w-px bg-slate-200" />
-            <h1 className="text-sm font-semibold text-slate-800">Analytics</h1>
+            <Link
+              href="/admin/forums"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Forums
+            </Link>
+            <span className="ml-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">System</span>
+            <Link
+              href="/users"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Users
+            </Link>
+            <Link
+              href="/admin/stats"
+              className="rounded-lg border border-slate-300 bg-slate-900 px-3 py-1.5 text-sm font-medium !text-white transition hover:bg-slate-800"
+            >
+              Analytics
+            </Link>
           </div>
         </div>
       </header>
