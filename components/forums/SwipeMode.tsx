@@ -174,7 +174,6 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
         eventType,
         postSlug: post.slug,
         tags: post.tags,
-        category: post.category,
         dwellMs,
         interactionDepth,
       }),
@@ -212,7 +211,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
   const visibleDots = posts.slice(visibleDotStart, visibleDotEnd);
   const topTags = [...new Set(posts.flatMap((p) => p.tags).filter(Boolean))].slice(0, 12);
   const activePost = posts[activeIndex];
-  const interestSignal = activePost?.tags[0] ?? activePost?.category ?? "construction";
+  const interestSignal = activePost?.tags[0] ?? "construction";
   const progressPct = posts.length > 1 ? ((activeIndex + 1) / posts.length) * 100 : 100;
   const progressComplete = progressPct >= 100;
   const easingPool: [number, number, number, number][] = [
@@ -222,7 +221,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
   ];
   const transitionEase = easingPool[activeIndex % easingPool.length];
   const toneForPost = (post: ForumPost): string => {
-    const signal = `${post.category ?? ""} ${post.tags.join(" ")}`.toLowerCase();
+    const signal = `${post.title} ${post.tags.join(" ")}`.toLowerCase();
     if (signal.includes("design") || signal.includes("interior")) return "from-indigo-500/20 via-transparent to-transparent";
     if (signal.includes("cost") || signal.includes("budget")) return "from-amber-500/20 via-transparent to-transparent";
     if (signal.includes("material") || signal.includes("concrete")) return "from-emerald-500/20 via-transparent to-transparent";
