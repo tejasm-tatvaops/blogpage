@@ -40,7 +40,8 @@ export default async function UsersPage() {
     return <UserDirectory users={cached.users} totals={cached.totals} userTotals={cached.userTotals} />;
   }
 
-  const userLimit = process.env.NODE_ENV === "development" ? 400 : 1000;
+  // Keep a full slice in dev so "real photos only" can surface mixed-avatar profiles.
+  const userLimit = 1000;
   const [users, totals, userTotals] = await Promise.all([
     withTimeout(getUserProfiles(userLimit).catch(() => []), 3500, []),
     withTimeout(getPlatformViewTotals().catch(() => ({ blogViews: 0, forumViews: 0 })), 2000, { blogViews: 0, forumViews: 0 }),

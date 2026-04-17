@@ -1,4 +1,5 @@
 import mongoose, { type InferSchemaType, type Model } from "mongoose";
+import { USER_BEHAVIOR_TYPES, USER_WRITING_TONES } from "@/lib/userBehavior";
 
 /**
  * Reputation tiers — unlocked by cumulative reputation_score:
@@ -47,6 +48,27 @@ const userProfileSchema = new mongoose.Schema(
     // Updated by personaService on every meaningful interaction.
     // Stored as a plain object (not Map) for lean-query compatibility.
     interest_tags: { type: mongoose.Schema.Types.Mixed, default: {} },
+    behavior_type: {
+      type: String,
+      enum: USER_BEHAVIOR_TYPES,
+      default: "casual",
+      index: true,
+    },
+    writing_tone: {
+      type: String,
+      enum: USER_WRITING_TONES,
+      default: "casual",
+    },
+    active_start_hour: { type: Number, default: 9, min: 0, max: 23 },
+    active_end_hour: { type: Number, default: 19, min: 0, max: 23 },
+    weekend_activity_multiplier: { type: Number, default: 1, min: 0.25, max: 2.5 },
+    burstiness: { type: Number, default: 0.3, min: 0, max: 1 },
+    silence_bias: { type: Number, default: 0.4, min: 0, max: 1 },
+    emoji_level: { type: Number, default: 1, min: 0, max: 3 },
+    social_cluster: { type: String, default: "cluster-1", trim: true, maxlength: 50, index: true },
+    frequent_peer_keys: { type: [String], default: [] },
+    topic_focus_history: { type: [String], default: [] },
+    topic_shift_count: { type: Number, default: 0 },
 
     // ── Reputation (forum + cross-platform) ───────────────────────────────────
     reputation_score: { type: Number, default: 0, min: 0, index: true },
@@ -72,6 +94,7 @@ userProfileSchema.index({ created_at: -1 });
 userProfileSchema.index({ blog_views: -1, last_seen_at: -1 });
 userProfileSchema.index({ forum_posts: -1, forum_comments: -1, last_seen_at: -1 });
 userProfileSchema.index({ reputation_score: -1, last_seen_at: -1 }); // leaderboard queries
+userProfileSchema.index({ behavior_type: 1, social_cluster: 1, last_seen_at: -1 });
 
 export type UserProfileSchemaType = InferSchemaType<typeof userProfileSchema>;
 export type UserProfileModelType = Model<UserProfileSchemaType>;

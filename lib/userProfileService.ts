@@ -7,8 +7,14 @@ import { ForumVoteModel } from "@/models/ForumVote";
 import { ViewEventModel } from "@/models/ViewEvent";
 import { BlogModel } from "@/models/Blog";
 import { FAKE_USERS } from "@/lib/fakeUsers";
-import { getAvatarForIdentity, getRealPhotoForIdentity, isRealPhotoAvatar } from "@/lib/avatar";
+import {
+  getAvatarForIdentity,
+  getGeneratedAvatarForIdentity,
+  getRealPhotoForIdentity,
+  isRealPhotoAvatar,
+} from "@/lib/avatar";
 import { recordInterest, type PersonaAction } from "@/lib/personaService";
+import { buildBehaviorProfile, isLikelyActiveNow, type UserBehaviorType, type UserWritingTone } from "@/lib/userBehavior";
 
 export type UserProfile = {
   id: string;
@@ -27,6 +33,19 @@ export type UserProfile = {
   reputation_score: number;
   reputation_tier: string;
   interest_tags: Record<string, number>;
+  behavior_type: UserBehaviorType;
+  writing_tone: UserWritingTone;
+  active_start_hour: number;
+  active_end_hour: number;
+  weekend_activity_multiplier: number;
+  burstiness: number;
+  silence_bias: number;
+  emoji_level: number;
+  social_cluster: string;
+  frequent_peer_keys: string[];
+  topic_focus_history: string[];
+  topic_shift_count: number;
+  is_active_now: boolean;
   created_at: string;
   last_seen_at: string;
 };
@@ -76,6 +95,18 @@ const toUserProfile = (doc: {
   reputation_score?: number;
   reputation_tier?: string;
   interest_tags?: Record<string, number>;
+  behavior_type?: UserBehaviorType;
+  writing_tone?: UserWritingTone;
+  active_start_hour?: number;
+  active_end_hour?: number;
+  weekend_activity_multiplier?: number;
+  burstiness?: number;
+  silence_bias?: number;
+  emoji_level?: number;
+  social_cluster?: string;
+  frequent_peer_keys?: string[];
+  topic_focus_history?: string[];
+  topic_shift_count?: number;
   created_at: Date;
   last_seen_at: Date;
 }): UserProfile => ({
@@ -95,6 +126,23 @@ const toUserProfile = (doc: {
   reputation_score: doc.reputation_score ?? 0,
   reputation_tier: doc.reputation_tier ?? "member",
   interest_tags: (doc.interest_tags as Record<string, number> | undefined) ?? {},
+  behavior_type: doc.behavior_type ?? "casual",
+  writing_tone: doc.writing_tone ?? "casual",
+  active_start_hour: doc.active_start_hour ?? 9,
+  active_end_hour: doc.active_end_hour ?? 19,
+  weekend_activity_multiplier: doc.weekend_activity_multiplier ?? 1,
+  burstiness: doc.burstiness ?? 0.3,
+  silence_bias: doc.silence_bias ?? 0.4,
+  emoji_level: doc.emoji_level ?? 1,
+  social_cluster: doc.social_cluster ?? "cluster-1",
+  frequent_peer_keys: Array.isArray(doc.frequent_peer_keys) ? doc.frequent_peer_keys : [],
+  topic_focus_history: Array.isArray(doc.topic_focus_history) ? doc.topic_focus_history : [],
+  topic_shift_count: doc.topic_shift_count ?? 0,
+  is_active_now: isLikelyActiveNow(
+    doc.active_start_hour ?? 9,
+    doc.active_end_hour ?? 19,
+    doc.weekend_activity_multiplier ?? 1,
+  ),
   created_at: doc.created_at.toISOString(),
   last_seen_at: doc.last_seen_at.toISOString(),
 });
@@ -114,7 +162,32 @@ const getIdentity = (request: Request): { identityKey: string; fingerprintId: st
   };
 };
 
-const buildAvatarUrl = (seed: string): string => getAvatarForIdentity(seed);
+const FEMALE_FIRST_NAMES = new Set(
+  [
+    "priya", "sneha", "kavya", "ananya", "meera", "pooja", "lakshmi", "nisha", "divya", "sunita",
+    "bhavna", "rekha", "chitra", "asha", "swati", "anaya", "diya", "aadhya", "myra", "aarohi",
+    "anika", "ira", "kiara", "saanvi",
+  ],
+);
+const MALE_FIRST_NAMES = new Set(
+  [
+    "rahul", "amit", "deepak", "suresh", "vikram", "ravi", "arjun", "kiran", "sanjay", "rajesh",
+    "arun", "mohan", "ajay", "prakash", "nikhil", "aarav", "vivaan", "aditya", "vihaan", "reyansh",
+    "ishaan", "krish", "kabir", "sai",
+  ],
+);
+
+const inferGenderFromDisplayName = (displayName?: string | null): "male" | "female" | null => {
+  if (!displayName) return null;
+  const first = displayName.trim().split(/\s+/)[0]?.toLowerCase().replace(/[^a-z]/g, "");
+  if (!first) return null;
+  if (FEMALE_FIRST_NAMES.has(first)) return "female";
+  if (MALE_FIRST_NAMES.has(first)) return "male";
+  return null;
+};
+
+const buildAvatarUrl = (seed: string, displayName?: string | null): string =>
+  getAvatarForIdentity(seed, { genderPreference: inferGenderFromDisplayName(displayName) });
 
 const buildDisplayName = (identityKey: string): string => {
   const clean = identityKey.replace(/[^a-zA-Z0-9]/g, "").slice(-6).toUpperCase();
@@ -133,7 +206,11 @@ const compactHash = (value: string): string => {
   return Math.abs(hash).toString(36);
 };
 
-const buildHistoricalAvatar = (identityKey: string): string => buildAvatarUrl(identityKey);
+const buildHistoricalAvatar = (identityKey: string, displayName?: string | null): string =>
+  buildAvatarUrl(identityKey, displayName);
+
+const buildBehaviorSeed = (identityKey: string, displayName?: string | null): ReturnType<typeof buildBehaviorProfile> =>
+  buildBehaviorProfile(`${identityKey}|${displayName ?? ""}`);
 
 // ─── Name / profile pools ─────────────────────────────────────────────────────
 
@@ -197,7 +274,7 @@ const setHistoricalProfile = async ({
     {
       $setOnInsert: {
         identity_key: identityKey,
-        avatar_url: buildHistoricalAvatar(avatarSeed ?? identityKey),
+        avatar_url: buildHistoricalAvatar(avatarSeed ?? identityKey, displayName),
         display_name: displayName,
         about,
         last_seen_at: lastSeenAt ?? new Date(),
@@ -205,6 +282,18 @@ const setHistoricalProfile = async ({
         reputation_tier: "member",
         interest_tags: {},
         blog_likes: 0,
+        behavior_type: buildBehaviorSeed(identityKey, displayName).behaviorType,
+        writing_tone: buildBehaviorSeed(identityKey, displayName).writingTone,
+        active_start_hour: buildBehaviorSeed(identityKey, displayName).activeStartHour,
+        active_end_hour: buildBehaviorSeed(identityKey, displayName).activeEndHour,
+        weekend_activity_multiplier: buildBehaviorSeed(identityKey, displayName).weekendActivityMultiplier,
+        burstiness: buildBehaviorSeed(identityKey, displayName).burstiness,
+        silence_bias: buildBehaviorSeed(identityKey, displayName).silenceBias,
+        emoji_level: buildBehaviorSeed(identityKey, displayName).emojiLevel,
+        social_cluster: buildBehaviorSeed(identityKey, displayName).socialCluster,
+        frequent_peer_keys: [],
+        topic_focus_history: buildBehaviorSeed(identityKey, displayName).topicFocus,
+        topic_shift_count: 0,
       },
       $max: {
         ...(lastSeenAt ? { last_seen_at: lastSeenAt } : {}),
@@ -275,6 +364,7 @@ export const recordUserActivity = async (input: UserActivityInput): Promise<void
   const { identityKey, fingerprintId, ipAddress } = getIdentity(input.request);
   const about = input.about?.trim() || defaultAboutByAction(input.action);
   const displayName = input.displayName?.trim() || buildDisplayName(identityKey);
+  const behavior = buildBehaviorSeed(identityKey, displayName);
 
   const increments: Record<string, number> = {};
   if (input.action === "blog_view") increments.blog_views = 1;
@@ -291,13 +381,25 @@ export const recordUserActivity = async (input: UserActivityInput): Promise<void
         identity_key: identityKey,
         fingerprint_id: fingerprintId,
         ip_address: ipAddress,
-        avatar_url: buildAvatarUrl(identityKey),
+        avatar_url: buildAvatarUrl(identityKey, displayName),
         display_name: displayName,
         about,
         reputation_score: 0,
         reputation_tier: "member",
         interest_tags: {},
         blog_likes: 0,
+        behavior_type: behavior.behaviorType,
+        writing_tone: behavior.writingTone,
+        active_start_hour: behavior.activeStartHour,
+        active_end_hour: behavior.activeEndHour,
+        weekend_activity_multiplier: behavior.weekendActivityMultiplier,
+        burstiness: behavior.burstiness,
+        silence_bias: behavior.silenceBias,
+        emoji_level: behavior.emojiLevel,
+        social_cluster: behavior.socialCluster,
+        frequent_peer_keys: [],
+        topic_focus_history: behavior.topicFocus,
+        topic_shift_count: 0,
       },
       $set: {
         last_seen_at: new Date(),
@@ -305,11 +407,25 @@ export const recordUserActivity = async (input: UserActivityInput): Promise<void
         ...(input.lastForumSlug ? { last_forum_slug: input.lastForumSlug } : {}),
         ...(input.displayName?.trim() ? { display_name: displayName } : {}),
         ...(input.about?.trim() ? { about } : {}),
+        ...(input.action === "forum_comment" && input.lastForumSlug
+          ? { frequent_peer_keys: [`thread:${input.lastForumSlug}`] }
+          : {}),
       },
       $inc: increments,
     },
     { upsert: true, new: true },
   ).lean();
+
+  const focusSignal = sanitizeKey(input.tags?.[0] ?? input.category ?? "");
+  if (focusSignal) {
+    await UserProfileModel.updateOne(
+      { identity_key: identityKey },
+      {
+        $addToSet: { topic_focus_history: focusSignal },
+        ...(Math.random() < 0.08 ? { $inc: { topic_shift_count: 1 } } : {}),
+      },
+    );
+  }
 
   // Update persona vector for content-bearing actions
   if (input.tags?.length || input.category) {
@@ -545,7 +661,19 @@ const ensureMinimumSyntheticProfiles = async (minimumCount: number): Promise<voi
       ip_address: null,
       display_name: displayName,
       about: buildSyntheticAbout(i),
-      avatar_url: buildAvatarUrl(identityKey),
+      avatar_url: buildAvatarUrl(identityKey, displayName),
+      behavior_type: buildBehaviorSeed(identityKey, displayName).behaviorType,
+      writing_tone: buildBehaviorSeed(identityKey, displayName).writingTone,
+      active_start_hour: buildBehaviorSeed(identityKey, displayName).activeStartHour,
+      active_end_hour: buildBehaviorSeed(identityKey, displayName).activeEndHour,
+      weekend_activity_multiplier: buildBehaviorSeed(identityKey, displayName).weekendActivityMultiplier,
+      burstiness: buildBehaviorSeed(identityKey, displayName).burstiness,
+      silence_bias: buildBehaviorSeed(identityKey, displayName).silenceBias,
+      emoji_level: buildBehaviorSeed(identityKey, displayName).emojiLevel,
+      social_cluster: buildBehaviorSeed(identityKey, displayName).socialCluster,
+      frequent_peer_keys: i % 5 === 0 ? [`seed:${Math.max(0, i - 1)}`] : [],
+      topic_focus_history: buildBehaviorSeed(identityKey, displayName).topicFocus,
+      topic_shift_count: i % 9 === 0 ? 1 : 0,
       blog_views: 0,
       forum_views: 0,
       blog_comments: i % 5,
@@ -622,7 +750,7 @@ const rebalanceSyntheticViewCounts = async (minimumCount: number): Promise<void>
 
 const ensureRealPhotoCoverage = async (minimumCount: number): Promise<void> => {
   const docs = await UserProfileModel.find({})
-    .select("_id identity_key avatar_url")
+    .select("_id identity_key display_name avatar_url")
     .sort({ created_at: 1 })
     .limit(Math.max(minimumCount, 1200))
     .lean();
@@ -648,7 +776,58 @@ const ensureRealPhotoCoverage = async (minimumCount: number): Promise<void> => {
       chunk.map((doc) =>
         UserProfileModel.updateOne(
           { _id: doc._id },
-          { $set: { avatar_url: getRealPhotoForIdentity(String(doc.identity_key ?? doc._id)) } },
+          {
+            $set: {
+              avatar_url: getRealPhotoForIdentity(String(doc.identity_key ?? doc._id), {
+                genderPreference: inferGenderFromDisplayName(String(doc.display_name ?? "")),
+              }),
+            },
+          },
+        ),
+      ),
+    );
+  }
+};
+
+const canonicalAvatarKey = (avatarUrl: string): string => {
+  const value = String(avatarUrl || "").trim().toLowerCase();
+  if (!value) return "";
+  // Treat same real-photo path as duplicate even if query params differ.
+  if (value.includes("randomuser.me/api/portraits/")) {
+    return value.split("?")[0]!;
+  }
+  return value;
+};
+
+const ensureUniqueAvatarAssignments = async (minimumCount: number): Promise<void> => {
+  const docs = await UserProfileModel.find({})
+    .select("_id identity_key avatar_url")
+    .sort({ created_at: 1 })
+    .limit(Math.max(minimumCount, 1200))
+    .lean();
+  if (docs.length === 0) return;
+
+  const seen = new Set<string>();
+  const duplicates: Array<{ _id: unknown; identity_key: string }> = [];
+  for (const doc of docs) {
+    const identityKey = String(doc.identity_key ?? "");
+    const key = canonicalAvatarKey(String(doc.avatar_url ?? ""));
+    if (!key || seen.has(key)) {
+      duplicates.push({ _id: doc._id, identity_key: identityKey });
+      continue;
+    }
+    seen.add(key);
+  }
+  if (duplicates.length === 0) return;
+
+  const CHUNK_SIZE = 50;
+  for (let i = 0; i < duplicates.length; i += CHUNK_SIZE) {
+    const chunk = duplicates.slice(i, i + CHUNK_SIZE);
+    await Promise.all(
+      chunk.map((doc) =>
+        UserProfileModel.updateOne(
+          { _id: doc._id },
+          { $set: { avatar_url: getGeneratedAvatarForIdentity(String(doc.identity_key || doc._id)) } },
         ),
       ),
     );
@@ -681,6 +860,7 @@ export const getUserProfiles = async (limit = 120): Promise<UserProfile[]> => {
       await backfillFromHistoricalData();
       await ensureMinimumSyntheticProfiles(minimum);
       await ensureRealPhotoCoverage(minimum);
+      await ensureUniqueAvatarAssignments(minimum);
       await rebalanceSyntheticViewCounts(minimum);
     })()
       .catch(() => undefined)

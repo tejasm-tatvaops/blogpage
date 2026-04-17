@@ -72,6 +72,20 @@ export function UserProfileQuickView({ displayName, trigger }: UserProfileQuickV
                   <div className="min-w-0">
                     <p className="truncate text-lg font-semibold text-slate-900">{user.display_name}</p>
                     <p className="mt-1 text-sm text-slate-600 line-clamp-2">{user.about}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      {user.is_active_now ? (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                          Active now
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                          Seen recently
+                        </span>
+                      )}
+                      <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                        Tone: {user.writing_tone}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">

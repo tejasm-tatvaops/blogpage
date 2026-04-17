@@ -8,6 +8,7 @@ import { logger } from "./logger";
 import { pickDistinctFakeUsers } from "./fakeUsers";
 import type { Activity } from "./activityQueue";
 import { buildPersonaInstruction, isPersonaEnabled, maybeApplyTypos, pickPersona } from "./personas";
+import { buildBehaviorProfile, getBehaviorDelayMs } from "./userBehavior";
 
 // ─── AI helpers (mirrors aiBlogGenerator.ts pattern) ───────────────────────
 
@@ -284,6 +285,7 @@ const processPost = async (
   }
 
   const users = pickDistinctFakeUsers(aiComments.length + aiComments.reduce((sum, c) => sum + c.replies.length, 0));
+  const userBehaviorMap = new Map(users.map((u) => [u.name, buildBehaviorProfile(`${u.name}|${post.id}`)]));
   let userIndex = 0;
 
   const normaliseBody = (value: string): string =>
@@ -302,10 +304,19 @@ const processPost = async (
     userIndex++;
 
     let parentId: string;
+    const behavior = userBehaviorMap.get(author.name);
+    const withTone = (input: string): string => {
+      if (!behavior) return input;
+      if (behavior.writingTone === "formal") return input.replace(/!/g, ".").replace(/\s{2,}/g, " ");
+      if (behavior.writingTone === "aggressive") return input.replace(/\bmaybe\b/gi, "definitely");
+      if (behavior.writingTone === "casual" && behavior.emojiLevel >= 2 && Math.random() < 0.35) return `${input} 🙂`;
+      return input;
+    };
     try {
       const created = await addComment(post.id, {
         author_name: author.name,
-        content: maybeApplyTypos(aiComment.content),
+        // Imperfect behavior: some users engage quickly with shallow reads.
+        content: maybeApplyTypos(Math.random() < 0.18 ? withTone(aiComment.content.split(".")[0] ?? aiComment.content) : withTone(aiComment.content)),
         parent_comment_id: null,
         is_ai_generated: true,
         persona_name: isPersonaEnabled() ? persona.name : null,
@@ -331,13 +342,17 @@ const processPost = async (
       if (Math.random() < 0.1) {
         await voteComment(post.id, parentId, "down");
       }
+      // Contradictory behavior: occasional downvote after commenting.
+      if (behavior?.behaviorType === "contrarian" && Math.random() < 0.2) {
+        await voteComment(post.id, parentId, "down");
+      }
     } catch (err) {
       logger.warn({ postId: post.id, error: (err as Error).message }, "autopopulate: failed to create comment");
       continue;
     }
 
     // Delay between comments for realism and API safety
-    await sleep(200 + Math.random() * 300);
+    await sleep(behavior ? getBehaviorDelayMs(behavior.behaviorType, behavior.burstiness) : 200 + Math.random() * 300);
 
     for (const reply of aiComment.replies) {
       if (!reply.content || reply.content.length < 3) continue;
@@ -345,12 +360,15 @@ const processPost = async (
       if (!replyBody || usedBodies.has(replyBody)) continue;
 
       const replyAuthor = users[userIndex % users.length]!;
+      const replyBehavior = userBehaviorMap.get(replyAuthor.name);
       userIndex++;
 
       try {
         const createdReply = await addComment(post.id, {
           author_name: replyAuthor.name,
-          content: maybeApplyTypos(reply.content),
+          content: maybeApplyTypos(
+            replyBehavior?.writingTone === "helpful" ? `${reply.content} Happy to share a sample BOQ format.` : reply.content,
+          ),
           parent_comment_id: parentId,
           is_ai_generated: true,
           persona_name: isPersonaEnabled() ? persona.name : null,
@@ -373,10 +391,10 @@ const processPost = async (
         logger.warn({ postId: post.id, error: (err as Error).message }, "autopopulate: failed to create reply");
       }
 
-      await sleep(150 + Math.random() * 200);
+      await sleep(replyBehavior ? getBehaviorDelayMs(replyBehavior.behaviorType, replyBehavior.burstiness) : 150 + Math.random() * 200);
     }
 
-    await sleep(300 + Math.random() * 500);
+    await sleep(behavior ? getBehaviorDelayMs(behavior.behaviorType, behavior.burstiness) : 300 + Math.random() * 500);
   }
 
   return { commentsCreated, repliesCreated };

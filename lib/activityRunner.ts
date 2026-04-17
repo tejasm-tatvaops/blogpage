@@ -14,6 +14,7 @@ import { logger } from "./logger";
 import { preGenerateActivityDrafts } from "./autopopulateService";
 import { getSystemToggles, setSystemToggles } from "./systemToggles";
 import { maybeApplyTypos, pickPersona } from "./personas";
+import { buildBehaviorProfile, getBehaviorDelayMs } from "./userBehavior";
 
 type RunnerState = {
   started: boolean;
@@ -95,15 +96,22 @@ const canExecuteCommentForPost = async (postId: string): Promise<boolean> => {
   return count < maxCommentsPerPost;
 };
 
+const getActivityAuthorSeed = (activity: Activity): string =>
+  "authorName" in activity && typeof activity.authorName === "string" && activity.authorName.trim()
+    ? activity.authorName
+    : "sim";
+
 const executeActivity = async (activity: Activity): Promise<boolean> => {
   try {
+    const behavior = buildBehaviorProfile(`${getActivityAuthorSeed(activity)}|${activity.postId}`);
     const persona = pickPersona();
     if (activity.type === "comment") {
       if (!(await canExecuteCommentForPost(activity.postId))) return true;
+      const emoji = behavior.emojiLevel >= 2 && Math.random() < 0.35 ? " 👍" : "";
       const created = await addComment(activity.postId, {
         author_name: activity.authorName ?? "Site Engineer",
         content: maybeApplyTypos(
-          activity.content ?? "Good thread. Curious how this compares with your latest site numbers.",
+          `${activity.content ?? "Good thread. Curious how this compares with your latest site numbers."}${emoji}`,
         ),
         parent_comment_id: null,
         is_ai_generated: activity.isAiGenerated ?? true,
@@ -114,13 +122,16 @@ const executeActivity = async (activity: Activity): Promise<boolean> => {
       }
 
       if (Math.random() > 0.55) {
+        const replySeed = behavior.writingTone === "aggressive"
+          ? "I disagree with that assumption. Site variability is much higher."
+          : "One practical way is to benchmark against the latest BOQ revision and vendor quotes.";
         requeueActivity(
           {
             type: "reply",
             postId: activity.postId,
             postType: activity.postType,
             commentId: created.id,
-            content: "One practical way is to benchmark against the latest BOQ revision and vendor quotes.",
+            content: replySeed,
             authorName: "Planning Lead",
             isAiGenerated: true,
             id: "reply-seed",
@@ -154,9 +165,13 @@ const executeActivity = async (activity: Activity): Promise<boolean> => {
     }
 
     if (activity.postType === "forum") {
+      const direction =
+        behavior.behaviorType === "contrarian" && Math.random() < 0.45
+          ? "down"
+          : (activity.direction ?? "up");
       const result = await voteForumPost(
         activity.postId,
-        activity.direction ?? "up",
+        direction,
         `sim_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
       );
       if (result.ok) await registerEngagement(activity);
@@ -239,20 +254,26 @@ const tick = async (): Promise<void> => {
     const remaining = Math.max(0, cap - state.minuteActions);
     if (remaining <= 0) return;
 
-    const clusterBurst = Math.random() < 0.32;
+    const weekend = [0, 6].includes(new Date().getDay());
+    const clusterBurst = Math.random() < (weekend ? 0.24 : 0.34);
     const batchSize = Math.min(remaining, clusterBurst ? randInt(2, 2) : 1);
     const activities = dequeueReadyActivities(batchSize);
     for (const activity of activities) {
+      const behavior = buildBehaviorProfile(`${getActivityAuthorSeed(activity)}|${activity.postId}`);
       const ok = await executeActivity(activity);
       if (!ok && activity.attempts < 2) {
         requeueActivity({ ...activity, attempts: activity.attempts + 1 }, randInt(30_000, 80_000));
       } else if (ok) {
         state.minuteActions += 1;
       }
-      await sleep(clusterBurst ? randInt(1_600, 4_200) : randInt(3_200, 10_000));
+      await sleep(
+        clusterBurst
+          ? getBehaviorDelayMs(behavior.behaviorType, behavior.burstiness)
+          : getBehaviorDelayMs(behavior.behaviorType, Math.max(0.05, behavior.burstiness - 0.2)),
+      );
     }
-    if (Math.random() < 0.38) {
-      state.inSilenceUntil = Date.now() + randInt(60_000, 240_000);
+    if (Math.random() < (weekend ? 0.45 : 0.34)) {
+      state.inSilenceUntil = Date.now() + randInt(90_000, weekend ? 330_000 : 240_000);
     }
   } finally {
     state.inFlight = false;
