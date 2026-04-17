@@ -26,6 +26,23 @@ type ObservabilityPayload = {
     dwell_events_per_sec: number;
     skip_rate: number;
   };
+  latency: {
+    feed_request_total_ms: LatencyStats;
+    feed_cache_hit_total_ms: LatencyStats;
+    feed_cache_miss_total_ms: LatencyStats;
+    feed_stage_ms: {
+      cache_read: LatencyStats;
+      persona_fetch: LatencyStats;
+      candidate_generation: LatencyStats;
+      scoring: LatencyStats;
+      build_feed_total: LatencyStats;
+      cache_write: LatencyStats;
+      event_enqueue: LatencyStats;
+    };
+    reconciliation_total_ms: LatencyStats;
+    reconciliation_stage_ms: Record<string, LatencyStats>;
+    observability_api_ms: LatencyStats;
+  };
   drift_events: Array<{
     id: string;
     entity: "Blog" | "Forum" | "Other";
@@ -38,6 +55,16 @@ type ObservabilityPayload = {
     created_at: string;
     entity_id: string;
   }>;
+};
+
+type LatencyStats = {
+  count: number;
+  p50: number;
+  p95: number;
+  p99: number;
+  avg: number;
+  baseline_p50: number | null;
+  baseline_p95: number | null;
 };
 
 const toRelative = (iso: string | null): string => {
@@ -56,6 +83,12 @@ const toRelative = (iso: string | null): string => {
 const fmtInt = (v: number): string => new Intl.NumberFormat("en-US").format(v);
 const fmtRate = (v: number): string => v.toFixed(2);
 const fmtPct = (v: number): string => `${v.toFixed(1)}%`;
+const fmtMs = (v: number): string => `${v.toFixed(1)}ms`;
+const baselineDelta = (current: number, baseline: number | null): string => {
+  if (!baseline || baseline <= 0) return "n/a";
+  const delta = ((current - baseline) / baseline) * 100;
+  return `${delta > 0 ? "+" : ""}${delta.toFixed(1)}%`;
+};
 
 const badgeByStatus: Record<ObservabilityPayload["status"], string> = {
   Healthy: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -203,6 +236,59 @@ export default function AdminObservabilityDashboard() {
             <div className="flex items-center justify-between"><span>Events/sec</span><span className="font-semibold">{fmtRate(data.live_signals.events_per_sec)}</span></div>
             <div className="flex items-center justify-between"><span>Dwell events/sec</span><span className="font-semibold">{fmtRate(data.live_signals.dwell_events_per_sec)}</span></div>
             <div className="flex items-center justify-between"><span>Skip rate</span><span className="font-semibold">{fmtPct(data.live_signals.skip_rate * 100)}</span></div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 xl:col-span-2">
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Feed latency (before vs after)</p>
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="rounded-xl bg-slate-50 p-3">
+              <p className="text-[11px] uppercase tracking-wide text-slate-500">Feed total p50/p95</p>
+              <p className="mt-1 text-sm font-semibold text-slate-800">
+                {fmtMs(data.latency.feed_request_total_ms.p50)} / {fmtMs(data.latency.feed_request_total_ms.p95)}
+              </p>
+              <p className="mt-1 text-[11px] text-slate-500">
+                vs baseline: {baselineDelta(data.latency.feed_request_total_ms.p95, data.latency.feed_request_total_ms.baseline_p95)}
+              </p>
+            </div>
+            <div className="rounded-xl bg-slate-50 p-3">
+              <p className="text-[11px] uppercase tracking-wide text-slate-500">Cache hit p50/p95</p>
+              <p className="mt-1 text-sm font-semibold text-slate-800">
+                {fmtMs(data.latency.feed_cache_hit_total_ms.p50)} / {fmtMs(data.latency.feed_cache_hit_total_ms.p95)}
+              </p>
+              <p className="mt-1 text-[11px] text-slate-500">
+                samples: {fmtInt(data.latency.feed_cache_hit_total_ms.count)}
+              </p>
+            </div>
+            <div className="rounded-xl bg-slate-50 p-3">
+              <p className="text-[11px] uppercase tracking-wide text-slate-500">Cache miss p50/p95</p>
+              <p className="mt-1 text-sm font-semibold text-slate-800">
+                {fmtMs(data.latency.feed_cache_miss_total_ms.p50)} / {fmtMs(data.latency.feed_cache_miss_total_ms.p95)}
+              </p>
+              <p className="mt-1 text-[11px] text-slate-500">
+                samples: {fmtInt(data.latency.feed_cache_miss_total_ms.count)}
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 md:grid-cols-5">
+            <div className="rounded-lg bg-slate-50 px-2 py-1.5">cache: {fmtMs(data.latency.feed_stage_ms.cache_read.p95)} p95</div>
+            <div className="rounded-lg bg-slate-50 px-2 py-1.5">persona: {fmtMs(data.latency.feed_stage_ms.persona_fetch.p95)} p95</div>
+            <div className="rounded-lg bg-slate-50 px-2 py-1.5">candidates: {fmtMs(data.latency.feed_stage_ms.candidate_generation.p95)} p95</div>
+            <div className="rounded-lg bg-slate-50 px-2 py-1.5">scoring: {fmtMs(data.latency.feed_stage_ms.scoring.p95)} p95</div>
+            <div className="rounded-lg bg-slate-50 px-2 py-1.5">build total: {fmtMs(data.latency.feed_stage_ms.build_feed_total.p95)} p95</div>
+            <div className="rounded-lg bg-slate-50 px-2 py-1.5">write: {fmtMs(data.latency.feed_stage_ms.cache_write.p95)} p95</div>
+            <div className="rounded-lg bg-slate-50 px-2 py-1.5">event: {fmtMs(data.latency.feed_stage_ms.event_enqueue.p95)} p95</div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 xl:col-span-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Reconciliation stage latency p95</p>
+          <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-700 md:grid-cols-5">
+            {Object.entries(data.latency.reconciliation_stage_ms).map(([stage, stats]) => (
+              <div key={stage} className="rounded-lg bg-slate-50 px-2 py-1.5">
+                {stage.replace(/_/g, " ")}: {fmtMs(stats.p95)}
+              </div>
+            ))}
           </div>
         </div>
 

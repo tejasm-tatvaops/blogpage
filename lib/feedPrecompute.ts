@@ -6,6 +6,7 @@ import { feedCacheKey, setCachedFeed } from "@/lib/feedCache";
 
 const PRECOMPUTE_INTERVAL_MS = 3 * 60 * 1000;
 const HOT_IDENTITY_LIMIT = 500;
+const PRECOMPUTE_CONCURRENCY = 12;
 
 const precomputeState = globalThis as typeof globalThis & {
   __feedPrecomputeIdentities?: Set<string>;
@@ -27,19 +28,33 @@ export const markFeedIdentityHot = (identityKey: string): void => {
 
 const runOneCycle = async (): Promise<void> => {
   const identities = [...(precomputeState.__feedPrecomputeIdentities ?? [])].slice(0, HOT_IDENTITY_LIMIT);
-  await Promise.allSettled(
-    identities.map(async (identityKey) => {
-      const personaVector = await getPersonaVector(identityKey, 30, true);
-      const variant = assignFeedVariant(identityKey);
-      const result = await buildFeed({
-        personaVector,
-        limit: 20,
-        page: 1,
-        scoringWeights: variant.weights,
-      });
-      await setCachedFeed(feedCacheKey(identityKey, 1, 20), result);
-    }),
-  );
+  let cursor = 0;
+  const worker = async (): Promise<void> => {
+    while (cursor < identities.length) {
+      const next = identities[cursor];
+      cursor += 1;
+      if (!next) continue;
+      try {
+        const personaVector = await getPersonaVector(next, 30, true);
+        const variant = assignFeedVariant(next);
+        const result = await buildFeed({
+          personaVector,
+          limit: 20,
+          page: 1,
+          scoringWeights: variant.weights,
+        });
+        await setCachedFeed(feedCacheKey(next, 1, 20), result);
+      } catch (error) {
+        logger.debug(
+          { identityKey: next, error: error instanceof Error ? error.message : String(error) },
+          "feed precompute identity failed",
+        );
+      }
+    }
+  };
+
+  const workerCount = Math.min(PRECOMPUTE_CONCURRENCY, Math.max(1, identities.length));
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
 };
 
 export const runFeedPrecomputeNow = async (): Promise<void> => {

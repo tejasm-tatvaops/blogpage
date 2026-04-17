@@ -136,6 +136,15 @@ const deleteKeysByScan = async (
  * Read a cached feed result.  Returns null on miss or expiry.
  */
 export const getCachedFeed = async <T>(key: string): Promise<T | null> => {
+  const local = feedCache.get(key);
+  if (local) {
+    try {
+      return JSON.parse(local) as T;
+    } catch {
+      return null;
+    }
+  }
+
   const redis = await redisReady();
   let raw: string | null = null;
   if (redis) {
@@ -148,11 +157,10 @@ export const getCachedFeed = async <T>(key: string): Promise<T | null> => {
       logger.debug({ error }, "Redis get failed, using local feed cache");
       raw = null;
     }
-  } else {
-    raw = feedCache.get(key);
   }
   if (!raw) return null;
   try {
+    feedCache.set(key, raw);
     return JSON.parse(raw) as T;
   } catch {
     return null;
@@ -167,11 +175,10 @@ export const setCachedFeed = async (key: string, value: unknown): Promise<void> 
     const payload = JSON.stringify(value);
     const redis = await redisReady();
     if (redis) {
-      await Promise.race([
+      void Promise.race([
         redis.set(key, payload, "PX", FEED_TTL_MS),
         new Promise((resolve) => setTimeout(resolve, 150)),
-      ]);
-      return;
+      ]).catch(() => undefined);
     }
     feedCache.set(key, payload);
   } catch {

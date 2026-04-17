@@ -56,6 +56,10 @@ const toFeedDoc = (payload: FeedEventInput) => ({
   dwell_ms: payload.dwellMs ?? 0,
   experiment_id: payload.experimentId ?? "feed_v3",
   variant_id: payload.variantId ?? "control",
+  request_id: payload.requestId ?? null,
+  position: payload.position ?? null,
+  interaction_depth: payload.interactionDepth ?? null,
+  author_key: payload.authorKey ?? null,
   metadata: payload.metadata ?? {},
 });
 

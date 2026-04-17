@@ -52,7 +52,7 @@ import { UserProfileModel, getReputationTier } from "@/models/UserProfile";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const WRITE_DECAY   = 0.97;   // per-interaction decay factor
-const READ_DECAY_H  = 0.002;  // hourly read-time decay: weight *= (1 - READ_DECAY_H)^hours
+const READ_DECAY_H  = 0.006;  // hourly read-time decay: weight *= (1 - READ_DECAY_H)^hours
 const MAX_WEIGHT    = 100;
 const MIN_WEIGHT    = 0.5;    // prune below this
 const MAX_TAGS      = 60;
@@ -70,6 +70,7 @@ const ACTION_WEIGHTS = {
   forum_vote:    1,
   skip:         -2,
   low_dwell:    -3,
+  fast_skip:    -6,
 } as const;
 
 export type PersonaAction = keyof typeof ACTION_WEIGHTS;
@@ -183,7 +184,7 @@ export const recordInterest = async ({
 
   await UserProfileModel.updateOne(
     { identity_key: identityKey },
-    { $set: { interest_tags: updated } },
+    { $set: { interest_tags: updated, last_interest_interaction_at: new Date() } },
   );
 };
 
@@ -200,7 +201,7 @@ export const getPersonaVector = async (
 ): Promise<Array<{ tag: string; weight: number }>> => {
   await connectToDatabase();
   const doc = await UserProfileModel.findOne({ identity_key: identityKey })
-    .select("interest_tags last_seen_at")
+    .select("interest_tags last_seen_at last_interest_interaction_at")
     .lean();
 
   const raw = (doc?.interest_tags as Record<string, number> | null) ?? {};
@@ -209,11 +210,57 @@ export const getPersonaVector = async (
     .sort((a, b) => b.weight - a.weight)
     .slice(0, topN);
 
-  if (applyDecay && doc?.last_seen_at) {
-    vector = applyReadDecay(vector, doc.last_seen_at as unknown as Date);
+  if (applyDecay && (doc?.last_interest_interaction_at || doc?.last_seen_at)) {
+    vector = applyReadDecay(
+      vector,
+      (doc.last_interest_interaction_at as unknown as Date | undefined) ?? (doc.last_seen_at as unknown as Date),
+    );
   }
 
   return vector;
+};
+
+export const getAuthorAffinityMap = async (identityKey: string): Promise<Record<string, number>> => {
+  await connectToDatabase();
+  const doc = await UserProfileModel.findOne({ identity_key: identityKey })
+    .select("author_affinity")
+    .lean();
+  const raw = (doc?.author_affinity as Record<string, number> | undefined) ?? {};
+  return raw;
+};
+
+export const recordAuthorAffinity = async ({
+  identityKey,
+  authorKey,
+  delta,
+}: {
+  identityKey: string;
+  authorKey: string;
+  delta: number;
+}): Promise<void> => {
+  if (!authorKey) return;
+  await connectToDatabase();
+  const doc = await UserProfileModel.findOne({ identity_key: identityKey })
+    .select("author_affinity")
+    .lean();
+  const current = (doc?.author_affinity as Record<string, number> | undefined) ?? {};
+  const next = { ...current };
+  const safeAuthor = authorKey.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
+  const value = Math.max(-40, Math.min(60, Number(next[safeAuthor] ?? 0) + delta));
+  if (Math.abs(value) < 0.2) {
+    delete next[safeAuthor];
+  } else {
+    next[safeAuthor] = value;
+  }
+  const trimmed = Object.fromEntries(
+    Object.entries(next)
+      .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+      .slice(0, 120),
+  );
+  await UserProfileModel.updateOne(
+    { identity_key: identityKey },
+    { $set: { author_affinity: trimmed, last_interest_interaction_at: new Date() } },
+  );
 };
 
 // ─── Scoring helpers ──────────────────────────────────────────────────────────

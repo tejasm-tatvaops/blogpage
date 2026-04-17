@@ -14,6 +14,10 @@ export type FeedEventInput = {
   dwellMs?: number;
   experimentId?: string;
   variantId?: string;
+  requestId?: string | null;
+  position?: number | null;
+  interactionDepth?: "low" | "medium" | "high" | null;
+  authorKey?: string | null;
   metadata?: Record<string, unknown>;
 };
 

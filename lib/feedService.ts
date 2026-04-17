@@ -159,6 +159,8 @@ export type FeedScoringWeights = {
   diversity: number;
   exploration: number;
   negative: number;
+  sessionIntent: number;
+  authorAffinity: number;
 };
 
 const DEFAULT_WEIGHTS: FeedScoringWeights = {
@@ -169,6 +171,8 @@ const DEFAULT_WEIGHTS: FeedScoringWeights = {
   diversity: W_DIVERSITY,
   exploration: W_EXPLORATION,
   negative: W_NEGATIVE,
+  sessionIntent: 0.07,
+  authorAffinity: 0.09,
 };
 
 const scoreCandidate = (
@@ -177,6 +181,7 @@ const scoreCandidate = (
   authorRepMap: Map<string, number>,
   tagFrequency: Map<string, number>,  // current page tag counts
   sessionRecent: { tags: string[]; authors: string[] },
+  authorAffinityMap: Record<string, number>,
   weights: FeedScoringWeights,
 ): ScoredCandidate => {
   const d = post as unknown as {
@@ -209,9 +214,15 @@ const scoreCandidate = (
   const diversityBoost = freq === 0 ? DIVERSITY_BONUS : freq >= MAX_SAME_TAG ? DIVERSITY_PENALTY : 0;
   const earlyEngagement = Math.min(1, ((d.upvote_count ?? 0) * 3 + (d.comment_count ?? 0) * 4) / Math.max(1, d.view_count ?? 0));
   const explorationScore = 0.6 * earlyEngagement + 0.4 * Math.exp(-Math.max(0, (Date.now() - new Date(d.created_at).getTime()) / 3_600_000) / 18);
-  const authorRepeatPenalty = sessionRecent.authors.includes(authorKey) ? 0.35 : 0;
-  const tagRepeatPenalty = sessionRecent.tags.includes(primaryTag) ? 0.4 : 0;
-  const negativePenalty = Math.min(1, authorRepeatPenalty + tagRepeatPenalty);
+  const sessionTagIntent = sessionRecent.tags.includes(primaryTag) ? 0.5 : 0;
+  const sessionAuthorIntent = sessionRecent.authors.includes(authorKey) ? 0.5 : 0;
+  const sessionIntentScore = Math.min(1, sessionTagIntent + sessionAuthorIntent);
+  const affinityRaw = Number(authorAffinityMap[authorKey] ?? 0);
+  const authorAffinityScore = Math.max(0, Math.min(1, (affinityRaw + 40) / 100));
+  const authorRepeatPenalty = sessionRecent.authors.includes(authorKey) ? 0.3 : 0;
+  const tagRepeatPenalty = sessionRecent.tags.includes(primaryTag) ? 0.35 : 0;
+  const negativeAffinityPenalty = affinityRaw < 0 ? Math.min(0.5, Math.abs(affinityRaw) / 40) : 0;
+  const negativePenalty = Math.min(1, authorRepeatPenalty + tagRepeatPenalty + negativeAffinityPenalty);
 
   const score =
     interestMatch   * weights.interest +
@@ -219,9 +230,12 @@ const scoreCandidate = (
     recencyScore    * weights.recency +
     authorQuality   * weights.author +
     diversityBoost  * weights.diversity +
-    explorationScore * weights.exploration -
+    explorationScore * weights.exploration +
+    sessionIntentScore * weights.sessionIntent +
+    authorAffinityScore * weights.authorAffinity -
     negativePenalty * weights.negative;
 
+  tagFrequency.set(primaryTag, freq + 1);
   return { post, score, interestMatch };
 };
 
@@ -269,6 +283,7 @@ export const buildFeed = async ({
   page  = 1,
   category,
   sessionRecent,
+  authorAffinity,
   scoringWeights,
   onStage,
 }: {
@@ -277,6 +292,7 @@ export const buildFeed = async ({
   page?: number;
   category?: string;
   sessionRecent?: { tags: string[]; authors: string[] };
+  authorAffinity?: Record<string, number>;
   scoringWeights?: FeedScoringWeights;
   onStage?: (stage: "candidates" | "scoring") => void;
 }): Promise<FeedResult> => {
@@ -285,6 +301,7 @@ export const buildFeed = async ({
   const hasPersona = personaVector.length > 0;
   const weights = scoringWeights ?? DEFAULT_WEIGHTS;
   const session = sessionRecent ?? { tags: [], authors: [] };
+  const affinity = authorAffinity ?? {};
 
   // ── COLD START: no persona → pure trending ────────────────────────────────
   if (!hasPersona) {
@@ -330,7 +347,7 @@ export const buildFeed = async ({
   const tagFrequency = new Map<string, number>(); // resets per scoring batch
 
   const scored: ScoredCandidate[] = candidates.map((post) =>
-    scoreCandidate(post, personaVector, authorRepMap, tagFrequency, session, weights),
+    scoreCandidate(post, personaVector, authorRepMap, tagFrequency, session, affinity, weights),
   );
 
   // Sort by score descending

@@ -48,6 +48,10 @@ const userProfileSchema = new mongoose.Schema(
     // Updated by personaService on every meaningful interaction.
     // Stored as a plain object (not Map) for lean-query compatibility.
     interest_tags: { type: mongoose.Schema.Types.Mixed, default: {} },
+    // User-specific affinity toward authors. Keys are normalised author ids.
+    author_affinity: { type: mongoose.Schema.Types.Mixed, default: {} },
+    // Tracks the last explicit interest/affinity interaction for faster decay handling.
+    last_interest_interaction_at: { type: Date, default: Date.now, index: true },
     behavior_type: {
       type: String,
       enum: USER_BEHAVIOR_TYPES,

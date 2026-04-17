@@ -798,12 +798,11 @@ export const getPromisingExplorationCandidates = async (limit = 12): Promise<Blo
       },
     },
     { $sort: { exploration_score: -1, created_at: -1 } },
-    { $limit: limit * 3 },
-    { $sample: { size: limit } },
+    { $limit: Math.max(limit, limit * 2) },
     { $project: { content: 0, versions: 0 } },
   ])) as unknown as BlogDocument[];
 
-  return docs.map(toBlogPost);
+  return docs.slice(0, limit).map(toBlogPost);
 };
 
 /**

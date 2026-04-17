@@ -16,6 +16,10 @@ const feedEventSchema = new mongoose.Schema(
     experiment_id: { type: String, default: "feed_v3" },
     variant_id: { type: String, default: "control", index: true },
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
+    request_id: { type: String, default: null, trim: true, index: true },
+    position: { type: Number, default: null, min: 0 },
+    interaction_depth: { type: String, enum: ["low", "medium", "high"], default: null },
+    author_key: { type: String, default: null, trim: true, index: true },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: false },
@@ -26,6 +30,9 @@ const feedEventSchema = new mongoose.Schema(
 feedEventSchema.index({ created_at: -1, event_type: 1 });
 feedEventSchema.index({ identity_key: 1, created_at: -1 });
 feedEventSchema.index({ post_slug: 1, event_type: 1, created_at: -1 });
+feedEventSchema.index({ identity_key: 1, event_type: 1, created_at: -1 });
+feedEventSchema.index({ identity_key: 1, author_key: 1, created_at: -1 });
+feedEventSchema.index({ request_id: 1, created_at: -1 });
 
 export type FeedEventSchemaType = InferSchemaType<typeof feedEventSchema>;
 export type FeedEventModelType = Model<FeedEventSchemaType>;

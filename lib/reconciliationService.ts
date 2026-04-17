@@ -8,6 +8,7 @@ import { ForumViewEventModel } from "@/models/ForumViewEvent";
 import { BlogLikeModel } from "@/models/BlogLike";
 import { ForumVoteModel } from "@/models/ForumVote";
 import { CounterDriftEventModel } from "@/models/CounterDriftEvent";
+import { recordLatency } from "@/lib/perfMetrics";
 
 type ReconciliationSummary = {
   startedAt: string;
@@ -18,6 +19,7 @@ type ReconciliationSummary = {
   updated: number;
   smallDrifts: number;
   largeDrifts: number;
+  stageTimingsMs: Record<string, number>;
 };
 
 type ReconciliationState = {
@@ -291,6 +293,7 @@ export const runReconciliationNow = async (): Promise<ReconciliationSummary> => 
         updated: 0,
         smallDrifts: 0,
         largeDrifts: 0,
+        stageTimingsMs: {},
       }
     );
   }
@@ -302,19 +305,24 @@ export const runReconciliationNow = async (): Promise<ReconciliationSummary> => 
   let entitiesScanned = 0;
   let smallDrifts = 0;
   let largeDrifts = 0;
+  const stageTimingsMs: Record<string, number> = {};
 
   try {
     await connectToDatabase();
-    const jobs = [
-      reconcileForumCommentCounts,
-      reconcileBlogVoteCounts,
-      reconcileForumVoteCounts,
-      reconcileBlogViewCounts,
-      reconcileForumViewCounts,
+    const jobs: Array<[string, () => Promise<{ scanned: number; updated: number; small: number; large: number }>]> = [
+      ["forum_comment_count", reconcileForumCommentCounts],
+      ["blog_vote_count", reconcileBlogVoteCounts],
+      ["forum_vote_count", reconcileForumVoteCounts],
+      ["blog_view_count", reconcileBlogViewCounts],
+      ["forum_view_count", reconcileForumViewCounts],
     ];
-    for (const job of jobs) {
+    for (const [jobName, job] of jobs) {
       try {
+        const stageStart = Date.now();
         const result = await job();
+        const stageMs = Date.now() - stageStart;
+        stageTimingsMs[jobName] = stageMs;
+        recordLatency(`reconciliation.stage.${jobName}`, stageMs);
         entitiesScanned += result.scanned;
         updated += result.updated;
         smallDrifts += result.small;
@@ -334,7 +342,9 @@ export const runReconciliationNow = async (): Promise<ReconciliationSummary> => 
       updated,
       smallDrifts,
       largeDrifts,
+      stageTimingsMs,
     };
+    recordLatency("reconciliation.run.total", summary.durationMs);
     state.lastSummary = summary;
     state.running = false;
   }

@@ -42,6 +42,8 @@ const blogSchema = new mongoose.Schema(
 blogSchema.index({ published: 1, created_at: -1 });
 blogSchema.index({ published: 1, publish_at: 1, created_at: -1 }); // scheduling filter
 blogSchema.index({ category: 1, published: 1, created_at: -1 });
+blogSchema.index({ deleted_at: 1, published: 1, publish_at: 1, created_at: -1 });
+blogSchema.index({ deleted_at: 1, published: 1, category: 1, publish_at: 1, created_at: -1 });
 blogSchema.index({ view_count: -1, created_at: -1 }); // analytics top-by-views
 blogSchema.index({ upvote_count: -1, created_at: -1 }); // analytics top-by-upvotes
 blogSchema.index({ deleted_at: 1 });

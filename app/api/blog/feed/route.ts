@@ -25,7 +25,7 @@
 
 import { NextResponse } from "next/server";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
-import { getPersonaVector } from "@/lib/personaService";
+import { getAuthorAffinityMap, getPersonaVector } from "@/lib/personaService";
 import { buildFeed } from "@/lib/feedService";
 import {
   feedCacheKey,
@@ -40,6 +40,7 @@ import { logger } from "@/lib/logger";
 import type { FeedResult } from "@/lib/feedService";
 import { getAllPosts } from "@/lib/blogService";
 import { startReconciliationWorker } from "@/lib/reconciliationService";
+import { recordLatency } from "@/lib/perfMetrics";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,14 @@ const withTimeout = async <T>(label: string, promise: Promise<T>, timeoutMs = 20
   ]);
 
 export async function GET(request: Request) {
+  const startedAt = Date.now();
+  let lastStageAt = startedAt;
+  const stageTimings: Record<string, number> = {};
+  const markStage = (name: string): void => {
+    const now = Date.now();
+    stageTimings[name] = now - lastStageAt;
+    lastStageAt = now;
+  };
   try {
     logger.info("feed: start");
     startFeedPrecomputeWorker();
@@ -72,6 +81,7 @@ export async function GET(request: Request) {
       : `ip:${ipAddress ?? "anonymous"}`;
     markFeedIdentityHot(identityKey);
     const variant = assignFeedVariant(identityKey);
+    const requestId = `feed_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     const cookieHeader = request.headers.get("cookie") ?? "";
     const sessionCookieMatch = cookieHeader.match(/(?:^|;\s*)tatvaops_feed_session=([^;]+)/);
     const sessionDiversity = parseSessionDiversityCookie(
@@ -88,6 +98,9 @@ export async function GET(request: Request) {
         2000,
       ).catch(() => []);
       logger.info({ count: posts.length }, "feed: before return (dev fallback)");
+      const totalMs = Date.now() - startedAt;
+      recordLatency("feed.request.total", totalMs);
+      recordLatency("feed.stage.dev_bypass", totalMs);
       return NextResponse.json(
         {
           posts,
@@ -104,9 +117,11 @@ export async function GET(request: Request) {
     // ── 2. Cache check ───────────────────────────────────────────────────────
     const cacheKey = feedCacheKey(identityKey, page, limit, category);
     const cached   = await withTimeout("feed cache read", getCachedFeed<FeedResult>(cacheKey), 500);
+    markStage("cache_read");
+    recordLatency("feed.stage.cache_read", stageTimings.cache_read ?? 0);
     if (cached) {
       const response = NextResponse.json(
-        { ...cached, _cache: "hit" },
+        { ...cached, _cache: "hit", request_id: requestId, experiment_id: variant.experimentId, variant_id: variant.variantId },
         { status: 200, headers: { "Cache-Control": "private, no-store" } },
       );
       response.cookies.set(
@@ -114,11 +129,19 @@ export async function GET(request: Request) {
         encodeURIComponent(JSON.stringify(updateSessionDiversityState(sessionDiversity, cached.session_updates?.recent_tags_seen ?? [], cached.session_updates?.recent_authors_seen ?? []))),
         { httpOnly: false, sameSite: "lax", maxAge: 60 * 60 * 6, path: "/" },
       );
+      const totalMs = Date.now() - startedAt;
+      recordLatency("feed.request.total", totalMs);
+      recordLatency("feed.request.cache_hit_total", totalMs);
       return response;
     }
 
     // ── 3. Persona vector (with read-time decay) ─────────────────────────────
-    const personaVector = await withTimeout("persona vector", getPersonaVector(identityKey, 30, true), 2000);
+    const [personaVector, authorAffinity] = await Promise.all([
+      withTimeout("persona vector", getPersonaVector(identityKey, 30, true), 2000),
+      withTimeout("author affinity", getAuthorAffinityMap(identityKey).catch(() => ({})), 1000),
+    ]);
+    markStage("persona_fetch");
+    recordLatency("feed.stage.persona_fetch", stageTimings.persona_fetch ?? 0);
     logger.info({ size: personaVector.length }, "feed: after persona");
 
     // ── 4. Build feed ────────────────────────────────────────────────────────
@@ -133,33 +156,54 @@ export async function GET(request: Request) {
         tags: sessionDiversity.recent_tags_seen,
         authors: sessionDiversity.recent_authors_seen,
       },
+      authorAffinity,
       scoringWeights: variant.weights,
       onStage: (stage) => {
-        if (stage === "candidates") logger.info("feed: after candidates");
-        if (stage === "scoring") logger.info("feed: after scoring");
+        if (stage === "candidates") {
+          markStage("candidate_generation");
+          recordLatency("feed.stage.candidate_generation", stageTimings.candidate_generation ?? 0);
+          logger.info("feed: after candidates");
+        }
+        if (stage === "scoring") {
+          markStage("scoring");
+          recordLatency("feed.stage.scoring", stageTimings.scoring ?? 0);
+          logger.info("feed: after scoring");
+        }
       },
       }),
       2500,
     );
+    markStage("build_feed_total");
+    recordLatency("feed.stage.build_feed_total", stageTimings.build_feed_total ?? 0);
 
     // ── 5. Write cache ────────────────────────────────────────────────────────
     await withTimeout("feed cache write", setCachedFeed(cacheKey, result), 500).catch(() => undefined);
-    await emitFeedEvent({
+    markStage("cache_write");
+    recordLatency("feed.stage.cache_write", stageTimings.cache_write ?? 0);
+    const enqueueStart = Date.now();
+    void emitFeedEvent({
       identityKey,
       eventType: "feed_served",
       experimentId: variant.experimentId,
       variantId: variant.variantId,
+      requestId,
       metadata: {
         page,
         limit,
         category: category ?? null,
         post_slugs: result.posts.map((p) => p.slug).slice(0, 20),
       },
-    }).catch(() => undefined);
+    })
+      .then(() => {
+        recordLatency("feed.stage.event_enqueue_async", Date.now() - enqueueStart);
+      })
+      .catch(() => undefined);
+    markStage("event_enqueue");
+    recordLatency("feed.stage.event_enqueue", stageTimings.event_enqueue ?? 0);
 
     // ── 6. Respond ────────────────────────────────────────────────────────────
     const response = NextResponse.json(
-      { ...result, _cache: "miss" },
+      { ...result, _cache: "miss", request_id: requestId, experiment_id: variant.experimentId, variant_id: variant.variantId },
       { status: 200, headers: { "Cache-Control": "private, no-store" } },
     );
     response.cookies.set(
@@ -168,8 +212,12 @@ export async function GET(request: Request) {
       { httpOnly: false, sameSite: "lax", maxAge: 60 * 60 * 6, path: "/" },
     );
     logger.info({ count: result.posts.length }, "feed: before return");
+    const totalMs = Date.now() - startedAt;
+    recordLatency("feed.request.total", totalMs);
+    recordLatency("feed.request.cache_miss_total", totalMs);
     return response;
   } catch (error) {
+    recordLatency("feed.request.error_total", Date.now() - startedAt);
     logger.error({ error }, "GET /api/blog/feed error");
     return NextResponse.json({ error: "Failed to fetch feed." }, { status: 500 });
   }

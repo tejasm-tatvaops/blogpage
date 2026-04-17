@@ -6,6 +6,7 @@ import { FailedFeedEventModel } from "@/models/FailedFeedEvent";
 import { CounterDriftEventModel } from "@/models/CounterDriftEvent";
 import { getFeedObservabilityHealth } from "@/lib/feedObservability";
 import { getReconciliationHealth, startReconciliationWorker } from "@/lib/reconciliationService";
+import { getLatencyStats, recordLatency } from "@/lib/perfMetrics";
 
 const driftEntityLabel = (value: string): "Blog" | "Forum" | "Other" => {
   if (value.startsWith("blog")) return "Blog";
@@ -14,6 +15,7 @@ const driftEntityLabel = (value: string): "Blog" | "Forum" | "Other" => {
 };
 
 export async function GET() {
+  const requestStart = Date.now();
   const allowed = await requireAdminApiAccess();
   if (!allowed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -49,7 +51,7 @@ export async function GET() {
         ? "Degraded"
         : "Healthy";
 
-  return NextResponse.json({
+  const payload = {
     generated_at: new Date().toISOString(),
     status: healthStatus,
     queue: {
@@ -85,6 +87,29 @@ export async function GET() {
       window_seconds: 60,
       skip_window_seconds: 300,
     },
+    latency: {
+      feed_request_total_ms: getLatencyStats("feed.request.total"),
+      feed_cache_hit_total_ms: getLatencyStats("feed.request.cache_hit_total"),
+      feed_cache_miss_total_ms: getLatencyStats("feed.request.cache_miss_total"),
+      feed_stage_ms: {
+        cache_read: getLatencyStats("feed.stage.cache_read"),
+        persona_fetch: getLatencyStats("feed.stage.persona_fetch"),
+        candidate_generation: getLatencyStats("feed.stage.candidate_generation"),
+        scoring: getLatencyStats("feed.stage.scoring"),
+        build_feed_total: getLatencyStats("feed.stage.build_feed_total"),
+        cache_write: getLatencyStats("feed.stage.cache_write"),
+        event_enqueue: getLatencyStats("feed.stage.event_enqueue"),
+      },
+      reconciliation_total_ms: getLatencyStats("reconciliation.run.total"),
+      reconciliation_stage_ms: {
+        forum_comment_count: getLatencyStats("reconciliation.stage.forum_comment_count"),
+        blog_vote_count: getLatencyStats("reconciliation.stage.blog_vote_count"),
+        forum_vote_count: getLatencyStats("reconciliation.stage.forum_vote_count"),
+        blog_view_count: getLatencyStats("reconciliation.stage.blog_view_count"),
+        forum_view_count: getLatencyStats("reconciliation.stage.forum_view_count"),
+      },
+      observability_api_ms: getLatencyStats("admin.observability.api"),
+    },
     drift_events: recentDrifts.map((event) => ({
       id: event._id.toString(),
       entity: driftEntityLabel(event.entity_type),
@@ -102,5 +127,7 @@ export async function GET() {
       created_at: event.created_at?.toISOString?.() ?? new Date().toISOString(),
       entity_id: event.entity_id,
     })),
-  });
+  };
+  recordLatency("admin.observability.api", Date.now() - requestStart);
+  return NextResponse.json(payload);
 }

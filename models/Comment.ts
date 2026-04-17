@@ -20,6 +20,7 @@ const commentSchema = new mongoose.Schema(
 
 commentSchema.index({ post_id: 1, created_at: -1 });
 commentSchema.index({ post_id: 1, parent_comment_id: 1, created_at: 1 });
+commentSchema.index({ post_id: 1, deleted_at: 1 });
 
 export type CommentSchemaType = InferSchemaType<typeof commentSchema>;
 
