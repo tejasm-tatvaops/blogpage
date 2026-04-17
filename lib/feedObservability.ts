@@ -3,7 +3,7 @@ import { logger } from "@/lib/logger";
 import { FeedEventModel } from "@/models/FeedEvent";
 import { enqueueFeedEvent, ensureFeedEventQueueStarted, getFeedEventQueueHealth } from "@/lib/feedEventQueue";
 
-export type FeedEventType = "feed_served" | "post_clicked" | "post_liked" | "dwell_time" | "skip";
+export type FeedEventType = "feed_served" | "post_clicked" | "post_liked" | "dwell_time" | "skip" | "share";
 
 export type FeedEventInput = {
   identityKey: string;

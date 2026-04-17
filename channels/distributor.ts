@@ -14,6 +14,7 @@
 import { Resend } from "resend";
 import { connectToDatabase } from "@/lib/mongodb";
 import { SubscriberModel } from "@/models/Subscriber";
+import { getTopChannels } from "@/lib/channelIntelligence";
 import * as emailChannel from "./emailChannel";
 import * as twitterChannel from "./twitterChannel";
 import * as linkedinChannel from "./linkedinChannel";
@@ -236,6 +237,25 @@ export async function distributeContent(
       detail: r.reason instanceof Error ? r.reason.message : String(r.reason),
     };
   });
+}
+
+/**
+ * Intelligent distribution — automatically selects the best-performing channels
+ * based on past share event data, then calls distributeContent with that list.
+ *
+ * @param content - post to distribute
+ * @param topN - how many channels to use (default: 3)
+ *
+ * @example
+ * const results = await intelligentDistribute(post);
+ * // Uses whichever 3 channels had the highest share counts over the last 30 days.
+ */
+export async function intelligentDistribute(
+  content: DistributableContent,
+  topN = 3,
+): Promise<ChannelResult[]> {
+  const channels = await getTopChannels(topN);
+  return distributeContent(content, channels);
 }
 
 // Re-export channel transforms for convenience

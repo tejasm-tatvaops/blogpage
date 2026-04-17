@@ -30,11 +30,21 @@ export function ShareButtons({
       ? `${window.location.origin}/blog/${slug}`
       : `/blog/${slug}`;
 
+  /** Fire-and-forget — records which channel was used without blocking the share. */
+  const trackShare = (channel: string) => {
+    fetch(`/api/blog/${encodeURIComponent(slug)}/share`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channel }),
+    }).catch(() => { /* non-fatal */ });
+  };
+
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(getUrl());
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      trackShare("copy");
     } catch {
       // clipboard not available
     }
@@ -42,16 +52,16 @@ export function ShareButtons({
 
   const payload: ContentPayload = { title, slug, excerpt, content, tags, category };
 
-  const shareTwitter = () => twitterChannel.share(payload, getUrl());
-  const shareLinkedIn = () => linkedinChannel.share(payload, getUrl());
-  const shareWhatsApp = () => whatsappChannel.share(payload, getUrl());
-  const shareThreads = () => threadsChannel.share(payload, getUrl());
-  const shareEmail = () => emailChannel.share(payload, getUrl());
+  const shareTwitter = () => { twitterChannel.share(payload, getUrl()); trackShare("twitter"); };
+  const shareLinkedIn = () => { linkedinChannel.share(payload, getUrl()); trackShare("linkedin"); };
+  const shareWhatsApp = () => { whatsappChannel.share(payload, getUrl()); trackShare("whatsapp"); };
+  const shareThreads = () => { threadsChannel.share(payload, getUrl()); trackShare("threads"); };
+  const shareEmail = () => { emailChannel.share(payload, getUrl()); trackShare("email"); };
 
   const shareInstagram = async () => {
     const used = await instagramChannel.share({ ...payload, imageUrl }, getUrl());
+    trackShare("instagram");
     if (!used) {
-      // clipboard fallback was used — show brief confirmation
       setIgCopied(true);
       setTimeout(() => setIgCopied(false), 2500);
     }
