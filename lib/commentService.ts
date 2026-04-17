@@ -258,3 +258,15 @@ export const deleteCommentById = async (commentId: string): Promise<boolean> => 
 
   return Boolean(result);
 };
+
+export const getCommentMetaById = async (
+  commentId: string,
+): Promise<{ post_id: string } | null> => {
+  await connectToDatabase();
+  if (!isValidObjectId(commentId)) return null;
+  const result = await CommentModel.findOne({ _id: commentId, ...notDeleted })
+    .select("post_id")
+    .lean();
+  if (!result?.post_id) return null;
+  return { post_id: result.post_id };
+};

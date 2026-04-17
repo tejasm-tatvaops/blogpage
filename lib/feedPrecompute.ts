@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { getPersonaVector } from "@/lib/personaService";
 import { buildFeed } from "@/lib/feedService";
 import { assignFeedVariant } from "@/lib/feedExperiments";
@@ -26,7 +27,7 @@ export const markFeedIdentityHot = (identityKey: string): void => {
 
 const runOneCycle = async (): Promise<void> => {
   const identities = [...(precomputeState.__feedPrecomputeIdentities ?? [])].slice(0, HOT_IDENTITY_LIMIT);
-  await Promise.all(
+  await Promise.allSettled(
     identities.map(async (identityKey) => {
       const personaVector = await getPersonaVector(identityKey, 30, true);
       const variant = assignFeedVariant(identityKey);
@@ -49,6 +50,8 @@ export const startFeedPrecomputeWorker = (): void => {
   if (process.env.NODE_ENV === "development") return;
   if (precomputeState.__feedPrecomputeTimer) return;
   precomputeState.__feedPrecomputeTimer = setInterval(() => {
-    void runOneCycle();
+    void runOneCycle().catch((error) => {
+      logger.warn({ error: error instanceof Error ? error.message : String(error) }, "feed precompute cycle failed");
+    });
   }, PRECOMPUTE_INTERVAL_MS);
 };

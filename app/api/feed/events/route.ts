@@ -45,13 +45,13 @@ export async function POST(request: Request) {
   });
 
   if (body.eventType === "skip" || (body.eventType === "dwell_time" && (body.dwellMs ?? 0) < 5000)) {
-    void recordInterest({
+    await recordInterest({
       identityKey,
       tags: body.tags ?? [],
       category: body.category,
       action: body.eventType === "skip" ? "skip" : "low_dwell",
     });
-    void invalidateFeedCache(identityKey);
+    await invalidateFeedCache(identityKey);
   }
 
   return NextResponse.json({ ok: true });

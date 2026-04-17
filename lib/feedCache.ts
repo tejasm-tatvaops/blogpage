@@ -116,6 +116,22 @@ const redisReady = async () => {
   return null;
 };
 
+const deleteKeysByScan = async (
+  redis: NonNullable<Awaited<ReturnType<typeof redisReady>>>,
+  match: string,
+): Promise<void> =>
+  new Promise<void>((resolve, reject) => {
+    const pendingDeletes: Array<Promise<unknown>> = [];
+    const stream = redis.scanStream({ match, count: 200 });
+    stream.on("data", (keys: string[]) => {
+      if (keys.length > 0) pendingDeletes.push(redis.del(...keys));
+    });
+    stream.on("error", reject);
+    stream.on("end", () => {
+      void Promise.allSettled(pendingDeletes).then(() => resolve());
+    });
+  });
+
 /**
  * Read a cached feed result.  Returns null on miss or expiry.
  */
@@ -170,12 +186,7 @@ export const setCachedFeed = async (key: string, value: unknown): Promise<void> 
 export const invalidateFeedCache = async (identityKey: string): Promise<void> => {
   const redis = await redisReady();
   if (redis) {
-    const stream = redis.scanStream({ match: `feed:${identityKey}:*`, count: 100 });
-    stream.on("data", (keys: string[]) => {
-      if (keys.length > 0) {
-        void redis.del(...keys);
-      }
-    });
+    await deleteKeysByScan(redis, `feed:${identityKey}:*`);
     return;
   }
   feedCache.deleteByPrefix(`feed:${identityKey}:`);
@@ -188,12 +199,7 @@ export const invalidateFeedCache = async (identityKey: string): Promise<void> =>
 export const invalidateAllFeeds = async (): Promise<void> => {
   const redis = await redisReady();
   if (redis) {
-    const stream = redis.scanStream({ match: "feed:*", count: 250 });
-    stream.on("data", (keys: string[]) => {
-      if (keys.length > 0) {
-        void redis.del(...keys);
-      }
-    });
+    await deleteKeysByScan(redis, "feed:*");
     return;
   }
   feedCache.deleteByPrefix("feed:");

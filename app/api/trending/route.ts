@@ -9,6 +9,6 @@ export async function GET() {
     return NextResponse.json({ posts }, { status: 200 });
   } catch (err) {
     console.error("[trending]", err);
-    return NextResponse.json({ posts: [] }, { status: 200 });
+    return NextResponse.json({ error: "Failed to fetch trending posts." }, { status: 503 });
   }
 }

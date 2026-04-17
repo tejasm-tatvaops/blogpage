@@ -39,6 +39,7 @@ import { parseSessionDiversityCookie, updateSessionDiversityState } from "@/lib/
 import { logger } from "@/lib/logger";
 import type { FeedResult } from "@/lib/feedService";
 import { getAllPosts } from "@/lib/blogService";
+import { startReconciliationWorker } from "@/lib/reconciliationService";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,7 @@ export async function GET(request: Request) {
   try {
     logger.info("feed: start");
     startFeedPrecomputeWorker();
+    startReconciliationWorker();
     const { searchParams } = new URL(request.url);
     const page     = Math.max(1, parseInt(searchParams.get("page")  ?? "1",  10) || 1);
     const limit    = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10) || 20));
@@ -76,8 +78,10 @@ export async function GET(request: Request) {
       sessionCookieMatch?.[1] ? decodeURIComponent(sessionCookieMatch[1]) : null,
     );
 
-    // Dev-mode safe fallback path: avoid heavy ranking/caching/eventing.
-    if (process.env.NODE_ENV === "development") {
+    // Dev-mode safe fallback path: avoid heavy ranking/caching/eventing by default.
+    // Set FEED_DEV_FULL_PIPELINE=true to validate full production pipeline in development.
+    const fullDevPipeline = process.env.FEED_DEV_FULL_PIPELINE === "true";
+    if (process.env.NODE_ENV === "development" && !fullDevPipeline) {
       const posts = await withTimeout(
         "dev simple feed",
         getAllPosts({ sort: "latest", category, limit: Math.min(10, limit) }),
@@ -140,7 +144,7 @@ export async function GET(request: Request) {
 
     // ── 5. Write cache ────────────────────────────────────────────────────────
     await withTimeout("feed cache write", setCachedFeed(cacheKey, result), 500).catch(() => undefined);
-    void emitFeedEvent({
+    await emitFeedEvent({
       identityKey,
       eventType: "feed_served",
       experimentId: variant.experimentId,

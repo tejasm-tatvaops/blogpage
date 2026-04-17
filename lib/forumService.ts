@@ -2,6 +2,7 @@ import { isValidObjectId } from "mongoose";
 import { z } from "zod";
 import { ForumPostModel } from "@/models/ForumPost";
 import { ForumVoteModel } from "@/models/ForumVote";
+import { ForumViewEventModel } from "@/models/ForumViewEvent";
 import { connectToDatabase } from "./mongodb";
 import { logger } from "./logger";
 import { updateReputation, recordInterest } from "./personaService";
@@ -532,6 +533,26 @@ export const incrementForumViewCount = async (slug: string): Promise<number | nu
     .select("view_count")
     .lean()) as unknown as ForumPostLean | null;
   return updated ? (updated.view_count ?? 0) : null;
+};
+
+export const trackForumViewEvent = async ({
+  slug,
+  postId,
+  referrerHost,
+  userAgent,
+}: {
+  slug: string;
+  postId: string;
+  referrerHost?: string | null;
+  userAgent?: string | null;
+}): Promise<void> => {
+  await connectToDatabase();
+  await ForumViewEventModel.create({
+    forum_slug: slug,
+    post_id: postId,
+    referrer_host: (referrerHost || "direct").trim().slice(0, 120),
+    user_agent: (userAgent || "").trim().slice(0, 500),
+  });
 };
 
 // ─── Trending ─────────────────────────────────────────────────────────────────

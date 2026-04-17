@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: ViewRouteProps) {
       return NextResponse.json({ error: "Post not found." }, { status: 404 });
     }
 
-    void trackViewEvent({
+    await trackViewEvent({
       slug,
       referrerHost: getReferrerHost(request.headers.get("referer")),
       userAgent: request.headers.get("user-agent"),

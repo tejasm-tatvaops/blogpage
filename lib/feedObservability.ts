@@ -1,6 +1,7 @@
 import { connectToDatabase } from "@/lib/mongodb";
 import { logger } from "@/lib/logger";
 import { FeedEventModel } from "@/models/FeedEvent";
+import { enqueueFeedEvent, ensureFeedEventQueueStarted, getFeedEventQueueHealth } from "@/lib/feedEventQueue";
 
 export type FeedEventType = "feed_served" | "post_clicked" | "post_liked" | "dwell_time" | "skip";
 
@@ -17,18 +18,8 @@ export type FeedEventInput = {
 };
 
 export const emitFeedEvent = async (input: FeedEventInput): Promise<void> => {
-  await connectToDatabase();
-  await FeedEventModel.create({
-    identity_key: input.identityKey,
-    event_type: input.eventType,
-    post_slug: input.postSlug ?? null,
-    tags: input.tags ?? [],
-    category: input.category ?? null,
-    dwell_ms: input.dwellMs ?? 0,
-    experiment_id: input.experimentId ?? "feed_v3",
-    variant_id: input.variantId ?? "control",
-    metadata: input.metadata ?? {},
-  });
+  ensureFeedEventQueueStarted();
+  await enqueueFeedEvent(input);
 };
 
 export const getFeedMetrics = async (windowHours = 24): Promise<{
@@ -68,3 +59,9 @@ export const getFeedMetrics = async (windowHours = 24): Promise<{
   logger.info({ served, clicked, liked, ctr, likeRate, avgDwellMs }, "feed metrics snapshot");
   return { served, clicked, liked, dwellEvents, avgDwellMs, ctr, likeRate };
 };
+
+export const getFeedObservabilityHealth = (): {
+  queue: ReturnType<typeof getFeedEventQueueHealth>;
+} => ({
+  queue: getFeedEventQueueHealth(),
+});

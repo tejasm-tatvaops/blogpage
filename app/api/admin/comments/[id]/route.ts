@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { requireAdminApiAccess } from "@/lib/adminAuth";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { errorResponse } from "@/lib/adminApi";
-import { deleteCommentById } from "@/lib/commentService";
+import { deleteCommentById, getCommentMetaById } from "@/lib/commentService";
+import { decrementForumCommentCount, getForumPostById } from "@/lib/forumService";
 import { logger } from "@/lib/logger";
 
 export async function DELETE(
@@ -16,9 +17,16 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    const meta = await getCommentMetaById(id);
     const deleted = await deleteCommentById(id);
     if (!deleted) {
       return NextResponse.json({ error: "Comment not found." }, { status: 404 });
+    }
+    if (meta?.post_id) {
+      const forumPost = await getForumPostById(meta.post_id);
+      if (forumPost) {
+        await decrementForumCommentCount(meta.post_id);
+      }
     }
     logger.info({ id }, "Admin deleted comment");
     return NextResponse.json({ ok: true }, { status: 200 });

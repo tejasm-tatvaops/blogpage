@@ -1,7 +1,13 @@
 import { BlogModel } from "@/models/Blog";
 import { CommentModel } from "@/models/Comment";
 import { addComment } from "./commentService";
-import { voteForumPost, incrementForumCommentCount, getForumPosts, setForumPostTrending } from "./forumService";
+import {
+  voteForumPost,
+  incrementForumCommentCount,
+  getForumPosts,
+  setForumPostTrending,
+  getForumPostById,
+} from "./forumService";
 import { getAllPosts } from "./blogService";
 import {
   dequeueReadyActivities,
@@ -101,6 +107,18 @@ const getActivityAuthorSeed = (activity: Activity): string =>
     ? activity.authorName
     : "sim";
 
+const withTimeout = async <T>(
+  label: string,
+  promise: Promise<T>,
+  timeoutMs: number,
+): Promise<T> =>
+  Promise.race<T>([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+    }),
+  ]);
+
 const executeActivity = async (activity: Activity): Promise<boolean> => {
   try {
     const behavior = buildBehaviorProfile(`${getActivityAuthorSeed(activity)}|${activity.postId}`);
@@ -169,8 +187,10 @@ const executeActivity = async (activity: Activity): Promise<boolean> => {
         behavior.behaviorType === "contrarian" && Math.random() < 0.45
           ? "down"
           : (activity.direction ?? "up");
+      const forumPost = await getForumPostById(activity.postId);
+      if (!forumPost) return false;
       const result = await voteForumPost(
-        activity.postId,
+        forumPost.slug,
         direction,
         `sim_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
       );
@@ -284,9 +304,14 @@ const scheduleNext = (): void => {
   if (!state.started) return;
   if (state.tickTimer) clearTimeout(state.tickTimer);
   const delay = randInt(30_000, 90_000);
-  state.tickTimer = setTimeout(async () => {
-    await tick();
-    scheduleNext();
+  state.tickTimer = setTimeout(() => {
+    void withTimeout("activity tick", tick(), 25_000)
+      .catch((error) => {
+        logger.warn({ error: error instanceof Error ? error.message : String(error) }, "activity tick failed");
+      })
+      .finally(() => {
+        scheduleNext();
+      });
   }, delay);
 };
 
