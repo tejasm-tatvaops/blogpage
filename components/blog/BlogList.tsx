@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { BlogPost } from "@/lib/blogService";
 import { BlogCard } from "./BlogCard";
@@ -7,8 +10,10 @@ type BlogListProps = {
   categories: string[];
   activeCategory?: string;
   query?: string;
-  sort: "latest" | "most_viewed";
+  sort: "latest" | "most_viewed" | "personalized";
 };
+type FeedBucket = "personalized" | "trending" | "exploration";
+type FeedPost = BlogPost & { _bucket?: FeedBucket; _reason_tag?: string };
 
 const IMAGE_POOLS = {
   construction: [
@@ -47,6 +52,20 @@ const IMAGE_POOLS = {
     "/images/construction/apartment-exterior-1.png",
     "/images/construction/kitchen-cabinets-2.png",
     "/images/construction/kitchen-cabinets-3.png",
+    "/images/construction/user-added-1.png",
+    "/images/construction/user-added-2.png",
+    "/images/construction/user-added-3.png",
+    "/images/construction/user-added-4.png",
+    "/images/construction/user-added-5.png",
+    "/images/construction/user-added-6.png",
+    "/images/construction/user-added-7.png",
+    "/images/construction/user-added-8.png",
+    "/images/construction/user-added-9.png",
+    "/images/construction/user-added-10.png",
+    "/images/construction/user-added-11.png",
+    "/images/construction/user-added-12.png",
+    "/images/construction/user-added-13.png",
+    "/images/construction/user-added-14.png",
   ],
   house: [
     "/images/construction/house-1.jpg",
@@ -144,6 +163,8 @@ const resolveCardImages = (
   return result;
 };
 
+type SortOption = "latest" | "most_viewed" | "personalized";
+
 const buildBlogHref = ({
   category,
   query,
@@ -151,7 +172,7 @@ const buildBlogHref = ({
 }: {
   category?: string;
   query?: string;
-  sort: "latest" | "most_viewed";
+  sort: SortOption;
 }): string => {
   const params = new URLSearchParams();
   if (category) params.set("category", category);
@@ -161,8 +182,73 @@ const buildBlogHref = ({
   return queryString ? `/blog?${queryString}` : "/blog";
 };
 
-export function BlogList({ posts, categories, activeCategory, query, sort }: BlogListProps) {
-  const resolvedImageMap = resolveCardImages(posts);
+export function BlogList({ posts: serverPosts, categories, activeCategory, query, sort }: BlogListProps) {
+  const [personalizedPosts, setPersonalizedPosts] = useState<FeedPost[] | null>(null);
+  const [personalizedLoading, setPersonalizedLoading] = useState(false);
+  const [topInterests, setTopInterests] = useState<string[]>([]);
+  const [feedTab, setFeedTab] = useState<"for_you" | "trending" | "explore">("for_you");
+
+  useEffect(() => {
+    if (sort !== "personalized") setFeedTab("for_you");
+  }, [sort]);
+
+  // When sort === "personalized", fetch client-side so the fingerprint cookie is sent.
+  useEffect(() => {
+    if (sort !== "personalized") {
+      setPersonalizedPosts(null);
+      return;
+    }
+    let cancelled = false;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 4000);
+    setPersonalizedLoading(true);
+    const params = new URLSearchParams({ limit: "50" });
+    if (activeCategory) params.set("category", activeCategory);
+    fetch(`/api/blog/feed?${params.toString()}`, { signal: controller.signal })
+      .then((r) => r.json())
+      .then((data: { posts?: FeedPost[]; top_interests?: string[] }) => {
+        if (!cancelled) {
+          const interests = data.top_interests ?? [];
+          const enriched = (data.posts ?? []).map((post) => {
+            if (post._bucket !== "personalized") return post;
+            const matched =
+              interests.find((tag) =>
+                [post.category, ...post.tags].map((v) => v.toLowerCase()).includes(tag.toLowerCase()),
+              ) ?? interests[0];
+            return { ...post, _reason_tag: matched };
+          });
+          setPersonalizedPosts(enriched);
+          setTopInterests(interests);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPersonalizedPosts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setPersonalizedLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [sort, activeCategory]);
+
+  const personalizedPool = (personalizedPosts ?? serverPosts) as FeedPost[];
+  const activePosts = sort === "personalized"
+    ? feedTab === "trending"
+      ? personalizedPool.filter((post) => post._bucket === "trending")
+      : feedTab === "explore"
+      ? personalizedPool.filter((post) => post._bucket === "exploration")
+      : personalizedPool.filter((post) => post._bucket !== "trending" && post._bucket !== "exploration")
+    : (serverPosts as FeedPost[]);
+
+  const fallbackPosts =
+    sort === "personalized" && activePosts.length === 0
+      ? personalizedPool
+      : activePosts;
+
+  const resolvedImageMap = resolveCardImages(fallbackPosts);
 
   return (
     <section className="mx-auto w-full max-w-[1500px] px-6 py-12">
@@ -191,6 +277,7 @@ export function BlogList({ posts, categories, activeCategory, query, sort }: Blo
           >
             <option value="latest">Latest</option>
             <option value="most_viewed">Most viewed</option>
+            <option value="personalized">For You</option>
           </select>
           <button
             type="submit"
@@ -205,6 +292,50 @@ export function BlogList({ posts, categories, activeCategory, query, sort }: Blo
             New post
           </Link>
         </form>
+
+        {sort === "personalized" && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+              <span className="font-medium text-slate-700">
+                Based on your interests:
+              </span>
+              {(topInterests.length > 0 ? topInterests : ["construction", "design", "planning"]).slice(0, 5).map((tag) => (
+                <span key={tag} className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setFeedTab("for_you")}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  feedTab === "for_you" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                For You
+              </button>
+              <button
+                type="button"
+                onClick={() => setFeedTab("trending")}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  feedTab === "trending" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                Trending
+              </button>
+              <button
+                type="button"
+                onClick={() => setFeedTab("explore")}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  feedTab === "explore" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                Explore
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 pb-6">
           <div className="flex flex-wrap gap-2.5">
@@ -230,23 +361,35 @@ export function BlogList({ posts, categories, activeCategory, query, sort }: Blo
               </Link>
             ))}
           </div>
-
         </div>
       </header>
 
-      {posts.length === 0 ? (
+      {personalizedLoading ? (
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-72 animate-pulse rounded-2xl bg-slate-100" />
+          ))}
+        </div>
+      ) : fallbackPosts.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-600">
-          No published articles found{activeCategory ? ` in "${activeCategory}"` : ""}
-          {query ? ` matching "${query}"` : ""}.
+          {sort === "personalized"
+            ? "Read and like a few articles and your personalised feed will appear here."
+            : `No published articles found${activeCategory ? ` in "${activeCategory}"` : ""}${query ? ` matching "${query}"` : ""}.`}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post) => (
+          {fallbackPosts.map((post, index) => (
             <BlogCard
               key={post.id}
               post={post}
               resolvedImageSrc={resolvedImageMap[post.id]?.primary}
               fallbackImagePool={resolvedImageMap[post.id]?.fallbackPool}
+              intelligence={{
+                bucket: post._bucket,
+                reasonTag: post._reason_tag,
+              }}
+              highlightTags={topInterests}
+              variantTone={(["indigo", "emerald", "amber"][index % 3] as "indigo" | "emerald" | "amber")}
             />
           ))}
         </div>

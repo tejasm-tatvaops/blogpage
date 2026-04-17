@@ -14,6 +14,9 @@ import { CoverImage } from "./CoverImage";
 import { AiAssistant } from "./AiAssistant";
 import { BookmarkButton } from "./BookmarkButton";
 import { ReadingTracker } from "./ReadingTracker";
+import type { UserProfile } from "@/lib/userProfileService";
+import { TopicActiveUsersStrip } from "@/components/users/TopicActiveUsersStrip";
+import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
 
 type BlogDetailProps = {
   post: BlogPost;
@@ -21,6 +24,7 @@ type BlogDetailProps = {
   categories: string[];
   comments: Comment[];
   forumSlug?: string | null;
+  topicUsers?: UserProfile[];
 };
 
 type ParsedFaq = {
@@ -94,7 +98,7 @@ const formatDate = (dateString: string): string =>
     year: "numeric",
   }).format(new Date(dateString));
 
-export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug }: BlogDetailProps) {
+export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug, topicUsers = [] }: BlogDetailProps) {
   const readingTimeMinutes = calculateReadingTime(post.content);
   const imageUrl = post.cover_image || "";
   const { mainContent, faqs, references } = parseContentSections(post.content);
@@ -126,10 +130,18 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
               <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
                 {/* Author */}
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 text-sm font-bold text-white shadow-sm">
-                    {authorInitial}
-                  </div>
-                  <span className="text-sm font-semibold text-slate-800">{post.author}</span>
+                  <UserProfileQuickView
+                    displayName={post.author}
+                    trigger={
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 text-sm font-bold text-white shadow-sm">
+                        {authorInitial}
+                      </div>
+                    }
+                  />
+                  <UserProfileQuickView
+                    displayName={post.author}
+                    trigger={<span className="text-sm font-semibold text-slate-800 hover:underline">{post.author}</span>}
+                  />
                 </div>
 
                 <span className="h-4 w-px bg-slate-200" aria-hidden />
@@ -235,6 +247,7 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
             </div>
 
             {/* ── Comments ── */}
+            <TopicActiveUsersStrip title="People active on this topic" users={topicUsers} />
             <div className="mt-10 rounded-2xl border border-slate-100 bg-white p-1">
               <CommentSection slug={post.slug} initialComments={comments} />
             </div>

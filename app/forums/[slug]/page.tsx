@@ -7,6 +7,8 @@ import { ForumViewCount } from "@/components/forums/ForumViewCount";
 import { MarkdownRenderer } from "@/components/blog/MarkdownRenderer";
 import { getForumPostBySlug } from "@/lib/forumService";
 import { getComments } from "@/lib/commentService";
+import { getActiveUsersByTopic } from "@/lib/userProfileService";
+import { TopicActiveUsersStrip } from "@/components/users/TopicActiveUsersStrip";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -45,7 +47,10 @@ export default async function ForumThreadPage({ params }: PageProps) {
   const post = await getForumPostBySlug(decodeURIComponent(slug));
   if (!post) notFound();
 
-  const comments = await getComments(post.id);
+  const [comments, topicUsers] = await Promise.all([
+    getComments(post.id),
+    getActiveUsersByTopic([...post.tags, post.title], 8).catch(() => []),
+  ]);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-3xl px-4 py-10">
@@ -136,6 +141,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
       </article>
 
       {/* Discussion */}
+      <TopicActiveUsersStrip title="People active in similar threads" users={topicUsers} />
       <ForumCommentSection
         slug={post.slug}
         initialComments={comments}

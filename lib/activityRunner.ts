@@ -51,9 +51,12 @@ const randInt = (min: number, max: number): number =>
 
 const actionsPerMinuteCap = (): number => {
   const hour = new Date().getHours();
-  if (hour >= 18 && hour <= 23) return 12;
-  if (hour >= 0 && hour <= 6) return 3;
-  return 7;
+  // More human-like daily activity curve.
+  if (hour >= 7 && hour <= 10) return 5;
+  if (hour >= 11 && hour <= 14) return 8;
+  if (hour >= 15 && hour <= 18) return 10;
+  if (hour >= 19 && hour <= 22) return 12;
+  return 2;
 };
 
 const maxCommentsPerPost = 24;
@@ -236,8 +239,8 @@ const tick = async (): Promise<void> => {
     const remaining = Math.max(0, cap - state.minuteActions);
     if (remaining <= 0) return;
 
-    const clusterBurst = Math.random() < 0.55;
-    const batchSize = Math.min(remaining, clusterBurst ? randInt(2, 3) : 1);
+    const clusterBurst = Math.random() < 0.32;
+    const batchSize = Math.min(remaining, clusterBurst ? randInt(2, 2) : 1);
     const activities = dequeueReadyActivities(batchSize);
     for (const activity of activities) {
       const ok = await executeActivity(activity);
@@ -246,10 +249,10 @@ const tick = async (): Promise<void> => {
       } else if (ok) {
         state.minuteActions += 1;
       }
-      await sleep(clusterBurst ? randInt(800, 2_200) : randInt(2_500, 8_500));
+      await sleep(clusterBurst ? randInt(1_600, 4_200) : randInt(3_200, 10_000));
     }
-    if (Math.random() < 0.28) {
-      state.inSilenceUntil = Date.now() + randInt(45_000, 150_000);
+    if (Math.random() < 0.38) {
+      state.inSilenceUntil = Date.now() + randInt(60_000, 240_000);
     }
   } finally {
     state.inFlight = false;
@@ -259,7 +262,7 @@ const tick = async (): Promise<void> => {
 const scheduleNext = (): void => {
   if (!state.started) return;
   if (state.tickTimer) clearTimeout(state.tickTimer);
-  const delay = randInt(20_000, 60_000);
+  const delay = randInt(30_000, 90_000);
   state.tickTimer = setTimeout(async () => {
     await tick();
     scheduleNext();

@@ -8,6 +8,7 @@ import { ViewEventModel } from "@/models/ViewEvent";
 import { BlogModel } from "@/models/Blog";
 import { FAKE_USERS } from "@/lib/fakeUsers";
 import { getAvatarForIdentity } from "@/lib/avatar";
+import { recordInterest, type PersonaAction } from "@/lib/personaService";
 
 export type UserProfile = {
   id: string;
@@ -15,12 +16,17 @@ export type UserProfile = {
   about: string;
   avatar_url: string;
   blog_views: number;
+  forum_views: number;
   blog_comments: number;
   forum_posts: number;
   forum_comments: number;
   forum_votes: number;
+  blog_likes: number;
   last_blog_slug: string | null;
   last_forum_slug: string | null;
+  reputation_score: number;
+  reputation_tier: string;
+  interest_tags: Record<string, number>;
   created_at: string;
   last_seen_at: string;
 };
@@ -30,17 +36,27 @@ export type PlatformViewTotals = {
   forumViews: number;
 };
 
+export type UserProfileViewTotals = {
+  blogViews: number;
+  forumViews: number;
+};
+
 const backfillState = globalThis as typeof globalThis & {
   __tatvaopsUserBackfillDone?: boolean;
+  __tatvaopsUserMaintenancePromise?: Promise<void> | null;
+  __tatvaopsUserMaintenanceLastRunAt?: number;
 };
 
 type UserActivityInput = {
   request: Request;
-  action: "blog_view" | "blog_comment" | "forum_post" | "forum_comment" | "forum_vote";
+  action: "blog_view" | "forum_view" | "blog_comment" | "forum_post" | "forum_comment" | "forum_vote";
   displayName?: string | null;
   about?: string | null;
   lastBlogSlug?: string | null;
   lastForumSlug?: string | null;
+  // Optional content signals for persona updates
+  tags?: string[];
+  category?: string | null;
 };
 
 const toUserProfile = (doc: {
@@ -49,12 +65,17 @@ const toUserProfile = (doc: {
   about: string;
   avatar_url: string;
   blog_views?: number;
+  forum_views?: number;
   blog_comments?: number;
   forum_posts?: number;
   forum_comments?: number;
   forum_votes?: number;
+  blog_likes?: number;
   last_blog_slug?: string | null;
   last_forum_slug?: string | null;
+  reputation_score?: number;
+  reputation_tier?: string;
+  interest_tags?: Record<string, number>;
   created_at: Date;
   last_seen_at: Date;
 }): UserProfile => ({
@@ -63,12 +84,17 @@ const toUserProfile = (doc: {
   about: doc.about,
   avatar_url: doc.avatar_url,
   blog_views: doc.blog_views ?? 0,
+  forum_views: doc.forum_views ?? 0,
   blog_comments: doc.blog_comments ?? 0,
   forum_posts: doc.forum_posts ?? 0,
   forum_comments: doc.forum_comments ?? 0,
   forum_votes: doc.forum_votes ?? 0,
+  blog_likes: doc.blog_likes ?? 0,
   last_blog_slug: doc.last_blog_slug ?? null,
   last_forum_slug: doc.last_forum_slug ?? null,
+  reputation_score: doc.reputation_score ?? 0,
+  reputation_tier: doc.reputation_tier ?? "member",
+  interest_tags: (doc.interest_tags as Record<string, number> | undefined) ?? {},
   created_at: doc.created_at.toISOString(),
   last_seen_at: doc.last_seen_at.toISOString(),
 });
@@ -108,6 +134,9 @@ const compactHash = (value: string): string => {
 };
 
 const buildHistoricalAvatar = (identityKey: string): string => buildAvatarUrl(identityKey);
+
+// ─── Name / profile pools ─────────────────────────────────────────────────────
+
 const FIRST_NAMES = [
   "Aarav", "Vivaan", "Aditya", "Vihaan", "Arjun", "Reyansh", "Ishaan", "Krish", "Kabir", "Sai",
   "Anaya", "Diya", "Aadhya", "Myra", "Aarohi", "Anika", "Ira", "Kiara", "Meera", "Saanvi",
@@ -125,6 +154,25 @@ const USER_INTERESTS = [
   "project scheduling", "estimation accuracy", "residential construction", "commercial buildouts", "procurement ops",
 ];
 
+/**
+ * Realistic interest-tag clusters used to seed synthetic user personas.
+ * Each cluster represents a coherent professional interest profile.
+ */
+const INTEREST_TAG_CLUSTERS: Array<Array<string>> = [
+  ["boq", "estimation", "cost-planning", "quantity-surveying"],
+  ["procurement", "vendor-comparison", "material-procurement", "supply-chain"],
+  ["site-execution", "construction-management", "site-engineering", "quality-control"],
+  ["project-scheduling", "timeline-planning", "milestone-tracking", "project-management"],
+  ["residential-construction", "housing", "villa-construction", "floor-plans"],
+  ["commercial-construction", "commercial-buildouts", "office-construction", "retail-fit-out"],
+  ["concrete", "structural-engineering", "rcc-design", "foundation-work"],
+  ["interior-design", "fit-out", "kitchen-cabinets", "renovation"],
+  ["real-estate", "property-valuation", "investment", "market-trends"],
+  ["sustainable-construction", "green-building", "eco-friendly", "energy-efficiency"],
+];
+
+// ─── Historical backfill helpers ──────────────────────────────────────────────
+
 const setHistoricalProfile = async ({
   identityKey,
   displayName,
@@ -139,7 +187,7 @@ const setHistoricalProfile = async ({
   displayName: string;
   about: string;
   avatarSeed?: string;
-  counts?: Partial<Record<"blog_views" | "blog_comments" | "forum_posts" | "forum_comments" | "forum_votes", number>>;
+  counts?: Partial<Record<"blog_views" | "forum_views" | "blog_comments" | "forum_posts" | "forum_comments" | "forum_votes", number>>;
   lastBlogSlug?: string | null;
   lastForumSlug?: string | null;
   lastSeenAt?: Date | null;
@@ -153,6 +201,10 @@ const setHistoricalProfile = async ({
         display_name: displayName,
         about,
         last_seen_at: lastSeenAt ?? new Date(),
+        reputation_score: 0,
+        reputation_tier: "member",
+        interest_tags: {},
+        blog_likes: 0,
       },
       $max: {
         ...(lastSeenAt ? { last_seen_at: lastSeenAt } : {}),
@@ -177,6 +229,8 @@ const defaultAboutByAction = (action: UserActivityInput["action"]): string => {
       return "Active reader who engages with community discussions and signals useful forum insights.";
     case "blog_comment":
       return "Reader who joins blog discussions around BOQ workflows, construction costs, and procurement decisions.";
+    case "forum_view":
+      return "Construction-focused reader browsing active forum threads, solutions, and community discussions.";
     case "blog_view":
     default:
       return "Construction-focused reader exploring TatvaOps blogs, guides, and planning insights.";
@@ -197,6 +251,24 @@ const buildSyntheticAbout = (index: number): string => {
   return `Active ${role} following TatvaOps for ${interest}, practical field insights, and better construction decisions.`;
 };
 
+/** Build a deterministic interest_tags object for a synthetic user from a cluster. */
+const buildSyntheticInterestTags = (index: number): Record<string, number> => {
+  const clusterIndex = index % INTEREST_TAG_CLUSTERS.length;
+  const cluster = INTEREST_TAG_CLUSTERS[clusterIndex]!;
+  const tags: Record<string, number> = {};
+  cluster.forEach((tag, i) => {
+    // Primary interest: 60-90; secondary: 30-50; tertiary: 10-25
+    const weight = i === 0 ? 60 + (index % 30) : i === 1 ? 30 + (index % 20) : 10 + (index % 15);
+    tags[tag] = weight;
+  });
+  // Mix in one adjacent cluster for variety
+  const adjacentCluster = INTEREST_TAG_CLUSTERS[(clusterIndex + 1) % INTEREST_TAG_CLUSTERS.length]!;
+  tags[adjacentCluster[0]!] = 15 + (index % 20);
+  return tags;
+};
+
+// ─── Core API ─────────────────────────────────────────────────────────────────
+
 export const recordUserActivity = async (input: UserActivityInput): Promise<void> => {
   await connectToDatabase();
 
@@ -206,6 +278,7 @@ export const recordUserActivity = async (input: UserActivityInput): Promise<void
 
   const increments: Record<string, number> = {};
   if (input.action === "blog_view") increments.blog_views = 1;
+  if (input.action === "forum_view") increments.forum_views = 1;
   if (input.action === "blog_comment") increments.blog_comments = 1;
   if (input.action === "forum_post") increments.forum_posts = 1;
   if (input.action === "forum_comment") increments.forum_comments = 1;
@@ -221,6 +294,10 @@ export const recordUserActivity = async (input: UserActivityInput): Promise<void
         avatar_url: buildAvatarUrl(identityKey),
         display_name: displayName,
         about,
+        reputation_score: 0,
+        reputation_tier: "member",
+        interest_tags: {},
+        blog_likes: 0,
       },
       $set: {
         last_seen_at: new Date(),
@@ -233,7 +310,29 @@ export const recordUserActivity = async (input: UserActivityInput): Promise<void
     },
     { upsert: true, new: true },
   ).lean();
+
+  // Update persona vector for content-bearing actions
+  if (input.tags?.length || input.category) {
+    const actionMap: Partial<Record<UserActivityInput["action"], PersonaAction>> = {
+      blog_view: "view",
+      blog_comment: "comment",
+      forum_post: "forum_post",
+      forum_comment: "forum_comment",
+      forum_vote: "forum_vote",
+    };
+    const personaAction = actionMap[input.action];
+    if (personaAction) {
+      void recordInterest({
+        identityKey,
+        tags: input.tags ?? [],
+        category: input.category,
+        action: personaAction,
+      });
+    }
+  }
 };
+
+// ─── Historical backfill ──────────────────────────────────────────────────────
 
 const backfillFromHistoricalData = async (): Promise<void> => {
   if (backfillState.__tatvaopsUserBackfillDone) return;
@@ -258,6 +357,7 @@ const backfillFromHistoricalData = async (): Promise<void> => {
     about: string;
     avatarSeed?: string;
     blog_views: number;
+    forum_views: number;
     blog_comments: number;
     forum_posts: number;
     forum_comments: number;
@@ -276,6 +376,7 @@ const backfillFromHistoricalData = async (): Promise<void> => {
       about,
       avatarSeed,
       blog_views: 0,
+      forum_views: 0,
       blog_comments: 0,
       forum_posts: 0,
       forum_comments: 0,
@@ -378,32 +479,43 @@ const backfillFromHistoricalData = async (): Promise<void> => {
     applySeen(profile, view.created_at, { blogSlug: view.slug });
   }
 
-  for (const profile of historicalProfiles.values()) {
-    await setHistoricalProfile({
-      identityKey: profile.identityKey,
-      displayName: profile.displayName,
-      about: profile.about,
-      avatarSeed: profile.avatarSeed,
-      counts: {
-        blog_views: profile.blog_views,
-        blog_comments: profile.blog_comments,
-        forum_posts: profile.forum_posts,
-        forum_comments: profile.forum_comments,
-        forum_votes: profile.forum_votes,
-      },
-      lastBlogSlug: profile.lastBlogSlug,
-      lastForumSlug: profile.lastForumSlug,
-      lastSeenAt: profile.lastSeenAt,
-    });
+  // Batch upserts — collect into array then run in parallel chunks of 50
+  const profileArray = [...historicalProfiles.values()];
+  const CHUNK_SIZE = 50;
+  for (let i = 0; i < profileArray.length; i += CHUNK_SIZE) {
+    const chunk = profileArray.slice(i, i + CHUNK_SIZE);
+    await Promise.all(
+      chunk.map((profile) =>
+        setHistoricalProfile({
+          identityKey: profile.identityKey,
+          displayName: profile.displayName,
+          about: profile.about,
+          avatarSeed: profile.avatarSeed,
+          counts: {
+            blog_views: profile.blog_views,
+            forum_views: profile.forum_views,
+            blog_comments: profile.blog_comments,
+            forum_posts: profile.forum_posts,
+            forum_comments: profile.forum_comments,
+            forum_votes: profile.forum_votes,
+          },
+          lastBlogSlug: profile.lastBlogSlug,
+          lastForumSlug: profile.lastForumSlug,
+          lastSeenAt: profile.lastSeenAt,
+        }),
+      ),
+    );
   }
 };
+
+// ─── Synthetic user generation ────────────────────────────────────────────────
 
 const ensureMinimumSyntheticProfiles = async (minimumCount: number): Promise<void> => {
   const currentCount = await UserProfileModel.countDocuments();
   if (currentCount >= minimumCount) return;
 
   const [blogs, forums] = await Promise.all([
-    BlogModel.find({ published: true, deleted_at: null }).select("slug").sort({ created_at: -1 }).limit(200).lean(),
+    BlogModel.find({ published: true, deleted_at: null }).select("slug tags category").sort({ created_at: -1 }).limit(200).lean(),
     ForumPostModel.find({ deleted_at: null }).select("slug").sort({ created_at: -1 }).limit(200).lean(),
   ]);
 
@@ -419,6 +531,14 @@ const ensureMinimumSyntheticProfiles = async (minimumCount: number): Promise<voi
     const createdAt = new Date(Date.now() - ((i % 365) * 24 + (i % 17)) * 60 * 60 * 1000);
     const lastSeenAt = new Date(createdAt.getTime() + ((i % 45) + 1) * 60 * 60 * 1000);
 
+    // Reputation: most users have 0, some have low scores, a few have higher
+    const reputationScore = i % 10 === 0 ? 50 + (i % 150) : i % 5 === 0 ? 10 + (i % 40) : 0;
+    const reputationTier =
+      reputationScore >= 2000 ? "elite"
+      : reputationScore >= 500 ? "expert"
+      : reputationScore >= 100 ? "contributor"
+      : "member";
+
     toInsert.push({
       identity_key: identityKey,
       fingerprint_id: null,
@@ -426,11 +546,16 @@ const ensureMinimumSyntheticProfiles = async (minimumCount: number): Promise<voi
       display_name: displayName,
       about: buildSyntheticAbout(i),
       avatar_url: buildAvatarUrl(identityKey),
-      blog_views: 3 + (i % 18),
+      blog_views: 0,
+      forum_views: 0,
       blog_comments: i % 5,
       forum_posts: i % 4 === 0 ? 1 + (i % 3) : 0,
       forum_comments: i % 7,
       forum_votes: 1 + (i % 12),
+      blog_likes: i % 8,
+      interest_tags: buildSyntheticInterestTags(i),
+      reputation_score: reputationScore,
+      reputation_tier: reputationTier,
       last_blog_slug: lastBlogSlug,
       last_forum_slug: lastForumSlug,
       created_at: createdAt,
@@ -443,10 +568,96 @@ const ensureMinimumSyntheticProfiles = async (minimumCount: number): Promise<voi
   }
 };
 
+const distributeTotal = (count: number, total: number, seedOffset: number): number[] => {
+  if (count <= 0) return [];
+  const safeTotal = Math.max(0, total);
+  const base = Math.floor(safeTotal / count);
+  let remainder = safeTotal % count;
+  return Array.from({ length: count }, (_, index) => {
+    const extra = remainder > 0 && ((index + seedOffset) % count) < remainder ? 1 : 0;
+    if (((index + seedOffset) % count) < remainder) remainder -= 1;
+    return base + extra;
+  });
+};
+
+const rebalanceSyntheticViewCounts = async (minimumCount: number): Promise<void> => {
+  const totals = await getPlatformViewTotals();
+  const docs = await UserProfileModel.find({})
+    .select("identity_key blog_views forum_views")
+    .sort({ created_at: 1 })
+    .limit(Math.max(minimumCount, 1200))
+    .lean();
+
+  const synthetic = docs.filter((doc) => String(doc.identity_key).startsWith("seed:"));
+  const real = docs.filter((doc) => !String(doc.identity_key).startsWith("seed:"));
+
+  if (synthetic.length === 0) return;
+
+  const realBlogViews = real.reduce((sum, doc) => sum + Number(doc.blog_views ?? 0), 0);
+  const realForumViews = real.reduce((sum, doc) => sum + Number(doc.forum_views ?? 0), 0);
+  const remainingBlogViews = Math.max(0, totals.blogViews - realBlogViews);
+  const remainingForumViews = Math.max(0, totals.forumViews - realForumViews);
+
+  const blogAllocations = distributeTotal(synthetic.length, remainingBlogViews, 3);
+  const forumAllocations = distributeTotal(synthetic.length, remainingForumViews, 11);
+
+  const CHUNK_SIZE = 50;
+  for (let i = 0; i < synthetic.length; i += CHUNK_SIZE) {
+    const chunk = synthetic.slice(i, i + CHUNK_SIZE);
+    await Promise.all(
+      chunk.map((doc, localIndex) =>
+        UserProfileModel.updateOne(
+          { _id: doc._id },
+          {
+            $set: {
+              blog_views: blogAllocations[i + localIndex] ?? 0,
+              forum_views: forumAllocations[i + localIndex] ?? 0,
+            },
+          },
+        ),
+      ),
+    );
+  }
+};
+
+// ─── Public queries ───────────────────────────────────────────────────────────
+
 export const getUserProfiles = async (limit = 120): Promise<UserProfile[]> => {
   await connectToDatabase();
-  await backfillFromHistoricalData();
-  await ensureMinimumSyntheticProfiles(Math.max(limit, 1000));
+  const minimum = Math.max(limit, 1000);
+
+  const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> =>
+    Promise.race<T>([
+      promise,
+      new Promise<T>((resolve) => {
+        setTimeout(() => resolve(fallback), timeoutMs);
+      }),
+    ]);
+
+  // Run expensive maintenance at most once per 10 minutes per process.
+  // This prevents /users page from repeatedly triggering heavy backfill/rebalance work.
+  const now = Date.now();
+  const lastRun = backfillState.__tatvaopsUserMaintenanceLastRunAt ?? 0;
+  const canRunMaintenance = now - lastRun > 10 * 60 * 1000;
+
+  if (canRunMaintenance && !backfillState.__tatvaopsUserMaintenancePromise) {
+    backfillState.__tatvaopsUserMaintenanceLastRunAt = now;
+    backfillState.__tatvaopsUserMaintenancePromise = (async () => {
+      await backfillFromHistoricalData();
+      await ensureMinimumSyntheticProfiles(minimum);
+      await rebalanceSyntheticViewCounts(minimum);
+    })()
+      .catch(() => undefined)
+      .finally(() => {
+        backfillState.__tatvaopsUserMaintenancePromise = null;
+      });
+  }
+
+  // Wait briefly for maintenance on cold path, then proceed with available data.
+  if (backfillState.__tatvaopsUserMaintenancePromise) {
+    await withTimeout(backfillState.__tatvaopsUserMaintenancePromise, 1200, undefined);
+  }
+
   const docs = await UserProfileModel.find({})
     .sort({ last_seen_at: -1, blog_views: -1, forum_posts: -1 })
     .limit(Math.min(Math.max(limit, 1), 1200))
@@ -465,4 +676,69 @@ export const getPlatformViewTotals = async (): Promise<PlatformViewTotals> => {
     blogViews: Number((blogAgg[0] as { total?: number } | undefined)?.total ?? 0),
     forumViews: Number((forumAgg[0] as { total?: number } | undefined)?.total ?? 0),
   };
+};
+
+export const getUserProfileViewTotals = async (): Promise<UserProfileViewTotals> => {
+  await connectToDatabase();
+  const [agg] = await UserProfileModel.aggregate([
+    {
+      $group: {
+        _id: null,
+        blogViews: { $sum: { $ifNull: ["$blog_views", 0] } },
+        forumViews: { $sum: { $ifNull: ["$forum_views", 0] } },
+      },
+    },
+  ]);
+
+  return {
+    blogViews: Number((agg as { blogViews?: number } | undefined)?.blogViews ?? 0),
+    forumViews: Number((agg as { forumViews?: number } | undefined)?.forumViews ?? 0),
+  };
+};
+
+export const getUserProfileByDisplayName = async (displayName: string): Promise<UserProfile | null> => {
+  await connectToDatabase();
+  const safeName = displayName.trim().slice(0, 120);
+  if (!safeName) return null;
+
+  const exact = await UserProfileModel.findOne({
+    display_name: { $regex: `^${safeName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" },
+  })
+    .sort({ last_seen_at: -1 })
+    .lean();
+  if (exact) return toUserProfile(exact as never);
+
+  const partial = await UserProfileModel.findOne({
+    display_name: { $regex: safeName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" },
+  })
+    .sort({ last_seen_at: -1 })
+    .lean();
+  return partial ? toUserProfile(partial as never) : null;
+};
+
+export const getActiveUsersByTopic = async (signals: string[], limit = 8): Promise<UserProfile[]> => {
+  await connectToDatabase();
+  const cleaned = [...new Set(signals.map((s) => sanitizeKey(s)).filter(Boolean))].slice(0, 8);
+  if (cleaned.length === 0) {
+    const fallback = await UserProfileModel.find({})
+      .sort({ last_seen_at: -1, forum_comments: -1, blog_comments: -1 })
+      .limit(limit)
+      .lean();
+    return fallback.map((doc) => toUserProfile(doc as never));
+  }
+
+  const or = cleaned.map((tag) => ({ [`interest_tags.${tag}`]: { $exists: true } }));
+  const docs = await UserProfileModel.find({ $or: or })
+    .sort({ last_seen_at: -1, forum_comments: -1, blog_comments: -1, blog_views: -1 })
+    .limit(limit)
+    .lean();
+
+  if (docs.length >= limit) return docs.map((doc) => toUserProfile(doc as never));
+
+  const seenIds = new Set(docs.map((d) => d._id.toString()));
+  const extras = await UserProfileModel.find({ _id: { $nin: [...seenIds] } })
+    .sort({ last_seen_at: -1 })
+    .limit(Math.max(0, limit - docs.length))
+    .lean();
+  return [...docs, ...extras].map((doc) => toUserProfile(doc as never));
 };

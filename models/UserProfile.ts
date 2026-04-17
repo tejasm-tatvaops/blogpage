@@ -1,5 +1,29 @@
 import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
+/**
+ * Reputation tiers — unlocked by cumulative reputation_score:
+ *   member      :   0 –  99  (default for new users)
+ *   contributor : 100 – 499
+ *   expert      : 500 – 1999
+ *   elite       : 2000+       (unlocks exclusive forum club access)
+ */
+export const REPUTATION_TIERS = ["member", "contributor", "expert", "elite"] as const;
+export type ReputationTier = (typeof REPUTATION_TIERS)[number];
+
+export const REPUTATION_THRESHOLDS: Record<ReputationTier, number> = {
+  member: 0,
+  contributor: 100,
+  expert: 500,
+  elite: 2000,
+};
+
+export const getReputationTier = (score: number): ReputationTier => {
+  if (score >= REPUTATION_THRESHOLDS.elite) return "elite";
+  if (score >= REPUTATION_THRESHOLDS.expert) return "expert";
+  if (score >= REPUTATION_THRESHOLDS.contributor) return "contributor";
+  return "member";
+};
+
 const userProfileSchema = new mongoose.Schema(
   {
     identity_key: { type: String, required: true, unique: true, trim: true, index: true },
@@ -8,11 +32,32 @@ const userProfileSchema = new mongoose.Schema(
     display_name: { type: String, required: true, trim: true, maxlength: 120 },
     about: { type: String, required: true, trim: true, maxlength: 280 },
     avatar_url: { type: String, required: true, trim: true, maxlength: 500 },
+
+    // ── Activity counters ─────────────────────────────────────────────────────
     blog_views: { type: Number, default: 0 },
+    forum_views: { type: Number, default: 0 },
     blog_comments: { type: Number, default: 0 },
     forum_posts: { type: Number, default: 0 },
     forum_comments: { type: Number, default: 0 },
     forum_votes: { type: Number, default: 0 },
+    blog_likes: { type: Number, default: 0 }, // upvotes cast on blog posts
+
+    // ── Persona: weighted interest vector ─────────────────────────────────────
+    // Keys are normalised tag/category strings; values are float weights (0–100).
+    // Updated by personaService on every meaningful interaction.
+    // Stored as a plain object (not Map) for lean-query compatibility.
+    interest_tags: { type: mongoose.Schema.Types.Mixed, default: {} },
+
+    // ── Reputation (forum + cross-platform) ───────────────────────────────────
+    reputation_score: { type: Number, default: 0, min: 0, index: true },
+    reputation_tier: {
+      type: String,
+      enum: REPUTATION_TIERS,
+      default: "member",
+      index: true,
+    },
+
+    // ── Navigation breadcrumbs ────────────────────────────────────────────────
     last_blog_slug: { type: String, default: null, trim: true },
     last_forum_slug: { type: String, default: null, trim: true },
     last_seen_at: { type: Date, default: Date.now, index: true },
@@ -26,6 +71,7 @@ const userProfileSchema = new mongoose.Schema(
 userProfileSchema.index({ created_at: -1 });
 userProfileSchema.index({ blog_views: -1, last_seen_at: -1 });
 userProfileSchema.index({ forum_posts: -1, forum_comments: -1, last_seen_at: -1 });
+userProfileSchema.index({ reputation_score: -1, last_seen_at: -1 }); // leaderboard queries
 
 export type UserProfileSchemaType = InferSchemaType<typeof userProfileSchema>;
 export type UserProfileModelType = Model<UserProfileSchemaType>;

@@ -4,6 +4,7 @@ import { ForumPostModel } from "@/models/ForumPost";
 import { ForumVoteModel } from "@/models/ForumVote";
 import { connectToDatabase } from "./mongodb";
 import { logger } from "./logger";
+import { updateReputation, recordInterest } from "./personaService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -309,6 +310,17 @@ export const createForumPost = async (input: ForumPostInput): Promise<ForumPost>
   });
 
   logger.info({ slug, linked_blog_slug: input.linked_blog_slug }, "Forum post created");
+
+  // Reputation: +5 for creating a forum post
+  if (input.creator_fingerprint) {
+    void updateReputation(`fp:${input.creator_fingerprint}`, 5);
+    void recordInterest({
+      identityKey: `fp:${input.creator_fingerprint}`,
+      tags: input.tags,
+      action: "forum_post",
+    });
+  }
+
   return toForumPost(doc.toObject() as unknown as ForumPostLean);
 };
 
@@ -426,6 +438,14 @@ export const voteForumPost = async (
   const newScore = computeHotScore(up, down, comments, updated.created_at);
   await ForumPostModel.updateOne({ _id: updated._id }, { score: newScore });
 
+  // Reputation: receiving an upvote = +2 for post author; downvote = -1
+  const authorFingerprint = updated.creator_fingerprint ?? null;
+  if (authorFingerprint) {
+    void updateReputation(`fp:${authorFingerprint}`, direction === "up" ? 2 : -1);
+  }
+  // Voter gets +1 for participating
+  void updateReputation(`fp:${fingerprintId}`, 1);
+
   return {
     ok: true,
     id: postId,
@@ -466,11 +486,12 @@ export const setBestAnswer = async (
 
 // ─── Comments ─────────────────────────────────────────────────────────────────
 
-export const incrementForumCommentCount = async (postId: string): Promise<void> => {
+export const incrementForumCommentCount = async (
+  postId: string,
+  commenterIdentityKey?: string,
+): Promise<void> => {
   await connectToDatabase();
   if (!isValidObjectId(postId)) return;
-  // Use findOneAndUpdate so we get the updated values in one round trip,
-  // avoiding the separate findById read that recomputeScore used to do.
   const updated = (await ForumPostModel.findOneAndUpdate(
     { _id: postId },
     { $inc: { comment_count: 1 } },
@@ -479,6 +500,11 @@ export const incrementForumCommentCount = async (postId: string): Promise<void> 
     .select("upvote_count downvote_count comment_count created_at")
     .lean()) as unknown as ForumPostLean | null;
   if (updated) await updateScoreFromDoc(postId, updated);
+
+  // Reputation: +3 for adding a forum comment
+  if (commenterIdentityKey) {
+    void updateReputation(commenterIdentityKey, 3);
+  }
 };
 
 export const decrementForumCommentCount = async (postId: string): Promise<void> => {

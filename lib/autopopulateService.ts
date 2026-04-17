@@ -241,6 +241,8 @@ const processPost = async (
 ): Promise<{ commentsCreated: number; repliesCreated: number }> => {
   let commentsCreated = 0;
   let repliesCreated = 0;
+  const usedBodies = new Set<string>();
+  const usedAuthors = new Set<string>();
 
   // Skip posts that already have a lot of comments
   const existingCount =
@@ -284,10 +286,19 @@ const processPost = async (
   const users = pickDistinctFakeUsers(aiComments.length + aiComments.reduce((sum, c) => sum + c.replies.length, 0));
   let userIndex = 0;
 
+  const normaliseBody = (value: string): string =>
+    value.toLowerCase().replace(/[^\w\s]/g, "").replace(/\s+/g, " ").trim();
+
   for (const aiComment of aiComments) {
     if (!aiComment.content || aiComment.content.length < 3) continue;
+    const commentBody = normaliseBody(aiComment.content);
+    if (!commentBody || usedBodies.has(commentBody)) continue;
 
-    const author = users[userIndex % users.length]!;
+    let author = users[userIndex % users.length]!;
+    if (usedAuthors.has(author.name)) {
+      const fallback = users.find((u) => !usedAuthors.has(u.name));
+      if (fallback) author = fallback;
+    }
     userIndex++;
 
     let parentId: string;
@@ -301,6 +312,8 @@ const processPost = async (
       });
       parentId = created.id;
       commentsCreated++;
+      usedBodies.add(commentBody);
+      usedAuthors.add(author.name);
 
       if (post.type === "forum") {
         await incrementForumCommentCount(post.id);
@@ -328,6 +341,8 @@ const processPost = async (
 
     for (const reply of aiComment.replies) {
       if (!reply.content || reply.content.length < 3) continue;
+      const replyBody = normaliseBody(reply.content);
+      if (!replyBody || usedBodies.has(replyBody)) continue;
 
       const replyAuthor = users[userIndex % users.length]!;
       userIndex++;
@@ -341,6 +356,7 @@ const processPost = async (
           persona_name: isPersonaEnabled() ? persona.name : null,
         });
         repliesCreated++;
+        usedBodies.add(replyBody);
 
         if (post.type === "forum") {
           await incrementForumCommentCount(post.id);

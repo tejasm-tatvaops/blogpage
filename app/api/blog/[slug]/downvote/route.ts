@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { incrementDownvote } from "@/lib/blogService";
 import { downvoteLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
+import { getFingerprintFromRequest } from "@/lib/fingerprint";
+import { BlogLikeModel } from "@/models/BlogLike";
+import { connectToDatabase } from "@/lib/mongodb";
 
 export async function POST(
   request: Request,
@@ -13,7 +16,27 @@ export async function POST(
 
   try {
     const { slug } = await params;
-    const newCount = await incrementDownvote(decodeURIComponent(slug));
+    const decodedSlug = decodeURIComponent(slug);
+
+    const fingerprintId = getFingerprintFromRequest(request);
+    const ipAddress =
+      request.headers.get("cf-connecting-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      null;
+    const identityKey = fingerprintId ? `fp:${fingerprintId}` : `ip:${ipAddress ?? "anonymous"}`;
+
+    await connectToDatabase();
+
+    try {
+      await BlogLikeModel.create({ blog_slug: decodedSlug, identity_key: identityKey, direction: "down" });
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && (err as { code?: number }).code === 11000) {
+        return NextResponse.json({ error: "Already voted." }, { status: 409 });
+      }
+      throw err;
+    }
+
+    const newCount = await incrementDownvote(decodedSlug);
     return NextResponse.json({ downvote_count: newCount }, { status: 200 });
   } catch (error) {
     logger.error({ error }, "POST /api/blog/[slug]/downvote error");

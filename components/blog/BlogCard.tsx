@@ -6,6 +6,12 @@ type BlogCardProps = {
   post: BlogPost;
   resolvedImageSrc?: string;
   fallbackImagePool?: string[];
+  intelligence?: {
+    bucket?: "personalized" | "trending" | "exploration";
+    reasonTag?: string;
+  };
+  highlightTags?: string[];
+  variantTone?: "indigo" | "emerald" | "amber";
 };
 
 const CARD_LOCAL_IMAGE_POOL = [
@@ -53,15 +59,44 @@ const formatDate = (dateString: string): string =>
     year: "numeric",
   }).format(new Date(dateString));
 
-export function BlogCard({ post, resolvedImageSrc, fallbackImagePool }: BlogCardProps) {
+export function BlogCard({
+  post,
+  resolvedImageSrc,
+  fallbackImagePool,
+  intelligence,
+  highlightTags = [],
+  variantTone = "indigo",
+}: BlogCardProps) {
   const imageResolution = resolvedImageSrc
     ? { primary: resolvedImageSrc, fallbackPool: fallbackImagePool ?? [] }
     : resolveCardImage(post);
 
+  const normalizedHighlights = highlightTags.map((tag) => tag.toLowerCase());
+  const replyCount =
+    typeof (post as { comment_count?: number }).comment_count === "number"
+      ? (post as { comment_count?: number }).comment_count ?? 0
+      : 0;
+  const showPopular = post.view_count >= 80 || post.upvote_count >= 12;
+  const showActive = replyCount >= 6;
+  const reasonLabel =
+    intelligence?.bucket === "personalized"
+      ? `🧠 Because you like ${intelligence.reasonTag ?? post.tags[0] ?? post.category}`
+      : intelligence?.bucket === "trending"
+      ? "🔥 Trending"
+      : intelligence?.bucket === "exploration"
+      ? "✨ Discover"
+      : null;
+  const toneClass =
+    variantTone === "emerald"
+      ? "from-emerald-600/35 via-emerald-900/30 to-black/65"
+      : variantTone === "amber"
+      ? "from-amber-600/35 via-amber-900/30 to-black/65"
+      : "from-indigo-600/35 via-indigo-900/30 to-black/65";
+
   return (
-    <article className="group h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <article className="group relative h-full min-h-[26rem] overflow-hidden bg-black">
       <Link href={`/blog/${post.slug}`} className="block h-full">
-        <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+        <div className="absolute inset-0 overflow-hidden bg-slate-100">
           <CoverImage
             src={imageResolution.primary}
             slug={post.slug}
@@ -69,30 +104,61 @@ export function BlogCard({ post, resolvedImageSrc, fallbackImagePool }: BlogCard
             disablePlaceholderFallback
             fallbackSources={imageResolution.fallbackPool}
             debugId={post.slug}
-            className="object-cover transition duration-500 group-hover:scale-[1.04]"
+            className="object-cover transition duration-700 ease-out group-hover:scale-[1.06]"
             sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
             priority={false}
           />
         </div>
+        <div className={`absolute inset-0 bg-gradient-to-t ${toneClass}`} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-        <div className="flex h-[calc(100%-12rem)] flex-col gap-3 p-5">
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3 p-5 text-white">
+          {(reasonLabel || showPopular || showActive) && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {reasonLabel && (
+                <span className="rounded-full bg-white/18 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+                  {reasonLabel}
+                </span>
+              )}
+              {showPopular && (
+                <span className="rounded-full bg-orange-500/90 px-2 py-0.5 text-[10px] font-bold text-white">
+                  🔥 Popular
+                </span>
+              )}
+              {showActive && (
+                <span className="rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-bold text-white">
+                  💬 Active
+                </span>
+              )}
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-xs font-medium text-white/80">
             <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
             <span aria-hidden>•</span>
             <span>{post.author}</span>
             <span aria-hidden>•</span>
             <span>{post.view_count.toLocaleString()} views</span>
+            <span aria-hidden>•</span>
+            <span>{replyCount.toLocaleString()} replies</span>
+            <span aria-hidden>•</span>
+            <span>{post.upvote_count.toLocaleString()} likes</span>
           </div>
 
-          <h2 className="line-clamp-2 text-xl font-bold leading-snug text-slate-900">{post.title}</h2>
+          <h2 className="line-clamp-2 text-2xl font-extrabold leading-tight text-white sm:text-[1.75rem]">
+            {post.title}
+          </h2>
 
-          <p className="line-clamp-3 text-sm leading-6 text-slate-600">{post.excerpt}</p>
+          <p className="line-clamp-3 text-sm leading-6 text-white/80">{post.excerpt}</p>
 
           <div className="mt-auto flex flex-wrap gap-2 pt-1">
             {post.tags.slice(0, 3).map((tag) => (
               <span
                 key={`${post.id}-${tag}`}
-                className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+                className={`rounded-full px-2.5 py-1 text-xs font-medium backdrop-blur-sm ${
+                  normalizedHighlights.includes(tag.toLowerCase())
+                    ? "bg-white text-slate-950"
+                    : "bg-white/20 text-white"
+                }`}
               >
                 #{tag}
               </span>

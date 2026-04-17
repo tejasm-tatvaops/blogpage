@@ -6,6 +6,7 @@ import type { Comment } from "@/lib/commentService";
 import { getOrCreateFingerprint } from "@/lib/personalization";
 import { useActivityPolling } from "@/lib/activityPolling";
 import { getAvatarForIdentity } from "@/lib/avatar";
+import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
 
 type ForumCommentSectionProps = {
   slug: string;
@@ -248,15 +249,23 @@ export function ForumCommentSection({
     const isBest = c.id === bestCommentId;
     return (
       <div key={c.id} className={`flex gap-3 ${isBest && !isReply ? "rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 -mx-3" : ""}`}>
-        <img
-          src={getAvatarForIdentity(`forum-comment:${c.author_name}|${c.id}`)}
-          alt={`${c.author_name} avatar`}
-          className={`h-9 w-9 flex-shrink-0 rounded-full border object-cover ${isBest ? "border-emerald-200 bg-emerald-50" : "border-indigo-200 bg-indigo-50"}`}
-          loading="lazy"
+        <UserProfileQuickView
+          displayName={c.author_name}
+          trigger={
+            <img
+              src={getAvatarForIdentity(`forum-comment:${c.author_name}|${c.id}`)}
+              alt={`${c.author_name} avatar`}
+              className={`h-9 w-9 flex-shrink-0 rounded-full border object-cover ${isBest ? "border-emerald-200 bg-emerald-50" : "border-indigo-200 bg-indigo-50"}`}
+              loading="lazy"
+            />
+          }
         />
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-slate-900">{c.author_name}</span>
+            <UserProfileQuickView
+              displayName={c.author_name}
+              trigger={<span className="text-sm font-semibold text-slate-900 hover:underline">{c.author_name}</span>}
+            />
             <time className="text-xs text-slate-400" dateTime={c.created_at}>
               {formatDate(c.created_at)}
             </time>

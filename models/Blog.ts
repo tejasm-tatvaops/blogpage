@@ -27,6 +27,9 @@ const blogSchema = new mongoose.Schema(
     upvote_count: { type: Number, default: 0, min: 0 },
     downvote_count: { type: Number, default: 0, min: 0 },
     view_count: { type: Number, default: 0, min: 0 },
+    // Inshorts-style: word count of rendered body text (excluding markdown syntax).
+    // Stored so feeds can filter/sort by brevity and UIs can show a badge.
+    word_count: { type: Number, default: 0, min: 0 },
     deleted_at: { type: Date, default: null },
   },
   {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import type { ForumPost } from "@/lib/forumService";
 
 type SwipeModeProps = {
@@ -14,20 +14,102 @@ const formatCount = (n: number): string => {
   return String(n);
 };
 
+const formatRelativeTime = (value: string): string => {
+  const created = new Date(value).getTime();
+  if (Number.isNaN(created)) return "now";
+  const diff = Date.now() - created;
+  const mins = Math.max(1, Math.floor(diff / 60_000));
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  return `${Math.floor(hrs / 24)}d`;
+};
+
+const gradients = [
+  "from-slate-950 via-indigo-950 to-slate-900",
+  "from-zinc-950 via-blue-950 to-slate-900",
+  "from-neutral-950 via-purple-950 to-slate-900",
+  "from-slate-950 via-cyan-950 to-slate-900",
+  "from-stone-950 via-fuchsia-950 to-slate-900",
+];
+
+const constructionImages = [
+  "/images/construction/site-1.jpg",
+  "/images/construction/site-2.jpg",
+  "/images/construction/site-3.jpg",
+  "/images/construction/site-4.jpg",
+  "/images/construction/site-5.png",
+  "/images/construction/site-6.png",
+  "/images/construction/site-7.png",
+  "/images/construction/site-team-1.png",
+  "/images/construction/foundation-1.png",
+  "/images/construction/tower-1.png",
+  "/images/construction/city-crane-1.png",
+  "/images/construction/highrise-1.png",
+  "/images/construction/concrete-mix-1.png",
+  "/images/construction/brick-stack-1.png",
+  "/images/construction/house-shell-1.png",
+  "/images/construction/modern-house-1.png",
+  "/images/construction/commercial-frame-1.png",
+  "/images/construction/user-added-1.png",
+  "/images/construction/user-added-2.png",
+  "/images/construction/user-added-3.png",
+  "/images/construction/user-added-4.png",
+  "/images/construction/user-added-5.png",
+  "/images/construction/user-added-6.png",
+  "/images/construction/user-added-7.png",
+  "/images/construction/user-added-8.png",
+  "/images/construction/user-added-9.png",
+  "/images/construction/user-added-10.png",
+  "/images/construction/user-added-11.png",
+  "/images/construction/user-added-12.png",
+  "/images/construction/user-added-13.png",
+  "/images/construction/user-added-14.png",
+];
+
+const gradientForPost = (id: string): string => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return gradients[hash % gradients.length];
+};
+
+const imageForPost = (id: string): string => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i += 1) hash = (hash * 37 + id.charCodeAt(i)) >>> 0;
+  return constructionImages[hash % constructionImages.length];
+};
+
+const shortText = (post: ForumPost): string => {
+  const source = (post.excerpt || post.content || "").replace(/\s+/g, " ").trim();
+  if (!source) return "Practical construction discussion from the community.";
+  return source.split(" ").slice(0, 60).join(" ");
+};
+
 export function SwipeMode({ posts, onClose }: SwipeModeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartXRef = useRef(0);
+  const touchStartAtRef = useRef(0);
+  const touchMovedRef = useRef(0);
+  const interactionDepthRef = useRef<"low" | "medium" | "high">("low");
+  const dwellStartedAtRef = useRef(Date.now());
+  const lastTrackedIndexRef = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [showGestureHint, setShowGestureHint] = useState(true);
+  const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
+  const [likedById, setLikedById] = useState<Record<string, boolean>>({});
+  const [swipeGlow, setSwipeGlow] = useState(false);
+  const [interactionAck, setInteractionAck] = useState(false);
 
   // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowDown") scrollTo(activeIndex + 1);
-      if (e.key === "ArrowUp") scrollTo(activeIndex - 1);
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") scrollTo(activeIndex + 1);
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") scrollTo(activeIndex - 1);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  });
+  }, [activeIndex, onClose, posts.length]);
 
   // Prevent body scroll while swipe mode is open
   useEffect(() => {
@@ -36,6 +118,18 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
       document.body.style.overflow = "";
     };
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowGestureHint(false), 2800);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const next = posts[activeIndex + 1];
+    if (!next) return;
+    const preloadImage = new Image();
+    preloadImage.src = imageForPost(next.id);
+  }, [activeIndex, posts]);
 
   // Track active slide via IntersectionObserver
   useEffect(() => {
@@ -59,156 +153,383 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
     return () => observer.disconnect();
   }, [posts]);
 
-  const scrollTo = (index: number) => {
+  const scrollTo = (index: number, behavior: ScrollBehavior = "smooth") => {
     const clamped = Math.max(0, Math.min(posts.length - 1, index));
     const container = containerRef.current;
     if (!container) return;
     const slide = container.querySelector(`[data-slide="${clamped}"]`);
-    slide?.scrollIntoView({ behavior: "smooth", block: "start" });
+    slide?.scrollIntoView({ behavior, block: "nearest", inline: "start" });
   };
 
+  const emitFeedEvent = (
+    eventType: "dwell_time" | "skip",
+    post: ForumPost,
+    dwellMs?: number,
+    interactionDepth: "low" | "medium" | "high" = interactionDepthRef.current,
+  ) => {
+    void fetch("/api/feed/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventType,
+        postSlug: post.slug,
+        tags: post.tags,
+        category: post.category,
+        dwellMs,
+        interactionDepth,
+      }),
+    }).catch(() => undefined);
+  };
+
+  const commitDwell = (fromIndex: number, toIndex: number) => {
+    const prev = posts[fromIndex];
+    if (!prev) return;
+    const dwellMs = Math.max(0, Date.now() - dwellStartedAtRef.current);
+    emitFeedEvent("dwell_time", prev, dwellMs);
+    if (toIndex !== fromIndex && dwellMs < 5000) {
+      emitFeedEvent("skip", prev, dwellMs);
+    }
+    dwellStartedAtRef.current = Date.now();
+  };
+
+  useEffect(() => {
+    if (lastTrackedIndexRef.current === activeIndex) return;
+    commitDwell(lastTrackedIndexRef.current, activeIndex);
+    lastTrackedIndexRef.current = activeIndex;
+  }, [activeIndex, posts]);
+
+  useEffect(() => {
+    return () => {
+      const current = posts[lastTrackedIndexRef.current];
+      if (!current) return;
+      const dwellMs = Math.max(0, Date.now() - dwellStartedAtRef.current);
+      emitFeedEvent("dwell_time", current, dwellMs);
+    };
+  }, [posts]);
+
+  const visibleDotStart = Math.max(0, activeIndex - 4);
+  const visibleDotEnd = Math.min(posts.length, visibleDotStart + 9);
+  const visibleDots = posts.slice(visibleDotStart, visibleDotEnd);
+  const topTags = [...new Set(posts.flatMap((p) => p.tags).filter(Boolean))].slice(0, 12);
+  const activePost = posts[activeIndex];
+  const interestSignal = activePost?.tags[0] ?? activePost?.category ?? "construction";
+  const progressPct = posts.length > 1 ? ((activeIndex + 1) / posts.length) * 100 : 100;
+  const progressComplete = progressPct >= 100;
+  const easingPool: [number, number, number, number][] = [
+    [0.16, 1, 0.3, 1],
+    [0.22, 1, 0.36, 1],
+    [0.2, 0.95, 0.25, 1],
+  ];
+  const transitionEase = easingPool[activeIndex % easingPool.length];
+  const toneForPost = (post: ForumPost): string => {
+    const signal = `${post.category ?? ""} ${post.tags.join(" ")}`.toLowerCase();
+    if (signal.includes("design") || signal.includes("interior")) return "from-indigo-500/20 via-transparent to-transparent";
+    if (signal.includes("cost") || signal.includes("budget")) return "from-amber-500/20 via-transparent to-transparent";
+    if (signal.includes("material") || signal.includes("concrete")) return "from-emerald-500/20 via-transparent to-transparent";
+    return "from-sky-500/20 via-transparent to-transparent";
+  };
+
+  if (posts.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 h-screen w-screen bg-black text-white">
+        <div className="mx-auto flex h-full w-full max-w-xl items-center justify-center px-6">
+          <div className="w-full space-y-3">
+            <div className="h-4 w-32 animate-pulse rounded bg-white/20" />
+            <div className="h-7 w-full animate-pulse rounded bg-white/20" />
+            <div className="h-24 w-full animate-pulse rounded bg-white/10" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950">
-      {/* Top bar */}
-      <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-5 py-4 md:px-8">
-        <span className="text-sm font-semibold text-white/70">
-          {activeIndex + 1} / {posts.length}
-        </span>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Exit swipe mode"
-          className="rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Progress dots */}
-      <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
-        {posts.map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            aria-label={`Go to post ${i + 1}`}
-            onClick={() => scrollTo(i)}
-            className={`h-1.5 rounded-full transition-all ${
-              i === activeIndex ? "w-6 bg-white" : "w-1.5 bg-white/30"
-            }`}
+    <motion.div
+      className="fixed inset-0 z-50 h-screen w-screen bg-black text-white"
+      animate={{ scale: selectedPost ? 0.985 : 1 }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
+    >
+      <AnimatePresence>
+        {swipeGlow && (
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.2 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            style={{ background: "radial-gradient(circle at center, rgba(125,211,252,0.45), transparent 55%)" }}
           />
-        ))}
+        )}
+      </AnimatePresence>
+      <div className="pointer-events-none absolute left-0 right-0 top-0 z-20">
+        <div className="pointer-events-auto sticky top-0 bg-black/20 px-3 pt-2 backdrop-blur-lg">
+          <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-white/15">
+            <motion.div
+              className="h-full rounded-full bg-white/85"
+              animate={{
+                width: `${progressPct}%`,
+                boxShadow: progressComplete
+                  ? "0 0 14px rgba(255,255,255,0.9), 0 0 24px rgba(96,165,250,0.75)"
+                  : "0 0 0 rgba(255,255,255,0)",
+              }}
+              transition={{ duration: 0.34, ease: transitionEase }}
+            />
+          </div>
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold tracking-wide text-white/95">My Feed</span>
+              <span className="text-xs text-white/65">{activeIndex + 1}/{posts.length}</span>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Exit swipe mode"
+              className="rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={`${activeIndex}-${interestSignal}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="mb-2 text-[11px] font-medium text-white/85"
+            >
+              Because you like <span className="font-semibold text-white">{interestSignal}</span>
+            </motion.p>
+          </AnimatePresence>
+          <div className="flex gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <span className="whitespace-nowrap rounded-full bg-white px-3 py-1 text-xs font-semibold text-black">All</span>
+            {topTags.map((tag) => (
+              <span key={tag} className="whitespace-nowrap rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white/90">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Slides container */}
       <div
         ref={containerRef}
-        className="h-full overflow-y-scroll"
-        style={{ scrollSnapType: "y mandatory", scrollbarWidth: "none" }}
+        className="h-screen whitespace-nowrap overflow-x-scroll overflow-y-hidden snap-x snap-mandatory px-2 pb-2 pt-16 [scroll-behavior:smooth]"
+        style={{ scrollbarWidth: "none" }}
+        onTouchStart={(event) => {
+          const point = event.touches[0];
+          touchStartXRef.current = point?.clientX ?? 0;
+          touchStartAtRef.current = Date.now();
+          touchMovedRef.current = 0;
+          interactionDepthRef.current = "low";
+        }}
+        onTouchMove={(event) => {
+          const point = event.touches[0];
+          const move = Math.abs((point?.clientX ?? 0) - touchStartXRef.current);
+          touchMovedRef.current = Math.max(touchMovedRef.current, move);
+          if (touchMovedRef.current > 35) interactionDepthRef.current = "medium";
+        }}
+        onTouchEnd={(event) => {
+          const point = event.changedTouches[0];
+          const dx = (point?.clientX ?? 0) - touchStartXRef.current;
+          const dt = Math.max(1, Date.now() - touchStartAtRef.current);
+          const velocity = Math.abs(dx) / dt;
+          const fastSwipe = velocity > 0.95 && Math.abs(dx) > 35;
+          const committedSwipe = Math.abs(dx) > 90;
+          if (fastSwipe || committedSwipe) {
+            interactionDepthRef.current = fastSwipe ? "high" : "medium";
+            setSwipeGlow(true);
+            window.setTimeout(() => setSwipeGlow(false), 260);
+            scrollTo(activeIndex + (dx < 0 ? 1 : -1), fastSwipe ? "auto" : "smooth");
+            return;
+          }
+          scrollTo(activeIndex, "smooth");
+        }}
       >
         {posts.map((post, i) => (
           <div
             key={post.id}
             data-slide={i}
-            className="flex h-screen flex-col items-center justify-center px-4 py-20 md:px-8"
-            style={{ scrollSnapAlign: "start" }}
+            className="mr-3 inline-block h-[calc(100vh-4.5rem)] w-[calc(100vw-2.75rem)] align-top snap-center"
           >
-            <div className="w-full max-w-[1500px] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#070b2a] via-[#060a25] to-[#030617] shadow-2xl">
-              <div className="grid grid-cols-1 md:grid-cols-[1.4fr_0.6fr]">
-                <div className="p-6 sm:p-8 md:p-12">
-                  {/* Tags */}
-                  {post.tags.length > 0 && (
-                    <div className="mb-5 flex flex-wrap gap-2">
-                      {post.tags.slice(0, 5).map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full bg-indigo-500/20 px-2.5 py-0.5 text-xs font-medium text-indigo-300"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+            {Math.abs(i - activeIndex) > 1 ? (
+              <div className="h-full w-full bg-black" />
+            ) : (
+              <motion.article
+                initial={{ opacity: 0.82, scale: 0.985, y: 18 }}
+                animate={{
+                  opacity: i === activeIndex ? 1 : 0.8,
+                  scale: i === activeIndex ? 1 : 0.986,
+                  y: i === activeIndex ? 0 : 5,
+                }}
+                transition={{
+                  duration: i === activeIndex ? 0.32 : 0.42,
+                  ease: transitionEase,
+                }}
+                onClick={() => setSelectedPost(post)}
+                layoutId={`forum-card-${post.id}`}
+                className={`relative h-full w-full overflow-hidden rounded-2xl bg-gradient-to-br ${gradientForPost(post.id)} bg-cover bg-center bg-no-repeat`}
+                style={{ backgroundImage: `url(${imageForPost(post.id)})` }}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-b ${toneForPost(post)} transition duration-500`} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-                  {/* Title */}
-                  <h2 className="mb-4 text-3xl font-extrabold leading-tight text-white sm:text-4xl md:text-5xl">
+                <div className="absolute bottom-28 right-4 z-10 flex flex-col gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    animate={likedById[post.id] ? { scale: [1, 1.24, 0.96, 1] } : { scale: 1 }}
+                    transition={{ duration: 0.32, ease: "easeOut" }}
+                    className={`rounded-full px-3 py-2 text-xs font-semibold backdrop-blur-md ${
+                      likedById[post.id] ? "bg-pink-500/80" : "bg-black/35"
+                    }`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      interactionDepthRef.current = "high";
+                      setInteractionAck(true);
+                      window.setTimeout(() => setInteractionAck(false), 500);
+                      setLikedById((prev) => ({ ...prev, [post.id]: !prev[post.id] }));
+                    }}
+                  >
+                    👍 {formatCount(post.upvote_count)}
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.94 }}
+                    className="rounded-full bg-black/35 px-3 py-2 text-xs font-semibold backdrop-blur-md"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    💬 {formatCount(post.comment_count)}
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.94 }}
+                    className="rounded-full bg-black/35 px-3 py-2 text-xs font-semibold backdrop-blur-md"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (typeof navigator !== "undefined" && navigator.share) {
+                        void navigator.share({ title: post.title, text: post.excerpt, url: `/forums/${post.slug}` }).catch(() => undefined);
+                      }
+                    }}
+                  >
+                    🔗 Share
+                  </motion.button>
+                </div>
+
+                <div className="absolute inset-x-0 bottom-0 z-10 p-4 pb-10 sm:p-6">
+                  <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                    {(post.view_count >= 80 || post.upvote_count >= 12) && (
+                      <span className="rounded-full bg-orange-500/90 px-2 py-0.5 text-[10px] font-bold">
+                        🔥 Popular
+                      </span>
+                    )}
+                    {post.comment_count >= 6 && (
+                      <span className="rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-bold">
+                        💬 Active
+                      </span>
+                    )}
+                  </div>
+                  <div className="mb-2 inline-flex rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
+                    {post.tags[0] ?? "discussion"}
+                  </div>
+                  <motion.h2
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, ease: "easeOut", delay: 0.02 }}
+                    className="text-2xl font-extrabold leading-tight sm:text-3xl"
+                  >
                     {post.title}
-                  </h2>
-
-                  {/* Excerpt */}
-                  <p className="mb-7 max-w-3xl text-base leading-8 text-slate-300 sm:text-lg">
-                    {post.excerpt}
-                  </p>
-
-                  {/* Stats row */}
-                  <div className="mb-8 flex flex-wrap items-center gap-5 text-sm text-slate-300">
-                    <span className="inline-flex items-center gap-1.5">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-indigo-400">
-                        <path d="M12 19V5M5 12l7-7 7 7" />
-                      </svg>
-                      <span className="font-semibold text-white">{formatCount(post.upvote_count)}</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                      </svg>
-                      {formatCount(post.comment_count)} replies
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                      {formatCount(post.view_count)} views
-                    </span>
-                  </div>
-
-                  {/* CTA */}
-                  <div className="flex flex-wrap gap-3">
-                    <Link
-                      href={`/forums/${post.slug}`}
-                      className="flex-1 rounded-xl bg-indigo-600 px-5 py-3 text-center text-sm font-semibold !text-white transition hover:bg-indigo-500 sm:text-base"
-                    >
-                      Read full post →
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => scrollTo(i + 1)}
-                      disabled={i === posts.length - 1}
-                      className="rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white disabled:opacity-30 sm:text-base"
-                    >
-                      Next
-                    </button>
+                  </motion.h2>
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut", delay: 0.14 }}
+                    className="mt-2 max-w-3xl text-sm leading-6 text-white/90 sm:text-base"
+                  >
+                    {shortText(post)}
+                  </motion.p>
+                  <div className="mt-3 flex flex-wrap gap-3 text-xs text-white/80 sm:text-sm">
+                    <span>{formatCount(post.view_count)} views</span>
+                    <span>{formatCount(post.comment_count)} replies</span>
+                    <span>{formatRelativeTime(post.created_at)} ago</span>
                   </div>
                 </div>
-
-                <div className="border-t border-white/10 bg-black/20 p-6 md:border-l md:border-t-0 md:p-8">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Thread info</p>
-                  <div className="mt-4 space-y-3 text-sm text-slate-300">
-                    <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
-                      <span>Author</span>
-                      <span className="font-medium text-white">{post.author_name}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
-                      <span>Score</span>
-                      <span className="font-medium text-white">{formatCount(post.upvote_count - post.downvote_count)}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
-                      <span>Replies</span>
-                      <span className="font-medium text-white">{formatCount(post.comment_count)}</span>
-                    </div>
-                  </div>
-
-                  <p className="mt-6 text-xs text-slate-500">
-                    Swipe/scroll to move to the next card. Press <span className="text-slate-300">Esc</span> to close.
-                  </p>
-                </div>
-              </div>
-            </div>
+              </motion.article>
+            )}
           </div>
         ))}
       </div>
-    </div>
+
+      <div className="pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
+        <div className="mb-2 flex items-center justify-center gap-1.5">
+          {visibleDots.map((_, offset) => {
+            const i = visibleDotStart + offset;
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => scrollTo(i)}
+                aria-label={`Go to post ${i + 1}`}
+                className={`pointer-events-auto h-1.5 rounded-full transition-all ${i === activeIndex ? "w-5 bg-white" : "w-1.5 bg-white/35"}`}
+              />
+            );
+          })}
+        </div>
+        <AnimatePresence>
+          {interactionAck && (
+            <motion.p
+              initial={{ opacity: 0, y: 8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="mb-2 rounded-full bg-emerald-500/80 px-3 py-1 text-[11px] font-semibold text-white"
+            >
+              Interaction saved
+            </motion.p>
+          )}
+        </AnimatePresence>
+        {showGestureHint && (
+          <p className="rounded-full bg-black/35 px-3 py-1 text-[11px] text-white/85 backdrop-blur-md">
+            Swipe left or right to continue
+          </p>
+        )}
+      </div>
+      <AnimatePresence>
+        {selectedPost && (
+          <motion.div
+            className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedPost(null)}
+          >
+            <motion.div
+              layoutId={`forum-card-${selectedPost.id}`}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-x-4 bottom-6 top-24 overflow-auto rounded-2xl border border-white/15 bg-zinc-950/90 p-5 text-white"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-wide text-white/80">
+                  {selectedPost.tags[0] ?? "discussion"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPost(null)}
+                  className="rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/90"
+                >
+                  Close
+                </button>
+              </div>
+              <h3 className="text-2xl font-bold leading-tight">{selectedPost.title}</h3>
+              <p className="mt-3 text-sm leading-7 text-white/85">{selectedPost.content || selectedPost.excerpt}</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

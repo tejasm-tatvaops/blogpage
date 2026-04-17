@@ -37,11 +37,18 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   const params = await searchParams;
   const category = params?.category?.trim() || undefined;
   const query = params?.q?.trim() || undefined;
-  const sort = params?.sort === "most_viewed" ? "most_viewed" : "latest";
+  const sort =
+    params?.sort === "most_viewed" ? "most_viewed"
+    : params?.sort === "personalized" ? "personalized"
+    : "latest";
+
+  // "personalized" sort is handled client-side by BlogList fetching /api/blog/feed.
+  // The server just provides latest posts as the initial render shell.
+  const serverSort = sort === "personalized" ? "latest" : sort;
 
   try {
     const [posts, categories, featuredByViews, featuredLatest] = await Promise.all([
-      getAllPosts({ category, query, sort }),
+      getAllPosts({ category, query, sort: serverSort }),
       getCategories(),
       getAllPosts({ sort: "most_viewed", limit: 5 }),
       getAllPosts({ sort: "latest", limit: 5 }),

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getForumPostBySlug, incrementForumViewCount } from "@/lib/forumService";
 import { logger } from "@/lib/logger";
+import { recordUserActivity } from "@/lib/userProfileService";
 
 export async function GET(
   _request: Request,
@@ -18,7 +19,7 @@ export async function GET(
 }
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
   // POST to the slug endpoint tracks a view (called client-side once per session)
@@ -26,6 +27,11 @@ export async function POST(
     const { slug } = await params;
     const newCount = await incrementForumViewCount(decodeURIComponent(slug));
     if (newCount === null) return NextResponse.json({ error: "Post not found." }, { status: 404 });
+    void recordUserActivity({
+      request,
+      action: "forum_view",
+      lastForumSlug: decodeURIComponent(slug),
+    });
     return NextResponse.json({ view_count: newCount }, { status: 200 });
   } catch (error) {
     logger.error({ error }, "POST /api/forums/[slug] (view) error");

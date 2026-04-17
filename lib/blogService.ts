@@ -10,6 +10,24 @@ const MAX_LIMIT = 200;
 // Fields projected for list queries — omits heavy `content` to keep responses lean.
 const LIST_PROJECTION = "-content";
 
+/** Maximum body-word count for Inshorts-style briefs. 0 = unlimited. */
+export const BLOG_MAX_WORDS = Number(process.env.BLOG_MAX_WORDS ?? 0);
+
+/**
+ * Count prose words in a markdown string.
+ * Strips code blocks, inline code, markdown punctuation, and URLs before counting
+ * so the limit applies to the readable body, not syntax characters.
+ */
+export const countWords = (markdown: string): number =>
+  markdown
+    .replace(/```[\s\S]*?```/g, " ")          // fenced code blocks
+    .replace(/`[^`]*`/g, " ")                  // inline code
+    .replace(/https?:\/\/\S+/g, " ")           // URLs
+    .replace(/[#>*_\-[\]()!|]/g, " ")          // markdown punctuation
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+
 export type BlogPost = {
   id: string;
   title: string;
@@ -26,6 +44,7 @@ export type BlogPost = {
   upvote_count: number;
   downvote_count: number;
   view_count: number;
+  word_count: number;
 };
 
 type ListParams = {
@@ -60,6 +79,7 @@ const toBlogPost = (doc: BlogDocument): BlogPost => {
     upvote_count?: number;
     downvote_count?: number;
     view_count?: number;
+    word_count?: number;
   };
   return {
     id: doc._id.toString(),
@@ -77,6 +97,7 @@ const toBlogPost = (doc: BlogDocument): BlogPost => {
     upvote_count: d.upvote_count ?? 0,
     downvote_count: d.downvote_count ?? 0,
     view_count: d.view_count ?? 0,
+    word_count: d.word_count ?? 0,
   };
 };
 
@@ -208,6 +229,13 @@ export const createPost = async (input: BlogPostWriteInput): Promise<BlogPost> =
       existingCoverImage: input.cover_image ?? null,
     })) ?? null;
 
+  const wordCount = countWords(input.content);
+  if (BLOG_MAX_WORDS > 0 && wordCount > BLOG_MAX_WORDS) {
+    throw new Error(
+      `Blog content exceeds Inshorts word limit: ${wordCount} words (max ${BLOG_MAX_WORDS}).`,
+    );
+  }
+
   const doc = await BlogModel.create({
     title: input.title.trim(),
     slug: uniqueSlug,
@@ -219,6 +247,7 @@ export const createPost = async (input: BlogPostWriteInput): Promise<BlogPost> =
     category: input.category.trim(),
     published: input.published,
     publish_at: input.publish_at ? new Date(input.publish_at) : null,
+    word_count: wordCount,
     deleted_at: null,
   });
 
@@ -257,6 +286,13 @@ export const updatePost = async (id: string, input: BlogPostWriteInput): Promise
       existingCoverImage: input.cover_image ?? null,
     })) ?? null;
 
+  const wordCount = countWords(input.content);
+  if (BLOG_MAX_WORDS > 0 && wordCount > BLOG_MAX_WORDS) {
+    throw new Error(
+      `Blog content exceeds Inshorts word limit: ${wordCount} words (max ${BLOG_MAX_WORDS}).`,
+    );
+  }
+
   const updated = (await BlogModel.findOneAndUpdate(
     { _id: id, ...notDeleted },
     {
@@ -270,6 +306,7 @@ export const updatePost = async (id: string, input: BlogPostWriteInput): Promise
       category: input.category.trim(),
       published: input.published,
       publish_at: input.publish_at ? new Date(input.publish_at) : null,
+      word_count: wordCount,
     },
     { new: true, runValidators: true },
   ).lean()) as BlogDocument | null;
@@ -570,6 +607,199 @@ export const getTrendingPosts = async (limit = 5): Promise<BlogPost[]> => {
     },
     { $sort: { trending_score: -1 } },
     { $limit: limit },
+    { $project: { content: 0, versions: 0 } },
+  ])) as unknown as BlogDocument[];
+
+  return docs.map(toBlogPost);
+};
+
+/**
+ * Trending candidate pool — upgraded HackerNews formula.
+ * Used by feedService as one of the 3 candidate buckets.
+ * Returns up to `limit` posts from the last 14 days by trending score.
+ */
+export const getTrendingCandidates = async (limit = 30): Promise<BlogPost[]> => {
+  await connectToDatabase();
+  const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+
+  const docs = (await BlogModel.aggregate([
+    {
+      $match: {
+        published: true,
+        deleted_at: null,
+        $or: [{ publish_at: null }, { publish_at: { $lte: new Date() } }],
+        created_at: { $gte: cutoff },
+      },
+    },
+    {
+      $addFields: {
+        age_hours: {
+          $divide: [{ $subtract: [new Date(), "$created_at"] }, 3_600_000],
+        },
+      },
+    },
+    {
+      $addFields: {
+        trending_score: {
+          $divide: [
+            {
+              $add: [
+                { $ifNull: ["$view_count", 0] },
+                { $multiply: [{ $ifNull: ["$upvote_count", 0] }, 3] },
+              ],
+            },
+            { $pow: [{ $add: ["$age_hours", 2] }, 1.5] },
+          ],
+        },
+      },
+    },
+    { $sort: { trending_score: -1 } },
+    { $limit: limit },
+    { $project: { content: 0, versions: 0 } },
+  ])) as unknown as BlogDocument[];
+
+  return docs.map(toBlogPost);
+};
+
+/**
+ * Exploration pool — random recent posts the user hasn't seen yet.
+ * Uses MongoDB's $sample for true randomness.
+ * Enables discovery and fights echo-chamber effects.
+ */
+export const getExplorationPosts = async (limit = 10): Promise<BlogPost[]> => {
+  await connectToDatabase();
+  const cutoff = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000); // last 60 days
+
+  const docs = (await BlogModel.aggregate([
+    {
+      $match: {
+        published: true,
+        deleted_at: null,
+        $or: [{ publish_at: null }, { publish_at: { $lte: new Date() } }],
+        created_at: { $gte: cutoff },
+      },
+    },
+    { $sample: { size: limit } },
+    { $project: { content: 0, versions: 0 } },
+  ])) as unknown as BlogDocument[];
+
+  return docs.map(toBlogPost);
+};
+
+/**
+ * Multi-window trending score:
+ *   score_6h  = base * exp(-age_hours / 6)
+ *   score_24h = base * exp(-age_hours / 24)
+ *   score_7d  = base * exp(-age_hours / 168)
+ *   trending_score = 0.5*score_6h + 0.3*score_24h + 0.2*score_7d
+ */
+export const getTrendingCandidatesMultiWindow = async (limit = 30): Promise<BlogPost[]> => {
+  await connectToDatabase();
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+
+  const docs = (await BlogModel.aggregate([
+    {
+      $match: {
+        published: true,
+        deleted_at: null,
+        $or: [{ publish_at: null }, { publish_at: { $lte: now } }],
+        created_at: { $gte: cutoff },
+      },
+    },
+    {
+      $addFields: {
+        age_hours: { $divide: [{ $subtract: [now, "$created_at"] }, 3_600_000] },
+        base_engagement: {
+          $add: [
+            { $multiply: [{ $ifNull: ["$upvote_count", 0] }, 3] },
+            { $multiply: [{ $ifNull: ["$comment_count", 0] }, 4] },
+            { $multiply: [{ $ifNull: ["$view_count", 0] }, 0.2] },
+          ],
+        },
+      },
+    },
+    {
+      $addFields: {
+        trend_6h: { $multiply: ["$base_engagement", { $exp: { $multiply: [-1 / 6, "$age_hours"] } }] },
+        trend_24h: { $multiply: ["$base_engagement", { $exp: { $multiply: [-1 / 24, "$age_hours"] } }] },
+        trend_7d: { $multiply: ["$base_engagement", { $exp: { $multiply: [-1 / 168, "$age_hours"] } }] },
+      },
+    },
+    {
+      $addFields: {
+        trending_score: {
+          $add: [
+            { $multiply: ["$trend_6h", 0.5] },
+            { $multiply: ["$trend_24h", 0.3] },
+            { $multiply: ["$trend_7d", 0.2] },
+          ],
+        },
+      },
+    },
+    { $sort: { trending_score: -1, created_at: -1 } },
+    { $limit: limit },
+    { $project: { content: 0, versions: 0 } },
+  ])) as unknown as BlogDocument[];
+
+  return docs.map(toBlogPost);
+};
+
+/**
+ * Promising exploration candidates:
+ *  exploration_score = 0.6 * early_engagement + 0.4 * recency_boost
+ *  early_engagement = ((upvotes*3)+(comments*4)) / max(1, views)
+ *  recency_boost = exp(-age_hours / 18)
+ */
+export const getPromisingExplorationCandidates = async (limit = 12): Promise<BlogPost[]> => {
+  await connectToDatabase();
+  const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000);
+  const now = new Date();
+
+  const docs = (await BlogModel.aggregate([
+    {
+      $match: {
+        published: true,
+        deleted_at: null,
+        $or: [{ publish_at: null }, { publish_at: { $lte: now } }],
+        created_at: { $gte: cutoff },
+      },
+    },
+    {
+      $addFields: {
+        age_hours: { $divide: [{ $subtract: [now, "$created_at"] }, 3_600_000] },
+        views_safe: { $max: [1, { $ifNull: ["$view_count", 0] }] },
+      },
+    },
+    {
+      $addFields: {
+        early_engagement: {
+          $divide: [
+            {
+              $add: [
+                { $multiply: [{ $ifNull: ["$upvote_count", 0] }, 3] },
+                { $multiply: [{ $ifNull: ["$comment_count", 0] }, 4] },
+              ],
+            },
+            "$views_safe",
+          ],
+        },
+        recency_boost: { $exp: { $multiply: [-1 / 18, "$age_hours"] } },
+      },
+    },
+    {
+      $addFields: {
+        exploration_score: {
+          $add: [
+            { $multiply: ["$early_engagement", 0.6] },
+            { $multiply: ["$recency_boost", 0.4] },
+          ],
+        },
+      },
+    },
+    { $sort: { exploration_score: -1, created_at: -1 } },
+    { $limit: limit * 3 },
+    { $sample: { size: limit } },
     { $project: { content: 0, versions: 0 } },
   ])) as unknown as BlogDocument[];
 

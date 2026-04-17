@@ -46,6 +46,8 @@ export const adminApiLimiter = createRateLimiter({ limit: 60, windowMs: 60_000 }
 export const commentLimiter = createRateLimiter({ limit: 3, windowMs: 60_000 });
 export const upvoteLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 export const downvoteLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
+// Anti-gaming: hard cap on total likes per identity per minute across all posts
+export const likeAntiGamingLimiter = createRateLimiter({ limit: 20, windowMs: 60_000 });
 
 // Forum-specific limiters
 export const forumPostLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Comment } from "@/lib/commentService";
 import { useActivityPolling } from "@/lib/activityPolling";
 import { getAvatarForIdentity } from "@/lib/avatar";
+import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
 
 type CommentSectionProps = {
   slug: string;
@@ -307,15 +308,23 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
           {sortedComments.map((c) => (
             <div key={c.id} className="flex gap-3">
               {/* Avatar */}
-              <img
-                src={getAvatarForIdentity(`blog-comment:${c.author_name}|${c.id}`)}
-                alt={`${c.author_name} avatar`}
-                className="h-9 w-9 flex-shrink-0 rounded-full border border-slate-200 bg-slate-100 object-cover"
-                loading="lazy"
+              <UserProfileQuickView
+                displayName={c.author_name}
+                trigger={
+                  <img
+                    src={getAvatarForIdentity(`blog-comment:${c.author_name}|${c.id}`)}
+                    alt={`${c.author_name} avatar`}
+                    className="h-9 w-9 flex-shrink-0 rounded-full border border-slate-200 bg-slate-100 object-cover"
+                    loading="lazy"
+                  />
+                }
               />
               <div className="flex-1">
                 <div className="flex flex-wrap items-baseline gap-2">
-                  <span className="text-sm font-semibold text-slate-900">{c.author_name}</span>
+                  <UserProfileQuickView
+                    displayName={c.author_name}
+                    trigger={<span className="text-sm font-semibold text-slate-900 hover:underline">{c.author_name}</span>}
+                  />
                   <time className="text-xs text-slate-400" dateTime={c.created_at}>
                     {formatDate(c.created_at)}
                   </time>
@@ -382,7 +391,10 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                     {c.replies.map((reply) => (
                       <div key={reply.id}>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-sm font-semibold text-slate-900">{reply.author_name}</span>
+                          <UserProfileQuickView
+                            displayName={reply.author_name}
+                            trigger={<span className="text-sm font-semibold text-slate-900 hover:underline">{reply.author_name}</span>}
+                          />
                           <time className="text-xs text-slate-400" dateTime={reply.created_at}>
                             {formatDate(reply.created_at)}
                           </time>

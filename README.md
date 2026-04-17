@@ -1,14 +1,17 @@
 # TatvaOps Blog Platform
 
-TatvaOps Blog Platform is a production-ready Next.js content system for construction-focused publishing.  
+TatvaOps Blog Platform is a production-ready Next.js content and community system for construction-focused publishing.  
 It includes:
 
 - public blog listing and detail pages
+- forum threads with voting, best-answer, and swipe mode
+- personalized feed pipeline (candidate generation, scoring, diversity)
+- user profile directory (activity-derived + backfilled + synthetic coverage)
 - admin CMS with login session auth
 - AI-powered article generation (Groq primary, OpenAI fallback)
 - programmatic SEO bulk generation
 - comments, threaded replies, voting, moderation
-- views tracking, reading progress, share actions
+- views tracking, reading progress, share actions, notifications
 - robust fallback handling for images and rendering
 
 ---
@@ -24,6 +27,8 @@ It includes:
 - React Markdown + remark-gfm + rehype
 - Radix UI primitives
 - pino logger
+- framer-motion
+- ioredis (distributed cache path, with dev-safe fallback)
 
 ---
 
@@ -45,12 +50,24 @@ It includes:
   - improved editorial layout and spacing
   - cleaner markdown flow (duplicate title removal)
   - FAQ + References moved to sidebar cards
+  - topic-based active users strip
 - Sidebar includes:
   - in-article navigation (TOC)
   - topics
   - tags
   - related posts
   - About TatvaOps card
+- Forum experience includes:
+  - hot/new/top/discussed feeds
+  - thread detail pages with best answer support
+  - right interaction rail + stats
+  - Inshorts-style fullscreen swipe mode with horizontal snap
+  - deterministic construction image backgrounds for swipe cards
+- Users directory includes:
+  - live user cards with profile stats and interests
+  - search, sorting, and photo-only filter
+  - profile quick view modal from comments/authors
+  - aggregate platform/user totals with verification badges
 
 ## Blog Engagement
 
@@ -65,6 +82,27 @@ It includes:
   - replies to comments
   - upvote/downvote for comments
   - sort by Top/Newest
+  - typing simulation for incoming activity
+  - quick profile drill-in on avatars/names
+
+## Feed + Personalization
+
+- Multi-stage feed pipeline (`/api/blog/feed`):
+  - candidate generation (personalized + trending + exploration)
+  - scoring with weighted components
+  - diversity enforcement
+- Experiment-ready scoring weights (variant assignment)
+- session-aware repetition penalties
+- negative-signal hooks (skip / low dwell capable path)
+- distributed cache interface with local fallback
+- dev-mode fast fallback path for feed stability
+
+## Notifications
+
+- Notification bell in navbar with unread badge
+- latest-notifications dropdown (lazy opened)
+- mark-as-read behavior
+- backend throttling and short-lived read cache for responsiveness
 
 ## Admin CMS
 
@@ -83,6 +121,14 @@ It includes:
 - Admin comment moderation:
   - list comments
   - delete moderation action
+- Admin forum tooling:
+  - generate random forums
+  - feature/unfeature controls
+  - forum moderation APIs
+- System toggles:
+  - live activity
+  - notifications
+  - personas
 
 ## AI + Programmatic SEO
 
@@ -102,6 +148,11 @@ It includes:
   - duplicate slug prevention
   - created/skipped/failed summary
   - internal link appending
+- Autopopulate/realism:
+  - AI-generated comments and replies for blogs/forums
+  - expanded persona pool + tone/style variation
+  - duplicate-content guardrails
+  - humanized timing/silence windows in activity runner
 
 ## Reliability + Hardening
 
@@ -116,6 +167,14 @@ It includes:
 - Login flow supports both:
   - JS fetch submit
   - regular HTML form submit fallback (with redirect)
+- API timeout/fallback guards on critical paths:
+  - feed
+  - notifications
+  - users directory data loads
+- Dev-safe performance controls:
+  - Redis disabled in development to avoid listener churn
+  - users page micro-cache + bounded limits
+  - heavy user maintenance throttled in request path
 
 ---
 
@@ -123,6 +182,8 @@ It includes:
 
 - `app/` - pages and API routes
 - `components/blog/` - blog UI and interactions
+- `components/forums/` - forum UI, cards, swipe mode, comments, voting
+- `components/users/` - directory, profile quick view, topic-user strips
 - `components/admin/` - admin CMS UI
 - `lib/` - services, auth, AI, utilities
 - `models/` - Mongoose schemas
@@ -162,6 +223,7 @@ Optional:
 - `GROQ_MODEL`
 - `OPENAI_MODEL`
 - `LOG_LEVEL`
+- `REDIS_URL` (distributed cache; safely bypassed in local dev)
 - `DAILY_AUTO_BLOGS_ENABLED` (`true` to run scheduler)
 - `DAILY_AUTO_BLOGS_RUN_ON_START` (`true` to run one job immediately on scheduler start)
 
@@ -198,6 +260,7 @@ Auth model:
 ## Public APIs
 
 - `GET /api/health` - basic health check
+- `GET /api/blog/feed` - personalized/trending/exploration feed
 - `POST /api/generate-blog` - generate one AI blog draft
 - `POST /api/generate-bulk-blogs` - generate location-based bulk blogs
 - `POST /api/blog/[slug]/view` - increment post view count
@@ -205,6 +268,14 @@ Auth model:
 - `POST /api/blog/[slug]/downvote` - increment post downvotes
 - `GET/POST /api/blog/[slug]/comments` - list/create comments
 - `POST /api/blog/[slug]/comments/[commentId]/vote` - vote on comment
+- `GET /api/notifications` - list notifications
+- `POST /api/notifications/read` - mark notifications as read
+- `GET /api/forums` - forum listing
+- `POST /api/forums` - create forum post
+- `GET /api/forums/[slug]` - forum thread detail
+- `POST /api/forums/[slug]/comments` - forum comments/replies
+- `POST /api/forums/[slug]/vote` - vote on thread
+- `GET /api/users/profile` - quick profile lookup by name
 
 ## Admin APIs
 
@@ -214,6 +285,11 @@ Auth model:
 - `GET/PATCH/DELETE /api/admin/blog/[id]`
 - `GET /api/admin/comments`
 - `DELETE /api/admin/comments/[id]`
+- `POST /api/admin/generate-blogs`
+- `POST /api/admin/generate-forums`
+- `POST /api/admin/system/toggles`
+- `GET /api/admin/feed/metrics`
+- `POST /api/admin/feed/precompute`
 
 ---
 
@@ -278,4 +354,4 @@ Important: when adding env values from CLI, avoid accidental trailing newline ch
 
 ## Status
 
-This repository is now set up as an end-to-end, production-oriented blog + CMS platform with AI generation, moderation, SEO automation, and deployment hardening.
+This repository is now set up as an end-to-end, production-oriented blog + forums + users platform with AI generation, moderation, personalization, and deployment hardening.

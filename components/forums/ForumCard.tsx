@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ForumPost } from "@/lib/forumService";
 import { getAvatarForIdentity } from "@/lib/avatar";
+import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
 
 type ForumCardProps = {
   post: ForumPost;
@@ -24,14 +25,19 @@ export function ForumCard({ post }: ForumCardProps) {
   return (
     <article className="group">
       <div className="flex items-start gap-3">
-        <div className="relative mt-1 h-11 w-11 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-white shadow-sm">
-          <img
-            src={avatarSrc}
-            alt={`${post.author_name} avatar`}
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-        </div>
+        <UserProfileQuickView
+          displayName={post.author_name}
+          trigger={
+            <div className="relative mt-1 h-11 w-11 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-white shadow-sm">
+              <img
+                src={avatarSrc}
+                alt={`${post.author_name} avatar`}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          }
+        />
 
         <Link
           href={`/forums/${post.slug}`}

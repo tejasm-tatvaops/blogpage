@@ -11,6 +11,7 @@ import {
 } from "@/lib/blogService";
 import { getComments } from "@/lib/commentService";
 import { getForumPostByBlogSlug } from "@/lib/forumService";
+import { getActiveUsersByTopic } from "@/lib/userProfileService";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com";
 
@@ -90,11 +91,12 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   if (!post) notFound();
 
-  const [relatedPosts, categories, comments, forumPost] = await Promise.all([
+  const [relatedPosts, categories, comments, forumPost, topicUsers] = await Promise.all([
     getRelatedPosts(post, 4).catch(() => [] as BlogPost[]),
     getCategories().catch(() => [] as string[]),
     getComments(post.id).catch(() => []),
     getForumPostByBlogSlug(post.slug).catch(() => null),
+    getActiveUsersByTopic([post.category, ...post.tags], 8).catch(() => []),
   ]);
 
   const faqItems = extractFaqItems(post.content);
@@ -124,6 +126,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         categories={categories}
         comments={comments}
         forumSlug={forumPost?.slug ?? null}
+        topicUsers={topicUsers}
       />
     </>
   );

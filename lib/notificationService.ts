@@ -20,6 +20,13 @@ type CreateNotificationInput = {
   message: string;
 };
 
+const notificationCacheState = globalThis as typeof globalThis & {
+  __tatvaNotificationReadCache?: Map<string, { expiresAt: number; payload: { items: NotificationItem[]; unreadCount: number } }>;
+};
+if (!notificationCacheState.__tatvaNotificationReadCache) {
+  notificationCacheState.__tatvaNotificationReadCache = new Map();
+}
+
 const toNotificationItem = (doc: {
   _id: { toString(): string };
   type: "reply" | "comment" | "vote";
@@ -55,8 +62,14 @@ export const getNotifications = async (
   recipientKey: string,
   limit = 5,
 ): Promise<{ items: NotificationItem[]; unreadCount: number }> => {
-  await connectToDatabase();
   const safeLimit = Math.min(Math.max(1, limit), 20);
+  const cacheKey = `${recipientKey}:${safeLimit}`;
+  const cached = notificationCacheState.__tatvaNotificationReadCache!.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.payload;
+  }
+
+  await connectToDatabase();
   const [docs, unreadCount] = await Promise.all([
     NotificationModel.find({ recipient_key: recipientKey })
       .sort({ created_at: -1 })
@@ -64,10 +77,15 @@ export const getNotifications = async (
       .lean(),
     NotificationModel.countDocuments({ recipient_key: recipientKey, is_read: false }),
   ]);
-  return {
+  const payload = {
     items: docs.map((d) => toNotificationItem(d as never)),
     unreadCount,
   };
+  notificationCacheState.__tatvaNotificationReadCache!.set(cacheKey, {
+    expiresAt: Date.now() + 5_000,
+    payload,
+  });
+  return payload;
 };
 
 export const markAsRead = async (recipientKey: string, notificationIds?: string[]): Promise<void> => {
@@ -77,4 +95,10 @@ export const markAsRead = async (recipientKey: string, notificationIds?: string[
     filter._id = { $in: notificationIds };
   }
   await NotificationModel.updateMany(filter, { is_read: true });
+  // Invalidate recipient cache.
+  for (const key of notificationCacheState.__tatvaNotificationReadCache!.keys()) {
+    if (key.startsWith(`${recipientKey}:`)) {
+      notificationCacheState.__tatvaNotificationReadCache!.delete(key);
+    }
+  }
 };
