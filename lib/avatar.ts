@@ -30,11 +30,19 @@ const hashForIndex = (value: string): number => {
   return Math.abs(hash);
 };
 
+export const isRealPhotoAvatar = (avatarUrl: string): boolean =>
+  /randomuser\.me\/api\/portraits\//i.test(avatarUrl);
+
+export const getRealPhotoForIdentity = (seed: string): string => {
+  const hash = hashForIndex(seed);
+  return REAL_PHOTO_POOL[hash % REAL_PHOTO_POOL.length]!;
+};
+
 export const getAvatarForIdentity = (seed: string): string => {
   const hash = hashForIndex(seed);
   // Keep a realistic mix app-wide.
   if (hash % 10 < 3) {
-    return REAL_PHOTO_POOL[hash % REAL_PHOTO_POOL.length]!;
+    return getRealPhotoForIdentity(seed);
   }
   return `https://api.dicebear.com/9.x/personas/svg?seed=${encodeURIComponent(seed)}`;
 };

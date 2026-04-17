@@ -26,7 +26,6 @@ const LOCAL_SAFE_IMAGE_POOL = [
   "/images/construction/site-5.png",
   "/images/construction/site-6.png",
   "/images/construction/site-7.png",
-  "/images/construction/site-team-1.png",
   "/images/construction/site-team-2.png",
   "/images/construction/site-team-3.png",
   "/images/construction/foundation-1.png",

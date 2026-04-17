@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { isRealPhotoAvatar } from "@/lib/avatar";
 import type { UserProfile } from "@/lib/userProfileService";
 
 type UserDirectoryProps = {
@@ -100,7 +101,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
   const visibleUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = users.filter((user) => {
-      if (photosOnly && user.avatar_url.includes("dicebear")) return false;
+      if (photosOnly && !isRealPhotoAvatar(user.avatar_url)) return false;
       if (!q) return true;
       return (
         user.display_name.toLowerCase().includes(q) ||
@@ -204,7 +205,9 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
         </div>
       ) : visibleUsers.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-8 py-14 text-center text-slate-600">
-          No user profiles yet. Once visitors start reading blogs or joining discussions, they will show up here.
+          {photosOnly
+            ? "No real-photo profiles match your current filters yet."
+            : "No user profiles yet. Once visitors start reading blogs or joining discussions, they will show up here."}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">

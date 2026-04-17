@@ -7,7 +7,7 @@ import { ForumVoteModel } from "@/models/ForumVote";
 import { ViewEventModel } from "@/models/ViewEvent";
 import { BlogModel } from "@/models/Blog";
 import { FAKE_USERS } from "@/lib/fakeUsers";
-import { getAvatarForIdentity } from "@/lib/avatar";
+import { getAvatarForIdentity, getRealPhotoForIdentity, isRealPhotoAvatar } from "@/lib/avatar";
 import { recordInterest, type PersonaAction } from "@/lib/personaService";
 
 export type UserProfile = {
@@ -620,6 +620,41 @@ const rebalanceSyntheticViewCounts = async (minimumCount: number): Promise<void>
   }
 };
 
+const ensureRealPhotoCoverage = async (minimumCount: number): Promise<void> => {
+  const docs = await UserProfileModel.find({})
+    .select("_id identity_key avatar_url")
+    .sort({ created_at: 1 })
+    .limit(Math.max(minimumCount, 1200))
+    .lean();
+
+  if (docs.length === 0) return;
+
+  const targetRealCount = Math.ceil(docs.length * 0.22);
+  const currentRealCount = docs.reduce(
+    (count, doc) => count + (isRealPhotoAvatar(String(doc.avatar_url ?? "")) ? 1 : 0),
+    0,
+  );
+  const needed = Math.max(0, targetRealCount - currentRealCount);
+  if (needed === 0) return;
+
+  const candidates = docs.filter((doc) => !isRealPhotoAvatar(String(doc.avatar_url ?? "")));
+  if (candidates.length === 0) return;
+
+  const toUpdate = candidates.slice(0, needed);
+  const CHUNK_SIZE = 50;
+  for (let i = 0; i < toUpdate.length; i += CHUNK_SIZE) {
+    const chunk = toUpdate.slice(i, i + CHUNK_SIZE);
+    await Promise.all(
+      chunk.map((doc) =>
+        UserProfileModel.updateOne(
+          { _id: doc._id },
+          { $set: { avatar_url: getRealPhotoForIdentity(String(doc.identity_key ?? doc._id)) } },
+        ),
+      ),
+    );
+  }
+};
+
 // ─── Public queries ───────────────────────────────────────────────────────────
 
 export const getUserProfiles = async (limit = 120): Promise<UserProfile[]> => {
@@ -645,6 +680,7 @@ export const getUserProfiles = async (limit = 120): Promise<UserProfile[]> => {
     backfillState.__tatvaopsUserMaintenancePromise = (async () => {
       await backfillFromHistoricalData();
       await ensureMinimumSyntheticProfiles(minimum);
+      await ensureRealPhotoCoverage(minimum);
       await rebalanceSyntheticViewCounts(minimum);
     })()
       .catch(() => undefined)
