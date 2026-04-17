@@ -42,3 +42,13 @@ export const requireAdminApiAccess = async (): Promise<boolean> => {
   const session = await getSession();
   return session.adminAuthenticated === true;
 };
+
+/**
+ * Read-only admin session check for conditional UI.
+ * Does not redirect; safe for public pages that optionally show admin controls.
+ */
+export const hasAdminSession = async (): Promise<boolean> => {
+  if (!isAdminEnabled()) return false;
+  const session = await getSession();
+  return session.adminAuthenticated === true;
+};

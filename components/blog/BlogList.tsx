@@ -11,6 +11,7 @@ type BlogListProps = {
   activeCategory?: string;
   query?: string;
   sort: "latest" | "most_viewed" | "personalized";
+  canCreatePost?: boolean;
 };
 type FeedBucket = "personalized" | "trending" | "exploration";
 type FeedPost = BlogPost & { _bucket?: FeedBucket; _reason_tag?: string };
@@ -181,7 +182,14 @@ const buildBlogHref = ({
   return queryString ? `/blog?${queryString}` : "/blog";
 };
 
-export function BlogList({ posts: serverPosts, categories, activeCategory, query, sort }: BlogListProps) {
+export function BlogList({
+  posts: serverPosts,
+  categories,
+  activeCategory,
+  query,
+  sort,
+  canCreatePost = false,
+}: BlogListProps) {
   const [personalizedPosts, setPersonalizedPosts] = useState<FeedPost[] | null>(null);
   const [personalizedLoading, setPersonalizedLoading] = useState(false);
   const [topInterests, setTopInterests] = useState<string[]>([]);
@@ -284,12 +292,14 @@ export function BlogList({ posts: serverPosts, categories, activeCategory, query
           >
             Search
           </button>
-          <Link
-            href="/admin/blog/new"
-            className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-sky-800"
-          >
-            New post
-          </Link>
+          {canCreatePost ? (
+            <Link
+              href="/admin/blog/new"
+              className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-sky-800"
+            >
+              New post
+            </Link>
+          ) : null}
         </form>
 
         {sort === "personalized" && (
