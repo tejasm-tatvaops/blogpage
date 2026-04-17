@@ -1,13 +1,17 @@
 import type { MetadataRoute } from "next";
 import { getAllPublishedPosts, getCategories } from "@/lib/blogService";
+import { getForumPosts } from "@/lib/forumService";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [posts, categories] = await Promise.all([
+  const [posts, categories, forumResult] = await Promise.all([
     getAllPublishedPosts({ limit: 1000 }).catch(() => []),
     getCategories().catch(() => []),
+    getForumPosts({ sort: "new", limit: 50, page: 1 }).catch(() => ({ posts: [] })),
   ]);
+
+  const forumPosts = forumResult.posts ?? [];
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -21,6 +25,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/forums`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.85,
     },
   ];
 
@@ -38,5 +48,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...postRoutes];
+  const forumRoutes: MetadataRoute.Sitemap = forumPosts.map((post) => ({
+    url: `${siteUrl}/forums/${post.slug}`,
+    lastModified: new Date(post.updated_at ?? post.created_at),
+    changeFrequency: "weekly" as const,
+    priority: 0.65,
+  }));
+
+  return [...staticRoutes, ...categoryRoutes, ...postRoutes, ...forumRoutes];
 }

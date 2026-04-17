@@ -81,7 +81,7 @@ const imageForPost = (id: string): string => {
 const shortText = (post: ForumPost): string => {
   const source = (post.excerpt || post.content || "").replace(/\s+/g, " ").trim();
   if (!source) return "Practical construction discussion from the community.";
-  return source.split(" ").slice(0, 60).join(" ");
+  return source.split(" ").slice(0, 110).join(" ");
 };
 
 export function SwipeMode({ posts, onClose }: SwipeModeProps) {
@@ -369,7 +369,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
                 }}
                 onClick={() => setSelectedPost(post)}
                 layoutId={`forum-card-${post.id}`}
-                className={`relative h-full w-full overflow-hidden rounded-2xl bg-gradient-to-br ${gradientForPost(post.id)} bg-cover bg-center bg-no-repeat`}
+                className={`relative h-full w-full overflow-hidden whitespace-normal rounded-2xl bg-gradient-to-br ${gradientForPost(post.id)} bg-cover bg-center bg-no-repeat`}
                 style={{ backgroundImage: `url(${imageForPost(post.id)})` }}
               >
                 <div className={`absolute inset-0 bg-gradient-to-b ${toneForPost(post)} transition duration-500`} />
@@ -409,7 +409,13 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
                     onClick={(event) => {
                       event.stopPropagation();
                       if (typeof navigator !== "undefined" && navigator.share) {
-                        void navigator.share({ title: post.title, text: post.excerpt, url: `/forums/${post.slug}` }).catch(() => undefined);
+                        const shareUrl = `${window.location.origin}/forums/${post.slug}`;
+                        const preview = shortText(post).split(" ").slice(0, 45).join(" ");
+                        void navigator.share({
+                          title: post.title,
+                          text: `${preview}\n\n#${(post.tags[0] ?? "construction").replace(/[^a-z0-9]/gi, "")} #TatvaOps`,
+                          url: shareUrl,
+                        }).catch(() => undefined);
                       }
                     }}
                   >
@@ -445,7 +451,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3, ease: "easeOut", delay: 0.14 }}
-                    className="mt-2 max-w-3xl text-sm leading-6 text-white/90 sm:text-base"
+                    className="mt-2 line-clamp-6 max-w-3xl text-sm leading-6 text-white/90 sm:text-base"
                   >
                     {shortText(post)}
                   </motion.p>
