@@ -36,18 +36,32 @@ export default async function UsersPage() {
   const now = Date.now();
   const cached = usersPageState.__tatvaUsersPageCache;
   // Dev-safe micro-cache to avoid repeated heavy recompute during hot reload and rapid navigation.
-  if (cached && now - cached.cachedAt < 12_000) {
+  // Never serve cached empty result; it causes a false "no users" state flicker.
+  if (cached && cached.users.length > 0 && now - cached.cachedAt < 12_000) {
     return <UserDirectory users={cached.users} totals={cached.totals} userTotals={cached.userTotals} />;
   }
 
   // Keep a full slice in dev so "real photos only" can surface mixed-avatar profiles.
   const userLimit = 1000;
-  const [users, totals, userTotals] = await Promise.all([
+  let [users, totals, userTotals] = await Promise.all([
     withTimeout(getUserProfiles(userLimit).catch(() => []), 3500, []),
     withTimeout(getPlatformViewTotals().catch(() => ({ blogViews: 0, forumViews: 0 })), 2000, { blogViews: 0, forumViews: 0 }),
     withTimeout(getUserProfileViewTotals().catch(() => ({ blogViews: 0, forumViews: 0 })), 2000, { blogViews: 0, forumViews: 0 }),
   ]);
+  console.log("users fetched:", users.length);
 
-  usersPageState.__tatvaUsersPageCache = { users, totals, userTotals, cachedAt: now };
+  // One immediate retry helps avoid first-hit race/timeout cold-start empties.
+  if (users.length === 0) {
+    [users, totals, userTotals] = await Promise.all([
+      withTimeout(getUserProfiles(userLimit).catch(() => []), 5000, []),
+      withTimeout(getPlatformViewTotals().catch(() => ({ blogViews: 0, forumViews: 0 })), 2500, { blogViews: 0, forumViews: 0 }),
+      withTimeout(getUserProfileViewTotals().catch(() => ({ blogViews: 0, forumViews: 0 })), 2500, { blogViews: 0, forumViews: 0 }),
+    ]);
+    console.log("users fetched after retry:", users.length);
+  }
+
+  if (users.length > 0) {
+    usersPageState.__tatvaUsersPageCache = { users, totals, userTotals, cachedAt: now };
+  }
   return <UserDirectory users={users} totals={totals} userTotals={userTotals} />;
 }

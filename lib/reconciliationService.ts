@@ -12,6 +12,9 @@ import { CounterDriftEventModel } from "@/models/CounterDriftEvent";
 type ReconciliationSummary = {
   startedAt: string;
   finishedAt: string;
+  durationMs: number;
+  entitiesScanned: number;
+  correctionsMade: number;
   updated: number;
   smallDrifts: number;
   largeDrifts: number;
@@ -73,7 +76,7 @@ const logDrift = async (input: {
   return severity;
 };
 
-const reconcileForumCommentCounts = async (): Promise<{ updated: number; small: number; large: number }> => {
+const reconcileForumCommentCounts = async (): Promise<{ scanned: number; updated: number; small: number; large: number }> => {
   const aggregates = await CommentModel.aggregate([
     { $match: { deleted_at: null } },
     { $group: { _id: "$post_id", total: { $sum: 1 } } },
@@ -81,6 +84,7 @@ const reconcileForumCommentCounts = async (): Promise<{ updated: number; small: 
   const map = new Map<string, number>(aggregates.map((row) => [String(row._id), Number(row.total ?? 0)]));
   const forums = await ForumPostModel.find({ deleted_at: null }).select("_id comment_count").lean();
 
+  const scanned = forums.length;
   let updated = 0;
   let small = 0;
   let large = 0;
@@ -102,10 +106,10 @@ const reconcileForumCommentCounts = async (): Promise<{ updated: number; small: 
     if (severity === "large") large += 1;
     else small += 1;
   }
-  return { updated, small, large };
+  return { scanned, updated, small, large };
 };
 
-const reconcileBlogVoteCounts = async (): Promise<{ updated: number; small: number; large: number }> => {
+const reconcileBlogVoteCounts = async (): Promise<{ scanned: number; updated: number; small: number; large: number }> => {
   const aggregates = await BlogLikeModel.aggregate([
     {
       $group: {
@@ -120,6 +124,7 @@ const reconcileBlogVoteCounts = async (): Promise<{ updated: number; small: numb
   );
   const blogs = await BlogModel.find({ deleted_at: null }).select("slug upvote_count downvote_count").lean();
 
+  const scanned = blogs.length;
   let updated = 0;
   let small = 0;
   let large = 0;
@@ -153,10 +158,10 @@ const reconcileBlogVoteCounts = async (): Promise<{ updated: number; small: numb
     if (sevUp === "large" || sevDown === "large") large += 1;
     else small += 1;
   }
-  return { updated, small, large };
+  return { scanned, updated, small, large };
 };
 
-const reconcileForumVoteCounts = async (): Promise<{ updated: number; small: number; large: number }> => {
+const reconcileForumVoteCounts = async (): Promise<{ scanned: number; updated: number; small: number; large: number }> => {
   const aggregates = await ForumVoteModel.aggregate([
     {
       $group: {
@@ -171,6 +176,7 @@ const reconcileForumVoteCounts = async (): Promise<{ updated: number; small: num
   );
   const forums = await ForumPostModel.find({ deleted_at: null }).select("_id upvote_count downvote_count").lean();
 
+  const scanned = forums.length;
   let updated = 0;
   let small = 0;
   let large = 0;
@@ -204,16 +210,17 @@ const reconcileForumVoteCounts = async (): Promise<{ updated: number; small: num
     if (sevUp === "large" || sevDown === "large") large += 1;
     else small += 1;
   }
-  return { updated, small, large };
+  return { scanned, updated, small, large };
 };
 
-const reconcileBlogViewCounts = async (): Promise<{ updated: number; small: number; large: number }> => {
+const reconcileBlogViewCounts = async (): Promise<{ scanned: number; updated: number; small: number; large: number }> => {
   const aggregates = await ViewEventModel.aggregate([
     { $group: { _id: "$slug", total: { $sum: 1 } } },
   ]);
   const map = new Map<string, number>(aggregates.map((row) => [String(row._id), Number(row.total ?? 0)]));
   const blogs = await BlogModel.find({ deleted_at: null }).select("slug view_count").lean();
 
+  const scanned = blogs.length;
   let updated = 0;
   let small = 0;
   let large = 0;
@@ -235,16 +242,17 @@ const reconcileBlogViewCounts = async (): Promise<{ updated: number; small: numb
     if (severity === "large") large += 1;
     else small += 1;
   }
-  return { updated, small, large };
+  return { scanned, updated, small, large };
 };
 
-const reconcileForumViewCounts = async (): Promise<{ updated: number; small: number; large: number }> => {
+const reconcileForumViewCounts = async (): Promise<{ scanned: number; updated: number; small: number; large: number }> => {
   const aggregates = await ForumViewEventModel.aggregate([
     { $group: { _id: "$post_id", total: { $sum: 1 } } },
   ]);
   const map = new Map<string, number>(aggregates.map((row) => [String(row._id), Number(row.total ?? 0)]));
   const forums = await ForumPostModel.find({ deleted_at: null }).select("_id view_count").lean();
 
+  const scanned = forums.length;
   let updated = 0;
   let small = 0;
   let large = 0;
@@ -267,7 +275,7 @@ const reconcileForumViewCounts = async (): Promise<{ updated: number; small: num
     if (severity === "large") large += 1;
     else small += 1;
   }
-  return { updated, small, large };
+  return { scanned, updated, small, large };
 };
 
 export const runReconciliationNow = async (): Promise<ReconciliationSummary> => {
@@ -277,6 +285,9 @@ export const runReconciliationNow = async (): Promise<ReconciliationSummary> => 
       state.lastSummary ?? {
         startedAt: new Date(now).toISOString(),
         finishedAt: new Date(now).toISOString(),
+        durationMs: 0,
+        entitiesScanned: 0,
+        correctionsMade: 0,
         updated: 0,
         smallDrifts: 0,
         largeDrifts: 0,
@@ -288,6 +299,7 @@ export const runReconciliationNow = async (): Promise<ReconciliationSummary> => 
   state.lastRunAt = now;
   const startedAt = new Date().toISOString();
   let updated = 0;
+  let entitiesScanned = 0;
   let smallDrifts = 0;
   let largeDrifts = 0;
 
@@ -303,6 +315,7 @@ export const runReconciliationNow = async (): Promise<ReconciliationSummary> => 
     for (const job of jobs) {
       try {
         const result = await job();
+        entitiesScanned += result.scanned;
         updated += result.updated;
         smallDrifts += result.small;
         largeDrifts += result.large;
@@ -315,6 +328,9 @@ export const runReconciliationNow = async (): Promise<ReconciliationSummary> => 
     const summary: ReconciliationSummary = {
       startedAt,
       finishedAt,
+      durationMs: Math.max(0, new Date(finishedAt).getTime() - new Date(startedAt).getTime()),
+      entitiesScanned,
+      correctionsMade: updated,
       updated,
       smallDrifts,
       largeDrifts,

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdminPageAccess } from "@/lib/adminAuth";
 import { getStats } from "@/lib/blogService";
 import SendDigestButton from "@/components/admin/SendDigestButton";
+import AdminObservabilityDashboard from "@/components/admin/AdminObservabilityDashboard";
 
 export const revalidate = 0;
 
@@ -55,6 +56,7 @@ export default async function AdminStatsPage() {
       </header>
 
       <div className="mx-auto max-w-[1500px] space-y-8 px-6 py-8">
+        <AdminObservabilityDashboard />
 
         {/* ── Stat cards ── */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">

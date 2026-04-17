@@ -17,6 +17,20 @@ type UserDirectoryProps = {
   };
 };
 
+type UsersSnapshot = {
+  users: UserProfile[];
+  totals: { blogViews: number; forumViews: number };
+  userTotals: { blogViews: number; forumViews: number };
+  savedAt: number;
+};
+
+const usersClientState = globalThis as typeof globalThis & {
+  __tatvaopsUsersLastGood?: UsersSnapshot | null;
+};
+if (!usersClientState.__tatvaopsUsersLastGood) {
+  usersClientState.__tatvaopsUsersLastGood = null;
+}
+
 const formatNumber = (value: number): string => new Intl.NumberFormat("en-US").format(value);
 const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -186,6 +200,18 @@ function ActivityBadges({ user }: { user: UserProfile }) {
 }
 
 export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps) {
+  const initialTotals = totals ?? { blogViews: 0, forumViews: 0 };
+  const initialUserTotals = userTotals ?? { blogViews: 0, forumViews: 0 };
+  const initialLastGood = usersClientState.__tatvaopsUsersLastGood;
+  const initialUsers = (users?.length ?? 0) > 0
+    ? users
+    : (initialLastGood?.users ?? []);
+
+  const [resolvedUsers, setResolvedUsers] = useState<UserProfile[]>(initialUsers);
+  const [resolvedTotals, setResolvedTotals] = useState(initialTotals);
+  const [resolvedUserTotals, setResolvedUserTotals] = useState(initialUserTotals);
+  const [loading, setLoading] = useState((initialUsers?.length ?? 0) === 0);
+  const [retryCompleted, setRetryCompleted] = useState((initialUsers?.length ?? 0) > 0);
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "blog_views" | "forum_activity">("recent");
   const [photosOnly, setPhotosOnly] = useState(false);
@@ -201,9 +227,121 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
     setSyncedAt(new Date().toISOString());
   }, []);
 
+  useEffect(() => {
+    const hasFreshUsers = (users?.length ?? 0) > 0;
+    const hasLastGood = (usersClientState.__tatvaopsUsersLastGood?.users.length ?? 0) > 0;
+    setResolvedUsers(hasFreshUsers ? users : (hasLastGood ? usersClientState.__tatvaopsUsersLastGood!.users : []));
+    setResolvedTotals(totals ?? (hasLastGood ? usersClientState.__tatvaopsUsersLastGood!.totals : { blogViews: 0, forumViews: 0 }));
+    setResolvedUserTotals(userTotals ?? (hasLastGood ? usersClientState.__tatvaopsUsersLastGood!.userTotals : { blogViews: 0, forumViews: 0 }));
+    if ((users?.length ?? 0) > 0) {
+      setLoading(false);
+      setRetryCompleted(true);
+      usersClientState.__tatvaopsUsersLastGood = {
+        users,
+        totals: totals ?? { blogViews: 0, forumViews: 0 },
+        userTotals: userTotals ?? { blogViews: 0, forumViews: 0 },
+        savedAt: Date.now(),
+      };
+    }
+  }, [users, totals, userTotals]);
+
+  useEffect(() => {
+    if ((users?.length ?? 0) > 0) return;
+    let cancelled = false;
+
+    const load = async (): Promise<void> => {
+      setLoading(true);
+      setRetryCompleted(false);
+      let keepSoftLoading = false;
+      try {
+        const fetchOnce = async () => {
+          const res = await fetch("/api/users", { cache: "no-store" });
+          const data = (await res.json()) as {
+            users?: UserProfile[];
+            totals?: { blogViews: number; forumViews: number };
+            userTotals?: { blogViews: number; forumViews: number };
+          };
+          return {
+            users: data.users || [],
+            totals: data.totals || { blogViews: 0, forumViews: 0 },
+            userTotals: data.userTotals || { blogViews: 0, forumViews: 0 },
+          };
+        };
+
+        let result = await fetchOnce();
+        if (result.users.length === 0) {
+          console.warn("users fetch returned empty; triggering retry");
+          await new Promise<void>((resolve) => setTimeout(resolve, 500));
+          result = await fetchOnce();
+        }
+
+        if (cancelled) return;
+
+        if (result.users.length > 0) {
+          setResolvedUsers(result.users);
+          setResolvedTotals(result.totals);
+          setResolvedUserTotals(result.userTotals);
+          usersClientState.__tatvaopsUsersLastGood = {
+            users: result.users,
+            totals: result.totals,
+            userTotals: result.userTotals,
+            savedAt: Date.now(),
+          };
+        } else {
+          const hasSecondarySignal =
+            (result.totals.blogViews + result.totals.forumViews) > 0 ||
+            (result.userTotals.blogViews + result.userTotals.forumViews) > 0;
+          const lastGood = usersClientState.__tatvaopsUsersLastGood;
+          console.warn("users fetch still empty after retry", {
+            totals: result.totals,
+            userTotals: result.userTotals,
+            hasLastGood: Boolean(lastGood?.users.length),
+            hasSecondarySignal,
+          });
+
+          if (lastGood && lastGood.users.length > 0) {
+            console.warn("using last-known-good users snapshot fallback");
+            setResolvedUsers(lastGood.users);
+            setResolvedTotals(lastGood.totals);
+            setResolvedUserTotals(lastGood.userTotals);
+          } else {
+            // If backend signals say data exists, keep soft-loading state instead of false empty.
+            if (hasSecondarySignal) {
+              console.warn("users empty but totals indicate existing data; keeping soft loading");
+              setLoading(true);
+              keepSoftLoading = true;
+              window.setTimeout(() => {
+                if (!cancelled) {
+                  void load();
+                }
+              }, 1200);
+              return;
+            }
+            setResolvedUsers([]);
+            setResolvedTotals(result.totals);
+            setResolvedUserTotals(result.userTotals);
+          }
+        }
+        setSyncedAt(new Date().toISOString());
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (!cancelled) {
+          setRetryCompleted(true);
+          setLoading(keepSoftLoading);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [users]);
+
   const visibleUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = users.filter((user) => {
+    const filtered = resolvedUsers.filter((user) => {
       if (photosOnly && !isRealPhotoAvatar(user.avatar_url)) return false;
       if (!q) return true;
       return (
@@ -224,22 +362,30 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
       return new Date(b.last_seen_at).getTime() - new Date(a.last_seen_at).getTime();
     });
     return sorted;
-  }, [users, query, sortBy, photosOnly]);
+  }, [resolvedUsers, query, sortBy, photosOnly]);
 
-  const safeTotals = totals ?? { blogViews: 0, forumViews: 0 };
-  const safeUserTotals = userTotals ?? { blogViews: 0, forumViews: 0 };
+  const safeTotals = resolvedTotals ?? { blogViews: 0, forumViews: 0 };
+  const safeUserTotals = resolvedUserTotals ?? { blogViews: 0, forumViews: 0 };
+  const confirmedEmpty =
+    !loading &&
+    retryCompleted &&
+    visibleUsers.length === 0 &&
+    safeTotals.blogViews === 0 &&
+    safeTotals.forumViews === 0 &&
+    safeUserTotals.blogViews === 0 &&
+    safeUserTotals.forumViews === 0;
   const blogViewsMatch = safeUserTotals.blogViews === safeTotals.blogViews;
   const forumViewsMatch = safeUserTotals.forumViews === safeTotals.forumViews;
   const helpfulUsers = useMemo(
     () =>
-      [...users]
+      [...resolvedUsers]
         .sort((a, b) => {
           const aScore = a.reputation_score + a.forum_comments * 3 + a.blog_comments * 2;
           const bScore = b.reputation_score + b.forum_comments * 3 + b.blog_comments * 2;
           return bScore - aScore;
         })
         .slice(0, 5),
-    [users],
+    [resolvedUsers],
   );
 
   return (
@@ -325,13 +471,13 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
         </div>
       )}
 
-      {booting ? (
+      {booting || loading ? (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 9 }).map((_, index) => (
             <div key={index} className="h-52 animate-pulse rounded-3xl bg-slate-100" />
           ))}
         </div>
-      ) : visibleUsers.length === 0 ? (
+      ) : confirmedEmpty ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-8 py-14 text-center text-slate-600">
           {photosOnly
             ? "No real-photo profiles match your current filters yet."
