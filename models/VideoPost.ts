@@ -63,9 +63,61 @@ export interface IVideoPost extends Document {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Extract a bare 11-character YouTube video ID from any valid YouTube URL
+ * or a plain ID string.
+ *
+ * Handles:
+ *   youtube.com/watch?v=ID
+ *   youtu.be/ID
+ *   youtube.com/shorts/ID          ← the common broken case
+ *   www.youtube.com/shorts/ID
+ *   m.youtube.com/shorts/ID
+ *   youtube.com/embed/ID
+ *   Plain 11-char ID (already extracted)
+ *
+ * Returns null when the input cannot be parsed into a valid ID.
+ */
+export function extractYouTubeVideoId(input: string): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+
+  // Already a bare ID — 11 chars, only [A-Za-z0-9_-]
+  if (/^[A-Za-z0-9_-]{11}$/.test(trimmed)) return trimmed;
+
+  try {
+    // Normalise schemeless URLs so `new URL()` doesn't throw
+    const href = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const url = new URL(href);
+
+    // youtube.com/shorts/ID[?...]
+    const shortsMatch = url.pathname.match(/\/shorts\/([A-Za-z0-9_-]{11})/);
+    if (shortsMatch?.[1]) return shortsMatch[1];
+
+    // youtube.com/watch?v=ID
+    const v = url.searchParams.get("v");
+    if (v && /^[A-Za-z0-9_-]{11}$/.test(v)) return v;
+
+    // youtu.be/ID
+    if (/youtu\.be$/i.test(url.hostname)) {
+      const id = url.pathname.replace(/^\//, "").split("/")[0] ?? "";
+      if (/^[A-Za-z0-9_-]{11}$/.test(id)) return id;
+    }
+
+    // youtube.com/embed/ID
+    const embedMatch = url.pathname.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+    if (embedMatch?.[1]) return embedMatch[1];
+  } catch {
+    // Not a URL — fall through to null
+  }
+
+  return null;
+}
+
 /** Derive the embed URL from the stored sourceType + IDs. */
 function resolveEmbedUrl(doc: Partial<IVideoPost>): string | null {
   if (doc.sourceType === "youtube" && doc.youtubeVideoId) {
+    // youtubeVideoId is already normalised to a bare ID at this point
     return `https://www.youtube.com/embed/${doc.youtubeVideoId}`;
   }
   if ((doc.sourceType === "uploaded" || doc.sourceType === "curated") && doc.videoUrl) {
@@ -159,7 +211,22 @@ const videoPostSchema = new mongoose.Schema<IVideoPost>(
 // ─── Pre-save hooks ───────────────────────────────────────────────────────────
 
 videoPostSchema.pre("save", function (next) {
-  // Resolve embedUrl + thumbnailUrl if not manually set
+  // ── Normalise youtubeVideoId ──────────────────────────────────────────────
+  // Accept any YouTube URL format (watch, shorts, youtu.be, embed) and
+  // reduce it to the bare 11-character video ID before anything else runs.
+  // This prevents broken embed URLs when admins paste full Shorts URLs.
+  if (this.sourceType === "youtube" && this.youtubeVideoId) {
+    const extracted = extractYouTubeVideoId(this.youtubeVideoId);
+    if (extracted) {
+      this.youtubeVideoId = extracted;
+    }
+    // Always clear cached embedUrl/thumbnailUrl so they are recomputed
+    // from the (potentially just-corrected) ID.
+    this.embedUrl = null;
+    this.thumbnailUrl = null;
+  }
+
+  // Resolve embedUrl + thumbnailUrl if not set
   if (!this.embedUrl) {
     this.embedUrl = resolveEmbedUrl(this);
   }

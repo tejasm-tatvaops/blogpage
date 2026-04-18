@@ -58,7 +58,7 @@ function AddVideoForm({ onCreated }: AddVideoFormProps) {
     setSuggestions(data.suggestions ?? []);
   }, [form.tags]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
@@ -147,20 +147,60 @@ function AddVideoForm({ onCreated }: AddVideoFormProps) {
               </div>
             </div>
 
-            {/* YouTube ID or Video URL */}
+            {/* YouTube URL / ID or direct Video URL */}
             {form.sourceType === "youtube" ? (
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">YouTube video ID *</label>
+                <label className="mb-1 block text-xs font-medium text-slate-600">
+                  YouTube URL or video ID *
+                </label>
                 <input
                   required
-                  placeholder="e.g. dQw4w9WgXcQ"
+                  placeholder="https://youtube.com/shorts/oAB5jqgG7ls  or  oAB5jqgG7ls"
                   value={form.youtubeVideoId}
                   onChange={(e) => field("youtubeVideoId", e.target.value)}
                   className={inputClass}
                 />
-                {form.youtubeVideoId && (
+                {/* Live preview: extract and show the resolved ID so admin can verify */}
+                {form.youtubeVideoId && (() => {
+                  // Inline extraction — mirrors the model's extractYouTubeVideoId logic
+                  const raw = form.youtubeVideoId.trim();
+                  let resolvedId: string | null = null;
+                  if (/^[A-Za-z0-9_-]{11}$/.test(raw)) {
+                    resolvedId = raw;
+                  } else {
+                    try {
+                      const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+                      const url = new URL(href);
+                      const shorts = url.pathname.match(/\/shorts\/([A-Za-z0-9_-]{11})/);
+                      if (shorts?.[1]) resolvedId = shorts[1];
+                      else if (!resolvedId) {
+                        const v = url.searchParams.get("v");
+                        if (v && /^[A-Za-z0-9_-]{11}$/.test(v)) resolvedId = v;
+                      }
+                      if (!resolvedId && /youtu\.be$/i.test(url.hostname)) {
+                        const id = url.pathname.replace(/^\//, "").split("/")[0] ?? "";
+                        if (/^[A-Za-z0-9_-]{11}$/.test(id)) resolvedId = id;
+                      }
+                      if (!resolvedId) {
+                        const embed = url.pathname.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+                        if (embed?.[1]) resolvedId = embed[1];
+                      }
+                    } catch { /* not a URL */ }
+                  }
+                  return resolvedId ? (
+                    <p className="mt-1 text-[11px] text-emerald-600">
+                      ✓ Video ID: <span className="font-mono font-semibold">{resolvedId}</span>
+                      {" · "}embed: youtube.com/embed/{resolvedId}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-[11px] text-red-500">
+                      Could not extract a valid video ID — paste a Shorts/watch/youtu.be URL or a bare 11-char ID.
+                    </p>
+                  );
+                })()}
+                {!form.youtubeVideoId && (
                   <p className="mt-1 text-[11px] text-slate-400">
-                    Preview: youtube.com/watch?v={form.youtubeVideoId}
+                    Accepts: youtube.com/shorts/ID · youtube.com/watch?v=ID · youtu.be/ID · bare ID
                   </p>
                 )}
               </div>
