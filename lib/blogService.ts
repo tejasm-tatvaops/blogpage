@@ -818,6 +818,39 @@ export type PostSummary = {
   excerpt: string;
 };
 
+/**
+ * Fetch published posts that share a specific tag.
+ * Used by tag hub pages (/tags/[tag]) and cross-linking.
+ */
+export const getPostsByTag = async (tag: string, limit = 10): Promise<BlogPost[]> => {
+  await connectToDatabase();
+  const docs = (await BlogModel.find({
+    tags: tag,
+    published: true,
+    ...notDeleted,
+    ...publishedNow(),
+  })
+    .select(LIST_PROJECTION)
+    .sort({ created_at: -1 })
+    .limit(limit)
+    .lean()) as unknown as BlogDocument[];
+  return docs.map(toBlogPost);
+};
+
+/**
+ * Returns all distinct tags across published blog posts, sorted alphabetically.
+ * Used to generate static params for tag hub pages.
+ */
+export const getAllTags = async (): Promise<string[]> => {
+  await connectToDatabase();
+  const tags = (await BlogModel.distinct("tags", {
+    published: true,
+    ...notDeleted,
+    ...publishedNow(),
+  })) as unknown as string[];
+  return tags.filter(Boolean).sort((a, b) => a.localeCompare(b));
+};
+
 export const getAllPostSummaries = async (): Promise<PostSummary[]> => {
   await connectToDatabase();
   const docs = (await BlogModel.find({ published: true, ...notDeleted, ...publishedNow() })

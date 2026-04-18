@@ -15,7 +15,7 @@
  */
 
 const MAX_PARAGRAPH_WORDS = 120;
-const MIN_BODY_WORDS = 200;
+const MIN_BODY_WORDS = 300;
 
 export type StructureWarning = {
   code:

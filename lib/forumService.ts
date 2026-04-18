@@ -921,6 +921,40 @@ export const trackForumViewEvent = async ({
 
 // ─── Trending ─────────────────────────────────────────────────────────────────
 
+/**
+ * Fetch forum posts that share tags with a given post (cross-linking use-case).
+ * Returns up to `limit` posts ordered by quality rank.
+ * Pass `excludeSlug` to skip a post already shown via a direct link.
+ */
+export const getRelatedForumPosts = async (
+  tags: string[],
+  excludeSlug?: string,
+  limit = 3,
+): Promise<ForumPost[]> => {
+  await connectToDatabase();
+  if (!tags.length) return [];
+
+  const filter: Record<string, unknown> = { tags: { $in: tags }, ...notDeleted };
+  if (excludeSlug) filter.slug = { $ne: excludeSlug };
+
+  const docs = (await ForumPostModel.find(filter)
+    .select(LIST_PROJECTION)
+    .sort({ final_rank_score: -1, created_at: -1 })
+    .limit(limit)
+    .lean()) as unknown as ForumPostLean[];
+  return docs.map(toForumPost);
+};
+
+/**
+ * Returns all distinct tags across non-deleted forum posts, sorted alphabetically.
+ * Used to generate static params for tag hub pages.
+ */
+export const getAllForumTags = async (): Promise<string[]> => {
+  await connectToDatabase();
+  const tags = (await ForumPostModel.distinct("tags", { ...notDeleted })) as unknown as string[];
+  return tags.filter(Boolean).sort((a, b) => a.localeCompare(b));
+};
+
 export const getTrendingForumPosts = async (limit = 5): Promise<ForumPost[]> => {
   await connectToDatabase();
   const docs = (await ForumPostModel.find({ ...notDeleted, is_trending: true })

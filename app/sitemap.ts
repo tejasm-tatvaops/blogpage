@@ -1,14 +1,16 @@
 import type { MetadataRoute } from "next";
-import { getAllPublishedPosts, getCategories } from "@/lib/blogService";
-import { getForumPosts } from "@/lib/forumService";
+import { getAllPublishedPosts, getCategories, getAllTags } from "@/lib/blogService";
+import { getForumPosts, getAllForumTags } from "@/lib/forumService";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [posts, categories, forumResult] = await Promise.all([
+  const [posts, categories, forumResult, blogTags, forumTags] = await Promise.all([
     getAllPublishedPosts({ limit: 1000 }).catch(() => []),
     getCategories().catch(() => []),
     getForumPosts({ sort: "new", limit: 50, page: 1 }).catch(() => ({ posts: [] })),
+    getAllTags().catch(() => [] as string[]),
+    getAllForumTags().catch(() => [] as string[]),
   ]);
 
   const forumPosts = forumResult.posts ?? [];
@@ -55,5 +57,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.65,
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...postRoutes, ...forumRoutes];
+  const allTags = [...new Set([...blogTags, ...forumTags])];
+  const tagRoutes: MetadataRoute.Sitemap = allTags.map((tag) => ({
+    url: `${siteUrl}/tags/${encodeURIComponent(tag)}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.75,
+  }));
+
+  return [...staticRoutes, ...categoryRoutes, ...tagRoutes, ...postRoutes, ...forumRoutes];
 }

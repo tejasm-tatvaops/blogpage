@@ -174,12 +174,13 @@ export function BlogSidebar({
           </div>
           <div className="flex flex-wrap gap-1.5 px-4 py-3.5">
             {post.tags.map((tag) => (
-              <span
+              <Link
                 key={tag}
-                className="rounded-md bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-100"
+                href={`/tags/${encodeURIComponent(tag)}`}
+                className="rounded-md bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-100 transition hover:bg-sky-100"
               >
                 #{tag}
-              </span>
+              </Link>
             ))}
           </div>
         </div>

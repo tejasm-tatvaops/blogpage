@@ -1,5 +1,7 @@
+import Link from "next/link";
 import type { BlogPost } from "@/lib/blogService";
 import type { Comment } from "@/lib/commentService";
+import type { ForumPost } from "@/lib/forumService";
 import { DiscussButton } from "@/components/forums/DiscussButton";
 import { calculateReadingTime } from "@/lib/blogService";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -25,6 +27,7 @@ type BlogDetailProps = {
   comments: Comment[];
   forumSlug?: string | null;
   topicUsers?: UserProfile[];
+  relatedForumPosts?: ForumPost[];
 };
 
 type ParsedFaq = {
@@ -98,7 +101,7 @@ const formatDate = (dateString: string): string =>
     year: "numeric",
   }).format(new Date(dateString));
 
-export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug, topicUsers = [] }: BlogDetailProps) {
+export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug, topicUsers = [], relatedForumPosts = [] }: BlogDetailProps) {
   const readingTimeMinutes = calculateReadingTime(post.content);
   const imageUrl = post.cover_image || "";
   const { mainContent, faqs, references } = parseContentSections(post.content);
@@ -203,12 +206,13 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
             {post.tags.length > 0 && (
               <div className="mb-6 flex flex-wrap gap-1.5">
                 {post.tags.map((tag) => (
-                  <span
+                  <Link
                     key={`${post.id}-detail-${tag}`}
-                    className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-200"
+                    href={`/tags/${encodeURIComponent(tag)}`}
+                    className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
                   >
                     #{tag}
-                  </span>
+                  </Link>
                 ))}
               </div>
             )}
@@ -220,6 +224,40 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
 
             <ReadingTracker slug={post.slug} readingTimeMinutes={readingTimeMinutes} />
             <AiAssistant slug={post.slug} />
+
+            {/* ── Related Discussions ── */}
+            {relatedForumPosts.length > 0 && (
+              <section aria-labelledby="related-discussions-heading" className="mt-10 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-5">
+                <h2 id="related-discussions-heading" className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-indigo-700">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  Related Discussions
+                </h2>
+                <ul className="space-y-3">
+                  {relatedForumPosts.map((thread) => (
+                    <li key={thread.id}>
+                      <Link
+                        href={`/forums/${thread.slug}`}
+                        className="group flex items-start gap-3 rounded-xl border border-indigo-100 bg-white px-4 py-3 transition hover:border-indigo-300 hover:shadow-sm"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0 text-indigo-400" aria-hidden>
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold leading-snug text-slate-800 transition group-hover:text-indigo-700 line-clamp-2">
+                            {thread.title}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-400">
+                            {thread.comment_count} {thread.comment_count === 1 ? "reply" : "replies"}
+                          </p>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             {/* ── Action bar (bottom) ── */}
             <div className="mt-8 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">

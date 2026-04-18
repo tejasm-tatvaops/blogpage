@@ -10,7 +10,7 @@ import {
   getRelatedPosts,
 } from "@/lib/blogService";
 import { getComments } from "@/lib/commentService";
-import { getForumPostByBlogSlug } from "@/lib/forumService";
+import { getForumPostByBlogSlug, getRelatedForumPosts, type ForumPost } from "@/lib/forumService";
 import { getActiveUsersByTopic } from "@/lib/userProfileService";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com";
@@ -91,12 +91,15 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   if (!post) notFound();
 
-  const [relatedPosts, categories, comments, forumPost, topicUsers] = await Promise.all([
+  // Fetch the linked forum post first so its slug can be excluded from related forum posts.
+  const forumPost = await getForumPostByBlogSlug(post.slug).catch(() => null);
+
+  const [relatedPosts, categories, comments, topicUsers, relatedForumPosts] = await Promise.all([
     getRelatedPosts(post, 4).catch(() => [] as BlogPost[]),
     getCategories().catch(() => [] as string[]),
     getComments(post.id).catch(() => []),
-    getForumPostByBlogSlug(post.slug).catch(() => null),
     getActiveUsersByTopic([post.category, ...post.tags], 8).catch(() => []),
+    getRelatedForumPosts(post.tags, forumPost?.slug ?? undefined, 4).catch(() => [] as ForumPost[]),
   ]);
 
   const faqItems = extractFaqItems(post.content);
@@ -127,6 +130,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         comments={comments}
         forumSlug={forumPost?.slug ?? null}
         topicUsers={topicUsers}
+        relatedForumPosts={relatedForumPosts}
       />
     </>
   );
