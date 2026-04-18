@@ -44,6 +44,13 @@ const IconJobs = () => (
   </svg>
 );
 
+const IconVideos = () => (
+  <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+    <path d="M14 5.5l-4 2.5 4 2.5V5.5z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+    <rect x="1" y="4" width="9" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.25" />
+  </svg>
+);
+
 const IconAnalytics = () => (
   <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
     <rect x="2" y="9" width="3" height="5" rx=".75" fill="currentColor" opacity=".8" />
@@ -66,6 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Blogs",    href: "/admin/blog",     icon: <IconBlogs /> },
       { label: "Forums",   href: "/admin/forums",   icon: <IconForums /> },
       { label: "Comments", href: "/admin/comments", icon: <IconComments /> },
+      { label: "Videos",   href: "/admin/videos",   icon: <IconVideos /> },
     ],
   },
   {

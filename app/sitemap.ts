@@ -1,16 +1,18 @@
 import type { MetadataRoute } from "next";
 import { getAllPublishedPosts, getCategories, getAllTags } from "@/lib/blogService";
 import { getForumPosts, getAllForumTags } from "@/lib/forumService";
+import { getAllVideoSlugs } from "@/lib/videoService";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [posts, categories, forumResult, blogTags, forumTags] = await Promise.all([
+  const [posts, categories, forumResult, blogTags, forumTags, videoSlugs] = await Promise.all([
     getAllPublishedPosts({ limit: 1000 }).catch(() => []),
     getCategories().catch(() => []),
     getForumPosts({ sort: "new", limit: 50, page: 1 }).catch(() => ({ posts: [] })),
     getAllTags().catch(() => [] as string[]),
     getAllForumTags().catch(() => [] as string[]),
+    getAllVideoSlugs().catch(() => [] as string[]),
   ]);
 
   const forumPosts = forumResult.posts ?? [];
@@ -65,5 +67,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...tagRoutes, ...postRoutes, ...forumRoutes];
+  const shortsStaticRoute: MetadataRoute.Sitemap = [
+    {
+      url: `${siteUrl}/shorts`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
+  ];
+
+  const videoRoutes: MetadataRoute.Sitemap = videoSlugs.map((slug) => ({
+    url: `${siteUrl}/shorts/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticRoutes, ...categoryRoutes, ...tagRoutes, ...shortsStaticRoute, ...postRoutes, ...forumRoutes, ...videoRoutes];
 }

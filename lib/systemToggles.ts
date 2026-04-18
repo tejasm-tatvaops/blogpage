@@ -2,6 +2,8 @@ type SystemToggles = {
   liveActivityEnabled: boolean;
   notificationsEnabled: boolean;
   personasEnabled: boolean;
+  /** Controls whether the /shorts feed and Shorts nav link are visible to users. */
+  shortsEnabled: boolean;
 };
 
 const globalState = globalThis as typeof globalThis & {
@@ -13,6 +15,7 @@ const toggles: SystemToggles =
     liveActivityEnabled: true,
     notificationsEnabled: true,
     personasEnabled: true,
+    shortsEnabled: true,
   };
 
 globalState.__tatvaopsSystemToggles = toggles;
@@ -28,6 +31,9 @@ export const setSystemToggles = (next: Partial<SystemToggles>): SystemToggles =>
   }
   if (typeof next.personasEnabled === "boolean") {
     toggles.personasEnabled = next.personasEnabled;
+  }
+  if (typeof next.shortsEnabled === "boolean") {
+    toggles.shortsEnabled = next.shortsEnabled;
   }
   return getSystemToggles();
 };
