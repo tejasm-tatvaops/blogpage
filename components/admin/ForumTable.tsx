@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ForumFeedSort, ForumPost } from "@/lib/forumService";
 import { ForumActions } from "./ForumActions";
+import { GenerateForumsButton } from "./GenerateForumsButton";
+import { JobQueuePanel } from "./JobQueuePanel";
 
 type ForumApiResult = {
   posts: ForumPost[];
@@ -43,8 +45,7 @@ export function ForumTable() {
   const [featureUpdatingId, setFeatureUpdatingId] = useState<string | null>(null);
   const [isAutopopulating, setIsAutopopulating] = useState(false);
   const [autopopulateResult, setAutopopulateResult] = useState<string | null>(null);
-  const [isGeneratingForums, setIsGeneratingForums] = useState(false);
-  const [generateForumsResult, setGenerateForumsResult] = useState<string | null>(null);
+  const [jobQueueTick, setJobQueueTick] = useState(0);
   const [reloadTick, setReloadTick] = useState(0);
 
   const queryTags = useMemo(() => {
@@ -69,7 +70,7 @@ export function ForumTable() {
         if (tagFilter !== "all") url.searchParams.set("tag", tagFilter);
         if (search.trim()) url.searchParams.set("q", search.trim());
 
-        const response = await fetch(url.toString(), { signal: controller.signal });
+        const response = await fetch(url.toString(), { signal: controller.signal, cache: "no-store" });
         if (response.status === 401) {
           router.push("/admin/login");
           return;
@@ -178,40 +179,12 @@ export function ForumTable() {
     }
   };
 
-  const onGenerateRandomForums = async () => {
-    if (isGeneratingForums) return;
-    try {
-      setError(null);
-      setGenerateForumsResult(null);
-      setIsGeneratingForums(true);
-      const response = await fetch("/api/admin/generate-forums", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count: 5 }),
-      });
-      const json = (await response.json()) as {
-        error?: string;
-        created?: number;
-        skipped?: number;
-        failed?: number;
-      };
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push("/admin/login");
-          return;
-        }
-        throw new Error(json.error ?? "Generate random forums failed.");
-      }
-      setGenerateForumsResult(
-        `Created ${json.created ?? 0} · Skipped ${json.skipped ?? 0} · Failed ${json.failed ?? 0}`,
-      );
+  const onGenerationComplete = (result: { created: number; skipped: number; failed: number }) => {
+    if (result.created > 0) {
       setPage(1);
-      setReloadTick((value) => value + 1);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Generate random forums failed.");
-    } finally {
-      setIsGeneratingForums(false);
+      setReloadTick((v) => v + 1);
     }
+    setJobQueueTick((v) => v + 1);
   };
 
   return (
@@ -263,14 +236,7 @@ export function ForumTable() {
           >
             {isAutopopulating ? "Populating..." : "AutoPopulate Content"}
           </button>
-          <button
-            type="button"
-            onClick={onGenerateRandomForums}
-            disabled={isGeneratingForums}
-            className="rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-indigo-800 disabled:opacity-50"
-          >
-            {isGeneratingForums ? "Generating..." : "Generate Random Forums"}
-          </button>
+          <GenerateForumsButton onComplete={onGenerationComplete} />
         </div>
       </div>
 
@@ -280,11 +246,10 @@ export function ForumTable() {
           AutoPopulate complete — {autopopulateResult}
         </p>
       )}
-      {generateForumsResult && (
-        <p className="mb-4 rounded bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
-          Random forums generation complete — {generateForumsResult}
-        </p>
-      )}
+      <div className="mb-4">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Generation Jobs</p>
+        <JobQueuePanel refreshTick={jobQueueTick} />
+      </div>
 
       <div className="mb-4 flex flex-wrap gap-3">
         <input

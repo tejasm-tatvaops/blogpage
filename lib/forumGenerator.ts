@@ -175,13 +175,21 @@ const normalizeTitle = (title: string): string =>
     .replace(/\s+/g, " ")
     .trim();
 
-export const generateForumThreads = async (count: number): Promise<GenerateForumsResult> => {
+export const generateForumThreads = async (count: number): Promise<GenerateForumsResult & { elapsedMs: number }> => {
+  const t0 = performance.now();
   await connectToDatabase();
   const safeCount = Math.min(Math.max(1, Math.floor(count || 5)), 20);
   const generated = await callAiForForumThreads(safeCount);
 
-  const existingDocs = await ForumPostModel.find({ deleted_at: null })
+  // Only scan recent posts for dedup — collisions with older content are rare and
+  // scanning all posts would be O(n) on the entire collection.
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const existingDocs = await ForumPostModel.find({
+    deleted_at: null,
+    created_at: { $gte: thirtyDaysAgo },
+  })
     .select("title slug")
+    .limit(500)
     .lean();
   const existingSlugSet = new Set(existingDocs.map((d) => String(d.slug)));
   const existingTitleSet = new Set(existingDocs.map((d) => normalizeTitle(String(d.title))));
@@ -241,7 +249,7 @@ export const generateForumThreads = async (count: number): Promise<GenerateForum
   }
 
   if (docsToInsert.length === 0) {
-    return { created: 0, skipped, failed: 0 };
+    return { created: 0, skipped, failed: 0, elapsedMs: Math.round(performance.now() - t0) };
   }
 
   let created = 0;
@@ -256,15 +264,17 @@ export const generateForumThreads = async (count: number): Promise<GenerateForum
   }
 
   if (created > 0) {
-    try {
-      await populateForums(Math.min(created, 10));
-    } catch (error) {
+    // Fire-and-forget — do not block the HTTP response waiting for AI comment generation.
+    // populateForums makes sequential AI calls per post and can take 30-120s for a batch.
+    void populateForums(Math.min(created, 10)).catch((error) => {
       logger.warn(
         { error: error instanceof Error ? error.message : String(error) },
-        "forum generator autopopulate skipped after create",
+        "background autopopulate failed after forum generation",
       );
-    }
+    });
   }
 
-  return { created, skipped, failed };
+  const elapsedMs = Math.round(performance.now() - t0);
+  logger.info({ created, skipped, failed, elapsedMs }, "forum generation complete");
+  return { created, skipped, failed, elapsedMs };
 };

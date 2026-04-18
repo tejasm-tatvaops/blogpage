@@ -412,7 +412,12 @@ const applyFairExposureWindow = (docs: ForumPostLean[], windowSize: number): For
   const selected: ForumPostLean[] = [];
   const authorCounts = new Map<string, number>();
   const tagCounts = new Map<string, number>();
-  const exposureCapPerAuthor = Math.max(2, Math.floor(windowSize / 4));
+  // When content is mostly single-author (AI-generated seed content), the normal cap
+  // of windowSize/4 causes starvation: page 2+ returns empty results because the one
+  // author hits the cap before the window fills. Detect this and raise the cap.
+  const distinctAuthors = new Set(docs.map((d) => (d.author_name ?? "anonymous").toLowerCase())).size;
+  const exposureCapPerAuthor =
+    distinctAuthors <= 2 ? windowSize : Math.max(2, Math.floor(windowSize / 4));
   const windowCandidates = docs.slice(0, Math.max(windowSize * 5, 80));
 
   for (const candidate of windowCandidates) {
@@ -470,7 +475,7 @@ export const getForumPosts = async ({
       ? (ForumPostModel.find(filter)
           .select(LIST_PROJECTION)
           .sort(sortMap[sort])
-          .limit(Math.min(400, safePage * safeLimit * 6))
+          .limit(Math.min(2000, safePage * safeLimit * 6))
           .lean() as unknown as Promise<ForumPostLean[]>)
       : (ForumPostModel.find(filter)
           .select(LIST_PROJECTION)
@@ -486,6 +491,13 @@ export const getForumPosts = async ({
       ? applyFairExposureWindow(docs, Math.max(safePage * safeLimit, safeLimit))
       : docs;
   const pagedDocs = sort === "hot" ? rankedDocs.slice(skip, skip + safeLimit) : rankedDocs;
+
+  if (pagedDocs.length === 0 && total > 0) {
+    logger.warn(
+      { sort, page: safePage, limit: safeLimit, total, docsFromDB: docs.length, rankedDocsCount: rankedDocs.length, skip },
+      "forum pagination returned empty page despite having posts — possible fair exposure starvation or fetch cap too low",
+    );
+  }
 
   return {
     posts: pagedDocs.map(toForumPost),
