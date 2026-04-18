@@ -10,6 +10,7 @@ It combines:
 - AI-assisted content + engagement generation
 - admin controls for moderation and system behavior
 - simulation realism controls for social activity feel
+- SEO content engine with internal linking, keyword optimization, and tag hub pages
 
 This README is intentionally exhaustive and implementation-heavy. It is meant to serve as:
 
@@ -27,6 +28,7 @@ This README is intentionally exhaustive and implementation-heavy. It is meant to
 - High-Level Architecture
 - Core Product Surfaces
 - Detailed Feature Inventory
+- SEO Content Engine *(new)*
 - Behavioral Realism System
 - Personalization / Feed System
 - User Profile System
@@ -59,6 +61,7 @@ TatvaOps is designed to feel like a real social content platform, not just a sta
 - synthetic + historical + real activity-based user directory
 - realism layer that models user behavior variation (activity timing, tone, interaction style)
 - admin panel for generation, moderation, system toggles, and feed observability hooks
+- SEO content engine: internal cross-linking, keyword extraction, tag hub pages, and content structure enforcement
 
 ---
 
@@ -96,20 +99,26 @@ TatvaOps is designed to feel like a real social content platform, not just a sta
 ### 1) Public Blog
 
 - `/blog` with search, category chips, sort modes (including personalized)
-- `/blog/[slug]` detail with article rendering, interactions, related content, and topic strips
+- `/blog/[slug]` detail with article rendering, interactions, related content, topic strips, and related forum discussions
 
 ### 2) Public Forums
 
 - `/forums` feed with sort modes and forum cards
-- `/forums/[slug]` thread detail with comments/votes/best-answer
+- `/forums/[slug]` thread detail with comments/votes/best-answer and related blog articles
 - swipe mode for immersive feed exploration
 
-### 3) Users Directory
+### 3) Tag / Topic Hubs *(new)*
+
+- `/tags/[tag]` — SSR content hub per tag, listing all matching blog posts and forum discussions
+- serves as a crawlable, indexed entry point for every tag in the system
+- generated statically at build time across all blog and forum tags
+
+### 4) Users Directory
 
 - `/users` real-time-ish directory of reader/contributor profiles
 - includes profile cards, behavior hints, interests, activity stats, and quick profile access points
 
-### 4) Admin
+### 5) Admin
 
 - `/admin/login`
 - `/admin/blog`, `/admin/forums`, `/admin/comments`, `/admin/stats`
@@ -134,6 +143,8 @@ TatvaOps is designed to feel like a real social content platform, not just a sta
   - topic active users strip
   - social share actions
   - cover image fallback chain hardened against placeholder-only outputs
+  - **Related Discussions section** — server-rendered list of up to 4 forum threads sharing tags with the article (new)
+  - **tag chips are now crawlable `<Link>` elements** pointing to `/tags/[tag]` (new)
 
 ## Forum Experience
 
@@ -145,6 +156,7 @@ TatvaOps is designed to feel like a real social content platform, not just a sta
   - per-thread vote flow
   - best answer feature
   - view count tracking
+  - **Related Articles section** — server-rendered list of up to 4 blog posts sharing the thread's primary tag (new)
 - immersive swipe mode:
   - horizontal snap and velocity-driven interactions
   - progress indicator, interaction micro-feedback, staged text transitions
@@ -161,10 +173,205 @@ TatvaOps is designed to feel like a real social content platform, not just a sta
   - search + sort + filter (`real photos only`)
   - profile quick view modal
   - totals validation blocks (DB totals vs profile totals)
-  - “recently helpful” strip
+  - "recently helpful" strip
   - behavior hints (active now, topic contributor, familiarity hints)
   - identity context chips (role, city, experience)
   - weekly activity sparkline and activity snippets
+
+---
+
+## SEO Content Engine *(new)*
+
+The SEO layer turns TatvaOps into an interconnected content graph. All linking is server-side rendered so Google can crawl every edge without JavaScript.
+
+---
+
+### Part 1 — Internal Linking Engine
+
+#### Auto keyword-to-blog linking (`lib/internalLinker.ts`)
+
+- scans markdown content for phrases that match published post titles or tags
+- injects `[keyword](/blog/slug)` markdown links — up to 7 per post
+- skips code fences, inline code, headings, and existing links (protected segments)
+- uses longest-phrase-first matching to avoid partial collisions
+- called during content rendering — no DB side-effects
+
+#### Blog → Forum cross-linking (server-side)
+
+Each blog detail page (`/app/blog/[slug]/page.tsx`) fetches up to 4 forum threads whose tags overlap with the article:
+
+```ts
+getRelatedForumPosts(post.tags, linkedForumSlug, 4)
+```
+
+Rendered as a **Related Discussions** card section inside the article column — fully SSR, no JS required for Google to crawl.
+
+#### Forum → Blog cross-linking (server-side)
+
+Each forum thread detail page (`/app/forums/[slug]/page.tsx`) fetches up to 4 blog posts sharing the thread's primary tag:
+
+```ts
+getPostsByTag(post.tags[0], 4)
+```
+
+Rendered as a **Related Articles** card section above the comment section — SSR, crawlable.
+
+#### Rules enforced
+
+- no more than one link per destination slug (prevents spam)
+- keyword anchor text is the natural match from content (no synthetic anchor stuffing)
+- linked forum slug is excluded from related forum results to avoid duplication
+- all links are `<Link>` (Next.js) — resolved at request time, not hydration time
+
+---
+
+### Part 2 — Keyword Optimization (`lib/keywordExtractor.ts`)
+
+Pure function — no I/O, no DB calls.
+
+```ts
+import { extractKeywords, descriptionHasKeyword } from "@/lib/keywordExtractor";
+
+const kw = extractKeywords({ title, tags, content });
+// kw.primary   → "construction cost estimation"
+// kw.secondary → ["construction", "boq", "estimation"]
+// kw.headings  → ["material takeoff workflow", "quantity surveying"]
+// kw.all       → deduped union of all above
+```
+
+#### How keywords are derived
+
+| Source | Field | Notes |
+|--------|-------|-------|
+| `title` | `primary` | First 3 meaningful words after stop-word filtering |
+| `tags[]` | `secondary` | Lowercased, deduped |
+| `## H2` / `### H3` | `headings` | Up to 4 words per heading, up to 8 headings |
+
+#### `descriptionHasKeyword(description, primary)`
+
+Returns `true` when the meta description naturally contains at least the first word of the primary keyword phrase. Use this in admin validation to ensure descriptions aren't keyword-free.
+
+#### What this powers
+
+- admin-side content quality feedback
+- future: automated meta description enhancement
+- future: heading keyword gap analysis before publish
+
+---
+
+### Part 3 — Content Structure Enforcement (`lib/contentStructureChecker.ts`)
+
+Extended from the original. Validates markdown before saving.
+
+| Check | Rule | Warning code |
+|-------|------|-------------|
+| H1 count | Exactly 1 | `MISSING_H1` / `MULTIPLE_H1` |
+| H1 vs title | Must match | `TITLE_H1_MISMATCH` |
+| Subheadings | Minimum 2 H2/H3 | `MISSING_SECTIONS` |
+| Paragraph length | Max 120 words each | `LONG_PARAGRAPH` |
+| Body word count | **Min 300 words** (raised from 200) | `TOO_SHORT` |
+
+The 300-word minimum aligns with the accepted SEO threshold for pages to be indexed with sufficient content signal.
+
+Usage:
+
+```ts
+import { checkContentStructure, formatStructureWarnings } from "@/lib/contentStructureChecker";
+
+const report = checkContentStructure({ title, content });
+if (!report.valid) {
+  console.warn(formatStructureWarnings(report));
+}
+```
+
+Returns a `StructureReport`:
+
+```ts
+{
+  valid: boolean
+  warnings: { code, message }[]
+  h1Count, h2Count, h3Count
+  paragraphCount
+  longestParagraphWords
+  wordCount
+}
+```
+
+---
+
+### Part 4 — Tag / Topic Hub Pages (`/app/tags/[tag]/page.tsx`)
+
+Each tag gets a dedicated SSR hub at `/tags/[tag]`.
+
+#### What each page includes
+
+- **SEO metadata**: `<title>`, `<meta description>`, canonical URL, Open Graph
+- **Breadcrumb**: `Home / Blog / #tag`
+- **Blog articles section**: all published posts with that tag (up to 20), sorted by newest
+- **Forum discussions section**: all forum threads with that tag (up to 20), ranked by hot score
+- **CTA link**: "Browse all #tag discussions" → `/forums?tag=tag`
+- **404 handling**: `notFound()` when no content exists for the tag
+
+#### Static generation
+
+```ts
+export async function generateStaticParams() {
+  const [blogTags, forumTags] = await Promise.all([getAllTags(), getAllForumTags()]);
+  const allTags = [...new Set([...blogTags, ...forumTags])];
+  return allTags.map((tag) => ({ tag: encodeURIComponent(tag) }));
+}
+```
+
+All tag pages are pre-rendered at build time. Revalidation TTL: **600 seconds**.
+
+#### New service functions powering tag pages
+
+| Function | File | Purpose |
+|----------|------|---------|
+| `getPostsByTag(tag, limit)` | `lib/blogService.ts` | Published blogs with a specific tag |
+| `getAllTags()` | `lib/blogService.ts` | All distinct blog tags (for static params) |
+| `getRelatedForumPosts(tags, excludeSlug, limit)` | `lib/forumService.ts` | Forum threads sharing tags (cross-linking) |
+| `getAllForumTags()` | `lib/forumService.ts` | All distinct forum tags (for static params) |
+
+---
+
+### Part 5 — Tag Links + Crawlability
+
+Previously, blog tags were rendered as plain `<span>` elements — invisible to Google's link graph.
+
+**Before:**
+```tsx
+<span className="...">#{tag}</span>
+```
+
+**After (both BlogDetail + BlogSidebar):**
+```tsx
+<Link href={`/tags/${encodeURIComponent(tag)}`} className="...">#{tag}</Link>
+```
+
+Every tag on every blog post and sidebar is now a crawlable link. Google can traverse:
+
+```
+/blog/[slug] → /tags/[tag] → /blog/[slug-2], /forums/[slug-3] → ...
+```
+
+This creates a fully interconnected content graph indexed at the tag level.
+
+---
+
+### Part 6 — Sitemap (`/app/sitemap.ts`)
+
+Tag hub pages are now included in the sitemap alongside posts and categories.
+
+| Route type | Priority | Change frequency |
+|-----------|---------|----------------|
+| Static routes (home, /blog, /forums) | 1.0–0.85 | monthly/daily |
+| Category routes | 0.7 | weekly |
+| **Tag hub routes** `/tags/[tag]` | **0.75** | **weekly** |
+| Blog posts | 0.8 | monthly |
+| Forum posts | 0.65 | weekly |
+
+Tag routes are de-duplicated across blog and forum tag sets before being added.
 
 ---
 
@@ -522,9 +729,11 @@ All heavy work is rate-limited in request path and guarded by timeout waiting.
 
 - `components/blog/BlogList.tsx`
 - `components/blog/BlogCard.tsx`
-- `components/blog/BlogDetail.tsx`
+- `components/blog/BlogDetail.tsx` — article detail; includes Related Discussions section and crawlable tag links
+- `components/blog/BlogSidebar.tsx` — TOC, FAQs, references, tags (now linked to `/tags/[tag]`), related posts
 - `components/blog/CommentSection.tsx`
 - `components/blog/CoverImage.tsx`
+- `components/blog/MarkdownRenderer.tsx`
 
 ## Forums
 
@@ -546,12 +755,25 @@ All heavy work is rate-limited in request path and guarded by timeout waiting.
 - `components/admin/ForumTable.tsx`
 - `components/admin/AdminCommentTable.tsx`
 
+## Pages (App Router)
+
+- `app/blog/page.tsx` — blog listing with ISR (300s)
+- `app/blog/[slug]/page.tsx` — blog detail, SSR with static params (top 1000 posts)
+- `app/forums/page.tsx` — forum listing, client-side
+- `app/forums/[slug]/page.tsx` — forum thread, SSR with static params (top 50 threads)
+- `app/tags/[tag]/page.tsx` — tag hub, SSR with static params (all tags, 600s revalidation) *(new)*
+- `app/sitemap.ts` — XML sitemap including static, category, tag, blog, and forum routes
+- `app/robots.ts` — blocks `/admin/`, `/api/`
+
 ---
 
 ## Services / Library Map
 
-- `lib/blogService.ts` — blog querying, transforms, trending windows
-- `lib/forumService.ts` — forum CRUD/sorting/voting/trending hooks
+- `lib/blogService.ts` — blog querying, transforms, trending windows; includes `getPostsByTag`, `getAllTags` *(updated)*
+- `lib/forumService.ts` — forum CRUD/sorting/voting/trending hooks; includes `getRelatedForumPosts`, `getAllForumTags` *(updated)*
+- `lib/keywordExtractor.ts` — pure keyword extraction from title, tags, and headings; `extractKeywords`, `descriptionHasKeyword` *(new)*
+- `lib/internalLinker.ts` — auto keyword-to-blog markdown link injection; `autoLinkContent`
+- `lib/contentStructureChecker.ts` — markdown structure validation (H1/H2/word count/paragraph length); min 300 words *(updated)*
 - `lib/userProfileService.ts` — profile ingest/backfill/synthetic/maintenance
 - `lib/userBehavior.ts` — behavioral personas and activity timing helpers
 - `lib/activityRunner.ts` — queue processor and realism timing loop
@@ -565,6 +787,9 @@ All heavy work is rate-limited in request path and guarded by timeout waiting.
 - `lib/notificationService.ts` — notification operations + cache
 - `lib/adminApi.ts` — admin request/response helper patterns
 - `lib/personas.ts` / `lib/personaService.ts` — writing persona + interest vector behavior
+- `lib/blogSeo.ts` — `buildArticleJsonLd`, `buildBreadcrumbJsonLd`, `buildFaqJsonLd`, `extractFaqItems`
+- `lib/forumSeo.ts` — `buildForumPostJsonLd`, `buildForumBreadcrumbJsonLd`
+- `lib/seo.ts` — `generateSEO` unified metadata helper
 
 ---
 
@@ -624,11 +849,13 @@ Open: [http://localhost:3000](http://localhost:3000)
 ## Fast verification checklist (local)
 
 1. `/blog` loads and cards render with non-placeholder images
-2. `/blog/[slug]` vote + view + comments work
-3. `/forums` list and `/forums/[slug]` comments/votes work
-4. swipe mode opens and transitions without blocking
-5. `/users` loads profile list and filter/sort operates
-6. `/admin/login` auth gate works with configured secret
+2. `/blog/[slug]` vote + view + comments work; Related Discussions section appears when matching forum threads exist
+3. `/forums` list and `/forums/[slug]` comments/votes work; Related Articles section appears when matching blogs exist
+4. `/tags/[tag]` renders the tag hub with blogs + discussions for a known tag
+5. swipe mode opens and transitions without blocking
+6. `/users` loads profile list and filter/sort operates
+7. `/admin/login` auth gate works with configured secret
+8. `GET /sitemap.xml` includes `/tags/[tag]` routes
 
 ---
 
@@ -653,9 +880,10 @@ vercel deploy --prod --yes --force
 
 ## Recommended deploy checks
 
-- verify build includes `/users`, `/blog`, `/forums` routes
+- verify build includes `/users`, `/blog`, `/forums`, `/tags` routes
 - smoke-test API endpoints (`/api/health`, `/api/blog/feed`)
 - admin login and one privileged endpoint check
+- verify `/sitemap.xml` contains tag hub entries
 
 ---
 
@@ -693,6 +921,18 @@ vercel deploy --prod --yes --force
 - run uniqueness maintenance pass (`ensureUniqueAvatarAssignments`) path
 - check canonicalization for real-photo URLs
 
+## `/tags/[tag]` returns 404 unexpectedly
+
+- confirm the tag exists in at least one published Blog or non-deleted ForumPost document
+- check that `getAllTags` / `getAllForumTags` are returning the tag (query filters include `deleted_at: null` and `published: true` for blogs)
+- revalidate or force-rebuild the page if content was added after the last static generation pass
+
+## Related Discussions / Related Articles not appearing
+
+- both sections require at least one matching document; empty arrays render nothing (no broken UI)
+- confirm the post has tags set — `getRelatedForumPosts` returns empty when `tags` array is empty
+- for forum → blog: `getPostsByTag` uses the first tag only (`post.tags[0]`); posts without tags produce no results
+
 ---
 
 ## Security Notes
@@ -711,6 +951,9 @@ vercel deploy --prod --yes --force
 - Redis path is optional and intentionally dev-bypassed for stability
 - deeper moderation telemetry and anti-abuse models can be extended
 - full cloud image storage driver can be expanded further where needed
+- `keywordExtractor` is currently a utility only — future: integrate into admin save flow to auto-validate descriptions and flag keyword-free meta before publish
+- tag hub pages (`/tags/[tag]`) show newest blogs and hot-ranked forums; future: add pagination for high-volume tags
+- internal linker (`lib/internalLinker.ts`) currently links blog content to other blogs only; future: extend to also auto-link forum thread bodies to related blog articles
 
 ---
 
@@ -723,5 +966,6 @@ TatvaOps now includes:
 - personalized feed architecture with experimentation hooks
 - robust user profile directory with realism-focused simulation layers
 - hardened admin workflows and deployment pipeline
+- **SEO content engine**: internal cross-linking (blog↔forum), keyword extraction, tag hub pages at `/tags/[tag]`, content structure enforcement at 300-word minimum, fully crawlable tag graph, and sitemap coverage for all tag routes
 
 The platform is intentionally optimized for iterative product experimentation while preserving operational stability.

@@ -192,86 +192,51 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
   };
 
   return (
-    <section className="mx-auto w-full max-w-[1500px] px-6 py-12">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Blog CMS</h1>
+    <section className="mx-auto w-full max-w-[1500px] px-6 py-6">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-semibold text-slate-900">Blogs</h1>
+          <p className="text-sm text-slate-500">{posts.length} posts</p>
+        </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2">
-            <span className="px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Content</span>
-            <Link
-              href="/admin/blog"
-              className="rounded-lg border border-slate-300 bg-slate-900 px-4 py-2 text-sm font-medium !text-white transition hover:bg-slate-800"
-            >
-              Blogs
-            </Link>
-            <Link
-              href="/admin/forums"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Forums
-            </Link>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2">
-            <span className="px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">System</span>
-            <Link
-              href="/users"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Users
-            </Link>
-            <Link
-              href="/admin/stats"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Analytics
-            </Link>
-            <Link
-              href="/admin/comments"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Moderate comments
-            </Link>
-          </div>
           <button
             type="button"
             onClick={onAutopopulate}
             disabled={isAutopopulating}
-            className="rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-violet-800 disabled:opacity-50"
+            className="rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200 hover:text-slate-900 disabled:opacity-50"
           >
-            {isAutopopulating ? "Populating..." : "AutoPopulate Content"}
+            {isAutopopulating ? "Populating…" : "AutoPopulate"}
           </button>
           <button
             type="button"
             onClick={onToggleLiveActivity}
             disabled={togglingLiveActivity}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold !text-white transition disabled:opacity-50 ${
-              liveActivityEnabled ? "bg-emerald-700 hover:bg-emerald-800" : "bg-slate-500 hover:bg-slate-600"
+            className={`rounded-md border px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
+              liveActivityEnabled
+                ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                : "border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
-            {togglingLiveActivity
-              ? "Updating..."
-              : liveActivityEnabled
-                ? "Live Activity: ON"
-                : "Live Activity: OFF"}
+            {togglingLiveActivity ? "…" : liveActivityEnabled ? "Live: ON" : "Live: OFF"}
           </button>
           <button
             type="button"
             onClick={onGenerateBulk}
             disabled={isBulkGenerating}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-slate-700 disabled:opacity-50"
+            className="rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200 hover:text-slate-900 disabled:opacity-50"
           >
-            {isBulkGenerating ? "Generating..." : "Generate Random Blogs"}
+            {isBulkGenerating ? "Generating…" : "Generate Blogs"}
           </button>
           <Link
             href="/admin/blog/new"
-            className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-sky-800"
+            className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-700"
           >
             New post
           </Link>
           <button
             type="button"
             onClick={onLogout}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
           >
             Log out
           </button>
@@ -279,112 +244,90 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
       </div>
 
       {error && (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
       )}
       {bulkResult && (
-        <p className="mb-4 rounded bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          {bulkResult}
-        </p>
+        <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{bulkResult}</div>
       )}
       {autopopulateResult && (
-        <p className="mb-4 rounded bg-violet-50 px-3 py-2 text-sm text-violet-700">
+        <div className="mb-4 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-700">
           AutoPopulate complete — {autopopulateResult}
-        </p>
+        </div>
       )}
 
       {/* Search + filter bar */}
-      <div className="mb-4 flex flex-wrap gap-3">
+      <div className="mb-4 flex flex-wrap gap-2">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by title, category, or tag…"
-          className="w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-sky-500 transition focus:ring-2"
+          className="w-full max-w-xs rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:ring-2 focus:ring-sky-500"
         />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-sky-500 transition focus:ring-2"
+          className="rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm text-slate-700 outline-none transition focus:ring-2 focus:ring-sky-500"
         >
           <option value="all">All</option>
           <option value="published">Published</option>
           <option value="draft">Drafts</option>
         </select>
-        <span className="self-center text-xs text-slate-500">
+        <span className="self-center text-xs text-slate-400">
           {filtered.length} / {posts.length} posts
         </span>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-600">
+        <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
           {posts.length === 0 ? "No posts found." : "No posts match your filter."}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-white">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">
+                <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Title
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">
-                  Category
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">
-                  Views
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">
-                  Upvotes
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">
-                  Date
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">
-                  Actions
-                </th>
+                <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Category</th>
+                <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Status</th>
+                <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">Views</th>
+                <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">Upvotes</th>
+                <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Date</th>
+                <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {filtered.map((post) => (
                 <tr key={post.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 text-sm text-slate-800">
+                  <td className="px-4 py-2.5 text-sm text-slate-800">
                     <Link
                       href={`/blog/${post.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:underline"
+                      className="line-clamp-1 max-w-[300px] hover:text-violet-400 hover:underline"
                     >
                       {post.title}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-sm text-slate-600">{post.category}</td>
-                  <td className="px-4 py-3 text-sm">
-                    <span
-                      className={`rounded-full px-2 py-1 text-xs ${
-                        post.published
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
-                    >
+                  <td className="px-4 py-2.5 text-sm text-slate-500">{post.category}</td>
+                  <td className="px-4 py-2.5 text-sm">
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                      post.published
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}>
                       {post.published ? "Published" : "Draft"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right text-sm tabular-nums text-slate-600">
-                    {formatCount(post.view_count)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm tabular-nums text-slate-600">
-                    {formatCount(post.upvote_count)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-600">
-                    {formatStableDate(post.created_at)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm">
+                  <td className="px-4 py-2.5 text-right tabular-nums text-sm text-slate-600">{formatCount(post.view_count)}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-sm text-slate-600">{formatCount(post.upvote_count)}</td>
+                  <td className="px-4 py-2.5 text-sm tabular-nums text-slate-500">{formatStableDate(post.created_at)}</td>
+                  <td className="px-4 py-2.5 text-right text-sm">
                     <div className="flex justify-end gap-3">
                       <Link
                         href={`/admin/blog/edit/${post.id}`}
-                        className="text-sky-700 hover:text-sky-900"
+                        className="text-xs text-slate-600 transition hover:text-violet-700"
                       >
                         Edit
                       </Link>
@@ -392,9 +335,9 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
                         type="button"
                         onClick={() => onDelete(post.id)}
                         disabled={deletingId === post.id}
-                        className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                        className="text-xs text-slate-400 transition hover:text-red-600 disabled:opacity-50"
                       >
-                        {deletingId === post.id ? "Deleting..." : "Delete"}
+                        {deletingId === post.id ? "Deleting…" : "Delete"}
                       </button>
                     </div>
                   </td>

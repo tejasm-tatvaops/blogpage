@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ForumFeedSort, ForumPost } from "@/lib/forumService";
-import { ForumActions } from "./ForumActions";
 import { GenerateForumsButton } from "./GenerateForumsButton";
 import { JobQueuePanel } from "./JobQueuePanel";
+import { PostInspector } from "./PostInspector";
 
 type ForumApiResult = {
   posts: ForumPost[];
@@ -28,7 +27,18 @@ const formatStableDate = (isoDate: string): string => {
   }).format(date);
 };
 
-const formatCount = (value: number): string => new Intl.NumberFormat("en-US").format(value);
+const fmt = (value: number): string => new Intl.NumberFormat("en-US").format(value);
+
+const ScoreDot = ({ value }: { value: number }) => {
+  const color =
+    value >= 0.7 ? "bg-emerald-500" : value >= 0.4 ? "bg-amber-500" : "bg-slate-400";
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`inline-block h-1.5 w-1.5 rounded-full ${color}`} />
+      <span className="tabular-nums">{value.toFixed(2)}</span>
+    </span>
+  );
+};
 
 export function ForumTable() {
   const router = useRouter();
@@ -47,6 +57,7 @@ export function ForumTable() {
   const [autopopulateResult, setAutopopulateResult] = useState<string | null>(null);
   const [jobQueueTick, setJobQueueTick] = useState(0);
   const [reloadTick, setReloadTick] = useState(0);
+  const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
 
   const queryTags = useMemo(() => {
     const tags = new Set<string>();
@@ -71,10 +82,7 @@ export function ForumTable() {
         if (search.trim()) url.searchParams.set("q", search.trim());
 
         const response = await fetch(url.toString(), { signal: controller.signal, cache: "no-store" });
-        if (response.status === 401) {
-          router.push("/admin/login");
-          return;
-        }
+        if (response.status === 401) { router.push("/admin/login"); return; }
         const json = (await response.json()) as ForumApiResult & { error?: string };
         if (!response.ok) throw new Error(json.error ?? "Failed to load forum posts.");
         setPosts(json.posts);
@@ -88,7 +96,6 @@ export function ForumTable() {
         setLoading(false);
       }
     };
-
     void run();
     return () => controller.abort();
   }, [page, router, search, sort, tagFilter, reloadTick]);
@@ -101,13 +108,11 @@ export function ForumTable() {
     setError(null);
     const previous = posts;
     setPosts((current) => current.filter((post) => post.id !== id));
+    if (selectedPost?.id === id) setSelectedPost(null);
     try {
       const response = await fetch(`/api/admin/forums/${encodeURIComponent(id)}`, { method: "DELETE" });
       const json = (await response.json()) as { error?: string };
-      if (response.status === 401) {
-        router.push("/admin/login");
-        return;
-      }
+      if (response.status === 401) { router.push("/admin/login"); return; }
       if (!response.ok) throw new Error(json.error ?? "Failed to delete forum post.");
       setTotal((count) => Math.max(0, count - 1));
     } catch (err) {
@@ -125,6 +130,7 @@ export function ForumTable() {
     const nextFeatured = !post.is_featured;
     const previous = posts;
     setPosts((current) => current.map((item) => (item.id === post.id ? { ...item, is_featured: nextFeatured } : item)));
+    if (selectedPost?.id === post.id) setSelectedPost((p) => p ? { ...p, is_featured: nextFeatured } : p);
     try {
       const response = await fetch(`/api/admin/forums/${encodeURIComponent(post.id)}/feature`, {
         method: "PATCH",
@@ -132,13 +138,11 @@ export function ForumTable() {
         body: JSON.stringify({ is_featured: nextFeatured }),
       });
       const json = (await response.json()) as { error?: string; post?: ForumPost };
-      if (response.status === 401) {
-        router.push("/admin/login");
-        return;
-      }
+      if (response.status === 401) { router.push("/admin/login"); return; }
       if (!response.ok) throw new Error(json.error ?? "Failed to update featured status.");
       if (json.post) {
         setPosts((current) => current.map((item) => (item.id === json.post?.id ? json.post : item)));
+        if (selectedPost?.id === json.post.id) setSelectedPost(json.post);
       }
     } catch (err) {
       setPosts(previous);
@@ -170,7 +174,7 @@ export function ForumTable() {
         throw new Error(json.error ?? "AutoPopulate failed.");
       }
       setAutopopulateResult(
-        `Processed ${json.postsProcessed ?? 0} posts · ${json.commentsCreated ?? 0} comments · ${json.repliesCreated ?? 0} replies`,
+        `${json.postsProcessed ?? 0} posts · ${json.commentsCreated ?? 0} comments · ${json.repliesCreated ?? 0} replies`,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "AutoPopulate failed.");
@@ -188,193 +192,199 @@ export function ForumTable() {
   };
 
   return (
-    <section className="mx-auto w-full max-w-[1500px] px-6 py-12">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Forums</h1>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2">
-            <span className="px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Content</span>
-            <Link
-              href="/admin/blog"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Blogs
-            </Link>
-            <Link
-              href="/admin/forums"
-              className="rounded-lg border border-slate-300 bg-slate-900 px-4 py-2 text-sm font-medium !text-white transition hover:bg-slate-800"
-            >
-              Forums
-            </Link>
+    <div className="flex h-full min-h-0">
+      {/* Main content */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-auto px-6 py-6">
+
+        {/* Page header */}
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-lg font-semibold text-slate-900">Forums</h1>
+            <p className="text-sm text-slate-500">{total} posts total</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2">
-            <span className="px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">System</span>
-            <Link
-              href="/users"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onAutopopulate}
+              disabled={isAutopopulating}
+              className="rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200 hover:text-slate-900 disabled:opacity-50"
             >
-              Users
-            </Link>
-            <Link
-              href="/admin/stats"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Analytics
-            </Link>
-            <Link
-              href="/admin/comments?type=forum"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Moderate forum comments
-            </Link>
+              {isAutopopulating ? "Populating…" : "AutoPopulate"}
+            </button>
+            <GenerateForumsButton onComplete={onGenerationComplete} />
           </div>
-          <button
-            type="button"
-            onClick={onAutopopulate}
-            disabled={isAutopopulating}
-            className="rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-violet-800 disabled:opacity-50"
+        </div>
+
+        {/* Error / result banners */}
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+        {autopopulateResult && (
+          <div className="mb-4 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-700">
+            AutoPopulate complete — {autopopulateResult}
+          </div>
+        )}
+
+        {/* Job queue */}
+        <div className="mb-5">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+            Generation jobs
+          </p>
+          <JobQueuePanel refreshTick={jobQueueTick} />
+        </div>
+
+        {/* Filters */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <input
+            value={search}
+            onChange={(e) => { setPage(1); setSearch(e.target.value); }}
+            placeholder="Search by title…"
+            className="w-full max-w-xs rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:ring-2 focus:ring-violet-500"
+          />
+          <select
+            value={sort}
+            onChange={(e) => { setPage(1); setSort(e.target.value as ForumFeedSort); }}
+            className="rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm text-slate-700 outline-none transition focus:ring-2 focus:ring-sky-500"
           >
-            {isAutopopulating ? "Populating..." : "AutoPopulate Content"}
-          </button>
-          <GenerateForumsButton onComplete={onGenerationComplete} />
+            <option value="hot">Hot</option>
+            <option value="new">New</option>
+            <option value="top">Top</option>
+            <option value="discussed">Most discussed</option>
+          </select>
+          <select
+            value={tagFilter}
+            onChange={(e) => { setPage(1); setTagFilter(e.target.value); }}
+            className="rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-sm text-slate-700 outline-none transition focus:ring-2 focus:ring-sky-500"
+          >
+            <option value="all">All tags</option>
+            {queryTags.map((tag) => (
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </select>
         </div>
-      </div>
 
-      {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {autopopulateResult && (
-        <p className="mb-4 rounded bg-violet-50 px-3 py-2 text-sm text-violet-700">
-          AutoPopulate complete — {autopopulateResult}
-        </p>
-      )}
-      <div className="mb-4">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Generation Jobs</p>
-        <JobQueuePanel refreshTick={jobQueueTick} />
-      </div>
-
-      <div className="mb-4 flex flex-wrap gap-3">
-        <input
-          value={search}
-          onChange={(e) => {
-            setPage(1);
-            setSearch(e.target.value);
-          }}
-          placeholder="Search by title…"
-          className="w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-sky-500 transition focus:ring-2"
-        />
-        <select
-          value={sort}
-          onChange={(e) => {
-            setPage(1);
-            setSort(e.target.value as ForumFeedSort);
-          }}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-sky-500 transition focus:ring-2"
-        >
-          <option value="hot">Hot</option>
-          <option value="new">New</option>
-          <option value="top">Top</option>
-          <option value="discussed">Most discussed</option>
-        </select>
-        <select
-          value={tagFilter}
-          onChange={(e) => {
-            setPage(1);
-            setTagFilter(e.target.value);
-          }}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-sky-500 transition focus:ring-2"
-        >
-          <option value="all">All tags</option>
-          {queryTags.map((tag) => (
-            <option key={tag} value={tag}>
-              {tag}
-            </option>
-          ))}
-        </select>
-        <span className="self-center text-xs text-slate-500">{total} posts</span>
-      </div>
-
-      {loading ? (
-        <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          {Array.from({ length: 6 }).map((_, idx) => (
-            <div key={idx} className="h-10 animate-pulse rounded bg-slate-100" />
-          ))}
-        </div>
-      ) : posts.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-600">
-          No forum posts found.
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Title</th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Score</th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Comments</th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Views</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Tags</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-600">Created</th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-slate-600">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {posts.map((post) => (
-                <tr key={post.id} className={post.is_featured ? "bg-amber-50/70 hover:bg-amber-50" : "hover:bg-slate-50"}>
-                  <td className="px-4 py-3 text-sm text-slate-800">
-                    <div className="flex items-center gap-2">
-                      <Link href={`/forums/${post.slug}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                        {post.title}
-                      </Link>
-                      {post.is_featured && (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
-                          Featured
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm tabular-nums text-slate-600">{formatCount(Math.round(post.score))}</td>
-                  <td className="px-4 py-3 text-right text-sm tabular-nums text-slate-600">{formatCount(post.comment_count)}</td>
-                  <td className="px-4 py-3 text-right text-sm tabular-nums text-slate-600">{formatCount(post.view_count)}</td>
-                  <td className="px-4 py-3 text-sm text-slate-600">
-                    {post.tags.length > 0 ? post.tags.join(", ") : "-"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-600">{formatStableDate(post.created_at)}</td>
-                  <td className="px-4 py-3 text-right text-sm">
-                    <ForumActions
-                      isDeleting={deletingId === post.id}
-                      isTogglingFeatured={featureUpdatingId === post.id}
-                      isFeatured={post.is_featured}
-                      onDelete={() => onDelete(post.id)}
-                      onToggleFeatured={() => onToggleFeatured(post)}
-                    />
-                  </td>
+        {/* Table */}
+        {loading ? (
+          <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-9 animate-pulse rounded-md bg-slate-100" />
+            ))}
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-400">
+            No forum posts found.
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-white">
+                <tr>
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Title</th>
+                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">Quality</th>
+                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">Comments</th>
+                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">Views</th>
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Tags</th>
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Created</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {posts.map((post) => {
+                  const isSelected = selectedPost?.id === post.id;
+                  return (
+                    <tr
+                      key={post.id}
+                      onClick={() => setSelectedPost(isSelected ? null : post)}
+                      className={`cursor-pointer transition-colors ${
+                        isSelected
+                          ? "bg-violet-50"
+                          : post.is_featured
+                          ? "bg-amber-50 hover:bg-amber-100"
+                          : "hover:bg-slate-50"
+                      }`}
+                    >
+                      <td className="px-4 py-2.5 text-slate-800">
+                        <div className="flex items-center gap-2">
+                          <span className="line-clamp-1 max-w-[340px]">{post.title}</span>
+                          {post.is_featured && (
+                            <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                              Featured
+                            </span>
+                          )}
+                          {post.badges.length > 0 && (
+                            <span className="shrink-0 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">
+                              {post.badges[0]}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-slate-600">
+                        <ScoreDot value={post.quality_score} />
+                      </td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-600">{fmt(post.comment_count)}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-600">{fmt(post.view_count)}</td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex flex-wrap gap-1">
+                          {post.tags.slice(0, 3).map((tag) => (
+                            <span key={tag} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
+                              {tag}
+                            </span>
+                          ))}
+                          {post.tags.length > 3 && (
+                            <span className="text-[10px] text-slate-400">+{post.tags.length - 3}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5 tabular-nums text-slate-500">{formatStableDate(post.created_at)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-      <div className="mt-4 flex items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={() => setPage((value) => Math.max(1, value - 1))}
-          disabled={page <= 1 || loading}
-          className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <span className="text-sm text-slate-600">
-          Page {page} of {Math.max(1, totalPages)}
-        </span>
-        <button
-          type="button"
-          onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
-          disabled={page >= totalPages || loading}
-          className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-        >
-          Next
-        </button>
+        {/* Pagination */}
+        <div className="mt-4 flex items-center justify-between">
+          <span className="text-xs text-slate-400">
+            {total > 0 ? `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total}` : ""}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((v) => Math.max(1, v - 1))}
+              disabled={page <= 1 || loading}
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-600 transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+            >
+              ← Prev
+            </button>
+            <span className="text-xs text-slate-500">
+              {page} / {Math.max(1, totalPages)}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((v) => Math.min(totalPages, v + 1))}
+              disabled={page >= totalPages || loading}
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-600 transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
       </div>
-    </section>
+
+      {/* Inspector panel */}
+      {selectedPost && (
+        <PostInspector
+          post={selectedPost}
+          onClose={() => setSelectedPost(null)}
+          onDelete={onDelete}
+          onToggleFeatured={onToggleFeatured}
+          isDeletingId={deletingId}
+          isFeatureUpdatingId={featureUpdatingId}
+        />
+      )}
+    </div>
   );
 }
