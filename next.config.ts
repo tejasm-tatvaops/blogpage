@@ -3,7 +3,9 @@ import path from "node:path";
 
 const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
-  { key: "X-Frame-Options", value: "DENY" },
+  // SAMEORIGIN: allow same-site framing; still blocks random third-party embeds of this app.
+  // DENY was overly aggressive and confused debugging of embedded players.
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
@@ -20,6 +22,8 @@ const securityHeaders = [
       "img-src 'self' data: https:",
       "font-src 'self'",
       "connect-src 'self'",
+      // Required: without frame-src, default-src blocks third-party iframes (e.g. YouTube shorts embeds).
+      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
