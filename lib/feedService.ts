@@ -49,6 +49,7 @@ import {
 } from "./personaService";
 import { connectToDatabase } from "./mongodb";
 import { UserProfileModel } from "@/models/UserProfile";
+import { UserPreferencesModel } from "@/models/UserPreferences";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -64,6 +65,80 @@ export type FeedResult = {
     recent_tags_seen: string[];
     recent_authors_seen: string[];
   };
+};
+
+// ─── Topic preference signals ─────────────────────────────────────────────────
+
+/**
+ * Explicit topic preferences declared by the user via the Personalize Feed modal.
+ * Distinct from the implicit persona vector (interest_tags) which is signal-based.
+ *
+ * Boost / penalty values are additive to the final ranking score:
+ *   +TOPIC_BOOST   when the post matches a declared Interested  topic
+ *   -TOPIC_PENALTY when the post matches a declared Not Interested topic
+ *
+ * These are intentionally larger than individual weighted components so that
+ * explicit user intent overrides implicit signals — but both remain active.
+ * Step 7 will expose these constants in the admin config panel.
+ */
+const TOPIC_BOOST   = 0.25;  // +25 normalised points — Interested match
+const TOPIC_PENALTY = 0.40;  // −40 normalised points — Not Interested match
+
+export type TopicPrefs = {
+  interested:   Set<string>;  // normalised topic strings
+  uninterested: Set<string>;
+};
+
+/** Lowercase + collapse non-alphanumeric to spaces for stable comparison. */
+const normalizeTopic = (s: string): string =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+/**
+ * Returns the additive boost and penalty for a post given explicit topic prefs.
+ * Checks the post's category and all tags for substring overlap with each preference.
+ */
+const computeTopicPreferenceSignal = (
+  post: FeedCandidate,
+  prefs: TopicPrefs | null,
+): { boost: number; penalty: number } => {
+  if (!prefs || (prefs.interested.size === 0 && prefs.uninterested.size === 0)) {
+    return { boost: 0, penalty: 0 };
+  }
+  const fields = [post.category, ...post.tags].map(normalizeTopic).filter(Boolean);
+  const matchesAny = (topics: Set<string>): boolean =>
+    [...topics].some((t) => fields.some((f) => f === t || f.includes(t) || t.includes(f)));
+  return {
+    boost:   matchesAny(prefs.interested)   ? TOPIC_BOOST   : 0,
+    penalty: matchesAny(prefs.uninterested) ? TOPIC_PENALTY : 0,
+  };
+};
+
+/**
+ * Fetch the explicit topic preferences for a given identity key.
+ * Returns null if no preferences have been saved yet (cold-start safe).
+ */
+export const fetchTopicPrefs = async (identityKey: string): Promise<TopicPrefs | null> => {
+  try {
+    await connectToDatabase();
+    const doc = await UserPreferencesModel.findOne(
+      { identity_key: identityKey },
+      { interested_topics: 1, uninterested_topics: 1 },
+    ).lean();
+    if (!doc) return null;
+    const toSet = (arr: unknown): Set<string> =>
+      new Set(
+        (Array.isArray(arr) ? arr : [])
+          .filter((x): x is string => typeof x === "string")
+          .map(normalizeTopic)
+          .filter(Boolean),
+      );
+    return {
+      interested:   toSet(doc.interested_topics),
+      uninterested: toSet(doc.uninterested_topics),
+    };
+  } catch {
+    return null;
+  }
 };
 
 // ─── Bucket sizes (total candidate pool before scoring) ──────────────────────
@@ -183,6 +258,7 @@ const scoreCandidate = (
   sessionRecent: { tags: string[]; authors: string[] },
   authorAffinityMap: Record<string, number>,
   weights: FeedScoringWeights,
+  topicPrefs: TopicPrefs | null = null,
 ): ScoredCandidate => {
   const d = post as unknown as {
     upvote_count: number;
@@ -224,16 +300,20 @@ const scoreCandidate = (
   const negativeAffinityPenalty = affinityRaw < 0 ? Math.min(0.5, Math.abs(affinityRaw) / 40) : 0;
   const negativePenalty = Math.min(1, authorRepeatPenalty + tagRepeatPenalty + negativeAffinityPenalty);
 
+  const { boost: topicBoost, penalty: topicPenalty } =
+    computeTopicPreferenceSignal(post, topicPrefs);
+
   const score =
-    interestMatch   * weights.interest +
-    engagementScore * weights.engagement +
-    recencyScore    * weights.recency +
-    authorQuality   * weights.author +
-    diversityBoost  * weights.diversity +
-    explorationScore * weights.exploration +
+    interestMatch      * weights.interest +
+    engagementScore    * weights.engagement +
+    recencyScore       * weights.recency +
+    authorQuality      * weights.author +
+    diversityBoost     * weights.diversity +
+    explorationScore   * weights.exploration +
     sessionIntentScore * weights.sessionIntent +
     authorAffinityScore * weights.authorAffinity -
-    negativePenalty * weights.negative;
+    negativePenalty    * weights.negative +
+    topicBoost         - topicPenalty;
 
   tagFrequency.set(primaryTag, freq + 1);
   return { post, score, interestMatch };
@@ -285,6 +365,7 @@ export const buildFeed = async ({
   sessionRecent,
   authorAffinity,
   scoringWeights,
+  topicPreferences,
   onStage,
 }: {
   personaVector: Array<{ tag: string; weight: number }>;
@@ -294,6 +375,8 @@ export const buildFeed = async ({
   sessionRecent?: { tags: string[]; authors: string[] };
   authorAffinity?: Record<string, number>;
   scoringWeights?: FeedScoringWeights;
+  /** Explicit topic preferences from PersonalizationModal. Optional — omitting is backward compatible. */
+  topicPreferences?: TopicPrefs | null;
   onStage?: (stage: "candidates" | "scoring") => void;
 }): Promise<FeedResult> => {
   const safePage  = Math.max(1, page);
@@ -347,7 +430,7 @@ export const buildFeed = async ({
   const tagFrequency = new Map<string, number>(); // resets per scoring batch
 
   const scored: ScoredCandidate[] = candidates.map((post) =>
-    scoreCandidate(post, personaVector, authorRepMap, tagFrequency, session, affinity, weights),
+    scoreCandidate(post, personaVector, authorRepMap, tagFrequency, session, affinity, weights, topicPreferences ?? null),
   );
 
   // Sort by score descending

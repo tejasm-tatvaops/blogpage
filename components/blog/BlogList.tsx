@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { BlogPost } from "@/lib/blogService";
 import { BlogCard } from "./BlogCard";
+import { PersonalizationModal, PREFS_STORAGE_KEY, PREFS_DISMISSED_KEY } from "@/components/feed/PersonalizationModal";
 
 type BlogListProps = {
   posts: BlogPost[];
@@ -194,6 +195,20 @@ export function BlogList({
   const [personalizedLoading, setPersonalizedLoading] = useState(false);
   const [topInterests, setTopInterests] = useState<string[]>([]);
   const [feedTab, setFeedTab] = useState<"for_you" | "trending" | "explore">("for_you");
+  const [showPersonalizationModal, setShowPersonalizationModal] = useState(false);
+
+  // Auto-show modal for first-time visitors who have no saved topic prefs.
+  useEffect(() => {
+    try {
+      const hasDismissed = localStorage.getItem(PREFS_DISMISSED_KEY);
+      const hasPrefs = localStorage.getItem(PREFS_STORAGE_KEY);
+      if (!hasDismissed && !hasPrefs) {
+        setShowPersonalizationModal(true);
+      }
+    } catch {
+      // localStorage unavailable – skip
+    }
+  }, []);
 
   useEffect(() => {
     if (sort !== "personalized") setFeedTab("for_you");
@@ -370,6 +385,17 @@ export function BlogList({
               </Link>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={() => setShowPersonalizationModal(true)}
+            className="ml-auto flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+          >
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
+              <path d="M4.5 7h5M7 4.5v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+            </svg>
+            Customize Feed
+          </button>
         </div>
       </header>
 
@@ -403,6 +429,11 @@ export function BlogList({
           ))}
         </div>
       )}
+
+      <PersonalizationModal
+        isOpen={showPersonalizationModal}
+        onClose={() => setShowPersonalizationModal(false)}
+      />
     </section>
   );
 }

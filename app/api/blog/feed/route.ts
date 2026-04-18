@@ -26,7 +26,7 @@
 import { NextResponse } from "next/server";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { getAuthorAffinityMap, getPersonaVector } from "@/lib/personaService";
-import { buildFeed } from "@/lib/feedService";
+import { buildFeed, fetchTopicPrefs } from "@/lib/feedService";
 import {
   feedCacheKey,
   getCachedFeed,
@@ -135,10 +135,11 @@ export async function GET(request: Request) {
       return response;
     }
 
-    // ── 3. Persona vector (with read-time decay) ─────────────────────────────
-    const [personaVector, authorAffinity] = await Promise.all([
+    // ── 3. Persona vector (with read-time decay) + topic preferences ─────────
+    const [personaVector, authorAffinity, topicPreferences] = await Promise.all([
       withTimeout("persona vector", getPersonaVector(identityKey, 30, true), 2000),
       withTimeout("author affinity", getAuthorAffinityMap(identityKey).catch(() => ({})), 1000),
+      withTimeout("topic prefs", fetchTopicPrefs(identityKey).catch(() => null), 500),
     ]);
     markStage("persona_fetch");
     recordLatency("feed.stage.persona_fetch", stageTimings.persona_fetch ?? 0);
@@ -157,6 +158,7 @@ export async function GET(request: Request) {
         authors: sessionDiversity.recent_authors_seen,
       },
       authorAffinity,
+      topicPreferences,
       scoringWeights: variant.weights,
       onStage: (stage) => {
         if (stage === "candidates") {
