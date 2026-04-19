@@ -19,8 +19,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   ensureActivityRunnerStarted();
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" data-theme="light" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <ThemeProvider />
         <Script
           id="unhandled-rejection-event-guard"
