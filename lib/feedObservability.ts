@@ -3,7 +3,14 @@ import { logger } from "@/lib/logger";
 import { FeedEventModel } from "@/models/FeedEvent";
 import { enqueueFeedEvent, ensureFeedEventQueueStarted, getFeedEventQueueHealth } from "@/lib/feedEventQueue";
 
-export type FeedEventType = "feed_served" | "post_clicked" | "post_liked" | "dwell_time" | "skip" | "share";
+export type FeedEventType =
+  | "feed_served"
+  | "post_clicked"
+  | "post_liked"
+  | "dwell_time"
+  | "skip"
+  | "share"
+  | "cross_content_click";
 
 export type FeedEventInput = {
   identityKey: string;
@@ -19,6 +26,9 @@ export type FeedEventInput = {
   interactionDepth?: "low" | "medium" | "high" | null;
   authorKey?: string | null;
   metadata?: Record<string, unknown>;
+  // Cross-content tracking (optional — only set for cross_content_click events)
+  sourceContentType?: string | null;
+  targetContentType?: string | null;
 };
 
 export const emitFeedEvent = async (input: FeedEventInput): Promise<void> => {

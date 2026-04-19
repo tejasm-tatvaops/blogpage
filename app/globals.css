@@ -1,6 +1,92 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* ─── Design token layer — overridden by [data-theme="dark"] ─────────────────
+   All existing component classes still work unchanged; they'll simply read from
+   these CSS custom properties. Tailwind utility classes continue to work as-is.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root,
+[data-theme="light"] {
+  --color-bg:           #ffffff;
+  --color-bg-subtle:    #f8fafc;
+  --color-surface:      #ffffff;
+  --color-border:       #e2e8f0;
+  --color-border-focus: #94a3b8;
+  --color-text:         #0f172a;
+  --color-text-muted:   #64748b;
+  --color-text-faint:   #94a3b8;
+  --color-accent:       #0ea5e9;
+  --color-accent-hover: #38bdf8;
+  --color-pill-bg:      #ffffff;
+  --color-pill-border:  #e2e8f0;
+  --color-pill-text:    #374151;
+  --color-navbar-bg:    #ffffff;
+  --color-card-bg:      #ffffff;
+  --color-card-hover:   #f8fafc;
+  --color-code-bg:      #f1f5f9;
+  --shadow-card:        0 1px 3px 0 rgb(0 0 0 / 0.07);
+}
+
+[data-theme="dark"] {
+  --color-bg:           #0f172a;
+  --color-bg-subtle:    #1e293b;
+  --color-surface:      #1e293b;
+  --color-border:       #334155;
+  --color-border-focus: #64748b;
+  --color-text:         #f1f5f9;
+  --color-text-muted:   #94a3b8;
+  --color-text-faint:   #64748b;
+  --color-accent:       #38bdf8;
+  --color-accent-hover: #7dd3fc;
+  --color-pill-bg:      #1e293b;
+  --color-pill-border:  #334155;
+  --color-pill-text:    #cbd5e1;
+  --color-navbar-bg:    #0f172a;
+  --color-card-bg:      #1e293b;
+  --color-card-hover:   #263347;
+  --color-code-bg:      #0f172a;
+  --shadow-card:        0 1px 3px 0 rgb(0 0 0 / 0.4);
+}
+
+/* ─── Dark-mode surface overrides for structural elements ─────────────────── */
+[data-theme="dark"] body {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+[data-theme="dark"] header {
+  background: var(--color-navbar-bg);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .bg-white {
+  background-color: var(--color-surface) !important;
+}
+
+[data-theme="dark"] .bg-slate-50 {
+  background-color: var(--color-bg-subtle) !important;
+}
+
+[data-theme="dark"] .border-slate-200 {
+  border-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .text-slate-900,
+[data-theme="dark"] .text-slate-800 {
+  color: var(--color-text) !important;
+}
+
+[data-theme="dark"] .text-slate-600,
+[data-theme="dark"] .text-slate-700 {
+  color: var(--color-text-muted) !important;
+}
+
+[data-theme="dark"] .text-slate-400,
+[data-theme="dark"] .text-slate-500 {
+  color: var(--color-text-faint) !important;
+}
+
 /* Smooth scroll only for users who haven't opted out of motion */
 @media (prefers-reduced-motion: no-preference) {
   html {
@@ -8,12 +94,17 @@
   }
 }
 
+/* ─── Smooth theme transition ─────────────────────────────────────────────── */
+html {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;

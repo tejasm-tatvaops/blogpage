@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Script from "next/script";
 import { Navbar } from "@/components/layout/Navbar";
 import { UnhandledRejectionGuard } from "@/components/system/UnhandledRejectionGuard";
+import { ThemeProvider } from "@/components/system/ThemeProvider";
 import { ensureActivityRunnerStarted } from "@/lib/activityRunner";
 import "./globals.css";
 
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
+        <ThemeProvider />
         <Script
           id="unhandled-rejection-event-guard"
           strategy="beforeInteractive"

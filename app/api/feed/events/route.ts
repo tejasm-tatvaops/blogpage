@@ -6,9 +6,11 @@ import { recordAuthorAffinity, recordInterest } from "@/lib/personaService";
 import { invalidateFeedCache } from "@/lib/feedCache";
 import { getPostBySlug } from "@/lib/blogService";
 import { getForumPostBySlug, registerForumDwellSignal } from "@/lib/forumService";
+import { onCrossContentLink } from "@/lib/reputationEngine";
+import type { RepContentType } from "@/models/ReputationEvent";
 
 const bodySchema = z.object({
-  eventType: z.enum(["post_clicked", "post_liked", "dwell_time", "skip"]),
+  eventType: z.enum(["post_clicked", "post_liked", "dwell_time", "skip", "cross_content_click"]),
   postSlug: z.string().trim().min(1).max(220).optional(),
   tags: z.array(z.string().trim().max(100)).max(10).optional(),
   category: z.string().trim().max(100).optional(),
@@ -19,6 +21,9 @@ const bodySchema = z.object({
   position: z.number().int().min(0).max(500).optional(),
   interactionDepth: z.enum(["low", "medium", "high"]).optional(),
   author: z.string().trim().max(120).optional(),
+  // Cross-content tracking: source and destination content types
+  sourceContentType: z.enum(["blog", "forum", "short", "tutorial"]).optional(),
+  targetContentType: z.enum(["blog", "forum", "short", "tutorial"]).optional(),
 });
 
 const identityFromRequest = (request: Request): string => {
@@ -66,7 +71,26 @@ export async function POST(request: Request) {
     position: body.position,
     interactionDepth: body.interactionDepth,
     authorKey,
+    sourceContentType: body.sourceContentType ?? null,
+    targetContentType: body.targetContentType ?? null,
   });
+
+  // Cross-content click: boost persona signal + award reputation multiplier
+  if (body.eventType === "cross_content_click" && body.sourceContentType && body.targetContentType) {
+    await recordInterest({
+      identityKey,
+      tags: body.tags ?? postForSignals?.tags ?? forumPostForSignals?.tags ?? [],
+      category: body.category ?? postForSignals?.category ?? forumPostForSignals?.tags?.[0],
+      action: "view",
+    });
+    void onCrossContentLink(
+      identityKey,
+      body.sourceContentType as RepContentType,
+      body.targetContentType as RepContentType,
+      body.postSlug ?? "",
+    );
+    await invalidateFeedCache(identityKey);
+  }
 
   if (body.eventType === "post_clicked" || body.eventType === "post_liked") {
     await recordInterest({

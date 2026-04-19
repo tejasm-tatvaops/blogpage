@@ -6,9 +6,16 @@ import { getSystemToggles, setSystemToggles } from "@/lib/systemToggles";
 import { setLiveActivityEnabled } from "@/lib/activityRunner";
 
 const schema = z.object({
-  liveActivityEnabled: z.boolean().optional(),
-  notificationsEnabled: z.boolean().optional(),
-  personasEnabled: z.boolean().optional(),
+  liveActivityEnabled:        z.boolean().optional(),
+  notificationsEnabled:       z.boolean().optional(),
+  personasEnabled:            z.boolean().optional(),
+  shortsEnabled:              z.boolean().optional(),
+  reputationEnabled:          z.boolean().optional(),
+  crossContentSignalsEnabled: z.boolean().optional(),
+  peerReviewEnabled:          z.boolean().optional(),
+  ingestionEnabled:           z.boolean().optional(),
+  tutorialsEnabled:           z.boolean().optional(),
+  autoDarkThemeEnabled:       z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -35,8 +42,15 @@ export async function POST(request: Request) {
   }
 
   const toggles = setSystemToggles({
-    notificationsEnabled: parsed.data.notificationsEnabled,
-    personasEnabled: parsed.data.personasEnabled,
+    notificationsEnabled:       parsed.data.notificationsEnabled,
+    personasEnabled:            parsed.data.personasEnabled,
+    shortsEnabled:              parsed.data.shortsEnabled,
+    reputationEnabled:          parsed.data.reputationEnabled,
+    crossContentSignalsEnabled: parsed.data.crossContentSignalsEnabled,
+    peerReviewEnabled:          parsed.data.peerReviewEnabled,
+    ingestionEnabled:           parsed.data.ingestionEnabled,
+    tutorialsEnabled:           parsed.data.tutorialsEnabled,
+    autoDarkThemeEnabled:       parsed.data.autoDarkThemeEnabled,
   });
   return NextResponse.json(toggles, { status: 200 });
 }

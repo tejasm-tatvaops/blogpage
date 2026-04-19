@@ -4,6 +4,8 @@ import { addComment, commentInputSchema, getComments } from "@/lib/commentServic
 import { forumCommentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
+import { onForumAnswerGiven } from "@/lib/reputationEngine";
+import { getFingerprintFromRequest } from "@/lib/fingerprint";
 
 export async function GET(
   _request: Request,
@@ -51,6 +53,11 @@ export async function POST(
     const comment = await addComment(post.id, result.data);
     // Keep comment_count denormalized for fast feed queries
     await incrementForumCommentCount(post.id);
+
+    const fp = getFingerprintFromRequest(request);
+    const actorKey = fp ? `fp:${fp}` : `ip:${getRateLimitKey(request)}`;
+    void onForumAnswerGiven(actorKey, post.slug);
+
     void recordUserActivity({
       request,
       action: "forum_comment",

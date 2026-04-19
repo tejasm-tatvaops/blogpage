@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 export function Navbar() {
   const navPillClass =
@@ -37,6 +38,9 @@ export function Navbar() {
             </svg>
             Shorts
           </Link>
+          <Link href="/tutorials" className={navPillClass}>
+            Tutorials
+          </Link>
           <Link
             href="/saved"
             className={`${navPillClass} gap-1.5`}
@@ -47,6 +51,7 @@ export function Navbar() {
             </svg>
             Saved
           </Link>
+          <ThemeToggle />
           <NotificationBell />
           <Link href="/admin/login" className={navPillClass}>
             Admin

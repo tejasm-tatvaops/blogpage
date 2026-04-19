@@ -6,7 +6,7 @@ const feedEventSchema = new mongoose.Schema(
     event_type: {
       type: String,
       required: true,
-      enum: ["feed_served", "post_clicked", "post_liked", "dwell_time", "skip", "share"],
+      enum: ["feed_served", "post_clicked", "post_liked", "dwell_time", "skip", "share", "cross_content_click"],
       index: true,
     },
     post_slug: { type: String, default: null, trim: true, index: true },
@@ -20,6 +20,9 @@ const feedEventSchema = new mongoose.Schema(
     position: { type: Number, default: null, min: 0 },
     interaction_depth: { type: String, enum: ["low", "medium", "high"], default: null },
     author_key: { type: String, default: null, trim: true, index: true },
+    // Cross-content click tracking (additive — null for non-cross-content events)
+    source_content_type: { type: String, default: null, trim: true },
+    target_content_type: { type: String, default: null, trim: true },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: false },

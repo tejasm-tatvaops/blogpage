@@ -5,6 +5,7 @@ import { forumVoteLimiter, getRateLimitKey, rateLimitResponse, rateLimitHeaders 
 import { logger } from "@/lib/logger";
 import { createNotification } from "@/lib/notificationService";
 import { recordUserActivity } from "@/lib/userProfileService";
+import { onForumUpvoteReceived } from "@/lib/reputationEngine";
 
 export async function POST(
   request: Request,
@@ -47,6 +48,13 @@ export async function POST(
         recipient_key: `fp:${result.creator_fingerprint}`,
         message: `Your post received a ${direction === "up" ? "new upvote" : "new downvote"}.`,
       });
+      if (direction === "up") {
+        void onForumUpvoteReceived(
+          `fp:${result.creator_fingerprint}`,
+          `fp:${fingerprintId}`,
+          slug,
+        );
+      }
     }
 
     void recordUserActivity({

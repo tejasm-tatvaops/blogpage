@@ -73,7 +73,8 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Blogs",    href: "/admin/blog",     icon: <IconBlogs /> },
       { label: "Forums",   href: "/admin/forums",   icon: <IconForums /> },
       { label: "Comments", href: "/admin/comments", icon: <IconComments /> },
-      { label: "Videos",   href: "/admin/videos",   icon: <IconVideos /> },
+      { label: "Videos",    href: "/admin/videos",    icon: <IconVideos /> },
+      { label: "Tutorials", href: "/admin/tutorials", icon: <IconBlogs /> },
     ],
   },
   {
@@ -85,8 +86,11 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "System",
     items: [
-      { label: "Analytics", href: "/admin/stats", icon: <IconAnalytics /> },
-      { label: "Users",     href: "/users",       icon: <IconUsers /> },
+      { label: "Analytics",   href: "/admin/stats",      icon: <IconAnalytics /> },
+      { label: "Users",       href: "/users",             icon: <IconUsers /> },
+      { label: "Reputation",  href: "/admin/reputation",  icon: <IconUsers /> },
+      { label: "Review Queue",href: "/admin/review-queue",icon: <IconBlogs /> },
+      { label: "Ingest",      href: "/admin/ingest",      icon: <IconJobs /> },
     ],
   },
 ];

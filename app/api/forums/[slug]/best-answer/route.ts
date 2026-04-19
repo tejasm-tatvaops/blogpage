@@ -3,6 +3,7 @@ import { setBestAnswer } from "@/lib/forumService";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
+import { onBestAnswerAwarded } from "@/lib/reputationEngine";
 
 export async function POST(
   request: Request,
@@ -40,6 +41,13 @@ export async function POST(
     if (!result.ok) {
       const status = result.reason === "unauthorized" ? 403 : 404;
       return NextResponse.json({ error: result.reason ?? "Failed." }, { status });
+    }
+
+    // Award reputation to the comment author. result.comment_author_key should
+    // be the identity_key stored on the comment; fall back to a best-effort fp.
+    const authorKey = (result as Record<string, unknown>).comment_author_key as string | undefined;
+    if (authorKey) {
+      void onBestAnswerAwarded(authorKey, decodeURIComponent(slug));
     }
 
     logger.info({ slug, commentId }, "Best answer set");
