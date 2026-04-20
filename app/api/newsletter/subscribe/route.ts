@@ -7,7 +7,23 @@ import { buildConfirmationEmail } from "@/channels/emailChannel";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const newsletterLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
+const newsletterLimiter: ReturnType<typeof createRateLimiter> =
+  createRateLimiter({ limit: 5, windowMs: 60_000 });
+
+const sendConfirmationEmail = async (email: string): Promise<void> => {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not configured.");
+  }
+
+  const resend = new Resend(apiKey);
+  const from = process.env.NEWSLETTER_FROM ?? "TatvaOps Blog <onboarding@resend.dev>";
+  const { subject, html } = buildConfirmationEmail(email);
+  const { error } = await resend.emails.send({ from, to: email, subject, html });
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`);
+  }
+};
 
 export async function POST(req: NextRequest) {
   const result = newsletterLimiter(getRateLimitKey(req));
@@ -40,25 +56,34 @@ export async function POST(req: NextRequest) {
 
     const isNew = upsertResult.upsertedCount > 0;
 
-    // Send confirmation email only for new subscribers
-    if (isNew) {
-      const apiKey = process.env.RESEND_API_KEY;
-      if (apiKey) {
-        const resend = new Resend(apiKey);
-        const from = process.env.NEWSLETTER_FROM ?? "TatvaOps Blog <onboarding@resend.dev>";
-        const { subject, html } = buildConfirmationEmail(email);
-        // Fire-and-forget — don't block the response on email delivery
-        resend.emails.send({ from, to: email, subject, html }).catch(() => {
-          // Confirmation email failure is non-fatal
-        });
-      }
+    try {
+      // Always send (or re-send) confirmation for both new and existing subscribers.
+      await sendConfirmationEmail(email);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown email delivery error";
+      console.error("newsletter.subscribe email delivery failed", { email, isNew, error: errorMessage });
+
+      return NextResponse.json(
+        {
+          error:
+            "Subscription saved, but we could not send the confirmation email right now. Please try again shortly.",
+          subscription_saved: true,
+        },
+        { status: 502 },
+      );
     }
 
     return NextResponse.json(
-      { message: isNew ? "Subscribed! Check your inbox for a confirmation." : "You're already subscribed!" },
+      {
+        message: isNew
+          ? "Subscribed! Check your inbox for a confirmation."
+          : "You're already subscribed. We re-sent your confirmation email.",
+      },
       { status: isNew ? 201 : 200 },
     );
-  } catch {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown newsletter subscribe error";
+    console.error("newsletter.subscribe failed", { email, error: errorMessage });
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },
       { status: 500 },
