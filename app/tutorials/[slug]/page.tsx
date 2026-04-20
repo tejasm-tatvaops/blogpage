@@ -114,6 +114,20 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
     getForumPosts({ tag: t.tags[0], limit: 4, sort: "hot" }).then((result) => result.posts).catch(() => []),
     getVideosByTags(t.tags, 4).catch(() => []),
   ]);
+  const plainInteractiveBlocks = Array.isArray(t.interactive_blocks)
+    ? t.interactive_blocks.map((block) => ({
+        block_id: String(block.block_id),
+        type: block.type,
+        title: String(block.title),
+        prompt: String(block.prompt),
+        options: Array.isArray(block.options) ? block.options.map((opt) => String(opt)) : [],
+        answer_index:
+          typeof block.answer_index === "number" && Number.isFinite(block.answer_index)
+            ? block.answer_index
+            : null,
+        explanation: block.explanation ? String(block.explanation) : null,
+      }))
+    : [];
   const plainSemanticRecommendations = semanticRecommendations.map((item) => ({
     slug: String(item.slug),
     title: String(item.title),
@@ -202,8 +216,8 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
           {t.content}
         </ReactMarkdown>
       </article>
-      {interactiveBlocksEnabled && Array.isArray(t.interactive_blocks) && t.interactive_blocks.length > 0 && (
-        <InteractiveBlocks slug={decodeURIComponent(slug)} blocks={t.interactive_blocks} />
+      {interactiveBlocksEnabled && plainInteractiveBlocks.length > 0 && (
+        <InteractiveBlocks slug={decodeURIComponent(slug)} blocks={plainInteractiveBlocks} />
       )}
       {semanticRecommendationsEnabled && plainSemanticRecommendations.length > 0 && (
         <TutorialRecommendations tutorials={plainSemanticRecommendations} />

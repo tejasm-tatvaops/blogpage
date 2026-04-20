@@ -1,7 +1,14 @@
 {
-  "/inshorts/page": "app/inshorts/page.js",
-  "/forums/page": "app/forums/page.js",
+  "/api/ingest/[jobId]/route": "app/api/ingest/[jobId]/route.js",
+  "/api/ingest/[jobId]/publish/route": "app/api/ingest/[jobId]/publish/route.js",
+  "/api/admin/tutorials/drafts/route": "app/api/admin/tutorials/drafts/route.js",
+  "/api/feed/events/route": "app/api/feed/events/route.js",
+  "/api/notifications/route": "app/api/notifications/route.js",
+  "/api/tutorials/[slug]/progress/route": "app/api/tutorials/[slug]/progress/route.js",
+  "/api/tutorials/route": "app/api/tutorials/route.js",
+  "/tutorials/page": "app/tutorials/page.js",
+  "/tutorials/[slug]/page": "app/tutorials/[slug]/page.js",
   "/admin/login/page": "app/admin/login/page.js",
   "/admin/(dashboard)/ingest/page": "app/admin/(dashboard)/ingest/page.js",
-  "/admin/(dashboard)/blog/page": "app/admin/(dashboard)/blog/page.js"
+  "/admin/(dashboard)/tutorials/drafts/page": "app/admin/(dashboard)/tutorials/drafts/page.js"
 }

@@ -110,6 +110,36 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/tutorials/route.js"
+    ],
+    "/saved/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/saved/page.js"
+    ],
+    "/api/ingest/url/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/ingest/url/route.js"
+    ],
+    "/api/ingest/[jobId]/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/ingest/[jobId]/route.js"
+    ],
+    "/admin/(dashboard)/tutorials/drafts/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/(dashboard)/tutorials/drafts/page.js"
+    ],
+    "/api/admin/tutorials/drafts/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/tutorials/drafts/route.js"
+    ],
+    "/api/ingest/[jobId]/publish/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/ingest/[jobId]/publish/route.js"
     ]
   }
 }
