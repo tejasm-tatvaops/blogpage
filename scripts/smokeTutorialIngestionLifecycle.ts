@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { createIngestionJob, getIngestionJob, markIngestionJobPublished } from "@/lib/ingestionService";
-import { createTutorial, getTutorialBySlug, getTutorials } from "@/lib/tutorialService";
+import { createTutorial, deleteTutorial, getTutorialBySlug, getTutorials } from "@/lib/tutorialService";
+import { ContentIngestionJobModel } from "@/models/ContentIngestionJob";
 import type { IngestionOutputType } from "@/models/ContentIngestionJob";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -20,6 +21,8 @@ async function waitForReady(jobId: string, timeoutMs = 120_000) {
 }
 
 async function run() {
+  let tutorialId: string | null = null;
+  let jobId: string | null = null;
   const outputType: IngestionOutputType = "tutorial";
   const job = await createIngestionJob({
     initiatorIdentityKey: "smoke:test",
@@ -29,7 +32,7 @@ async function run() {
       "This is a smoke-test source on BOQ workflows. Step 1 gather material rates. Step 2 normalize unit costs. Step 3 build trade-wise quantities. Step 4 validate contingency assumptions. Include practical examples for site execution and procurement planning.",
   });
 
-  const jobId = String(job._id);
+  jobId = String(job._id);
   const ready = await waitForReady(jobId);
 
   const readyRecord = {
@@ -60,7 +63,9 @@ async function run() {
     category,
     learningPathId,
     published: true,
+    isTestData: true,
   });
+  tutorialId = String((tutorial as Record<string, unknown>)._id);
   const slug = String((tutorial as Record<string, unknown>).slug);
   await markIngestionJobPublished(jobId, slug, "tutorial");
 
@@ -94,6 +99,14 @@ async function run() {
       2,
     ),
   );
+
+  // Cleanup smoke artifacts after verification.
+  if (tutorialId) {
+    await deleteTutorial(tutorialId);
+  }
+  if (jobId) {
+    await ContentIngestionJobModel.deleteOne({ _id: jobId });
+  }
 }
 
 run().catch((error) => {

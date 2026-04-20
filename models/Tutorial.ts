@@ -46,6 +46,7 @@ const tutorialSchema = new mongoose.Schema(
 
     published:  { type: Boolean, default: false, index: true },
     deleted_at: { type: Date, default: null },
+    is_test_data: { type: Boolean, default: false, index: true },
 
     // Global display order in admin list — managed via drag-and-drop
     // Lower value = higher position. Default 0 so existing docs sort to top.

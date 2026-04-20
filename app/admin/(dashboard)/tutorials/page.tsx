@@ -1,18 +1,32 @@
 import { requireAdminPageAccess } from "@/lib/adminAuth";
 import Link from "next/link";
 import { TutorialSortableList, type TutorialRow } from "@/components/admin/TutorialSortableList";
+import { getTutorials } from "@/lib/tutorialService";
+import { connectToDatabase } from "@/lib/mongodb";
+import { TutorialProgressModel } from "@/models/TutorialProgress";
+import { ContentIngestionJobModel } from "@/models/ContentIngestionJob";
 
 export const metadata = { title: "Tutorials Admin" };
 
 async function fetchTutorials(): Promise<TutorialRow[]> {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/api/admin/tutorials?limit=200&sort=sort_order`,
-      { cache: "no-store" },
-    );
-    if (!res.ok) return [];
-    const data = (await res.json()) as { tutorials?: TutorialRow[] };
-    return data.tutorials ?? [];
+    const result = await getTutorials({ limit: 200, includeUnpublished: true });
+    return (result.tutorials ?? []).map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        _id: String(r._id ?? ""),
+        title: String(r.title ?? ""),
+        slug: String(r.slug ?? ""),
+        difficulty: String(r.difficulty ?? "beginner"),
+        published: Boolean(r.published),
+        estimated_minutes: Number(r.estimated_minutes ?? 0),
+        created_at:
+          r.created_at instanceof Date
+            ? r.created_at.toISOString()
+            : String(r.created_at ?? new Date(0).toISOString()),
+        sort_order: Number(r.sort_order ?? 0),
+      } as TutorialRow;
+    });
   } catch {
     return [];
   }
@@ -23,12 +37,33 @@ async function fetchTutorialAnalytics(): Promise<{
   topTutorials?: Array<{ _id: string; started: number; completed: number; avgProgress: number }>;
 }> {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/api/admin/tutorials/analytics`,
-      { cache: "no-store" },
-    );
-    if (!res.ok) return {};
-    return await res.json();
+    await connectToDatabase();
+    const [[totalTutorials, publishedTutorials, progressRows, completedRows], topTutorials] = await Promise.all([
+      Promise.all([
+        // Keep this aligned with admin tutorials table (includes unpublished, excludes deleted).
+        (await getTutorials({ limit: 1, includeUnpublished: true })).total,
+        (await getTutorials({ limit: 1, includeUnpublished: false })).total,
+        TutorialProgressModel.countDocuments({}),
+        TutorialProgressModel.countDocuments({ completed: true }),
+      ]),
+      TutorialProgressModel.aggregate([
+        {
+          $group: {
+            _id: "$tutorial_slug",
+            started: { $sum: 1 },
+            completed: { $sum: { $cond: ["$completed", 1, 0] } },
+            avgProgress: { $avg: "$completion_percent" },
+          },
+        },
+        { $sort: { completed: -1, started: -1 } },
+        { $limit: 20 },
+      ]) as Promise<Array<{ _id: string; started: number; completed: number; avgProgress: number }>>,
+    ]);
+
+    return {
+      totals: { totalTutorials, publishedTutorials, progressRows, completedRows },
+      topTutorials,
+    };
   } catch {
     return {};
   }
@@ -47,13 +82,16 @@ type TutorialDraft = {
 
 async function fetchTutorialDrafts(): Promise<TutorialDraft[]> {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/api/admin/tutorials/drafts`,
-      { cache: "no-store" },
-    );
-    if (!res.ok) return [];
-    const data = (await res.json()) as { drafts?: TutorialDraft[] };
-    return data.drafts ?? [];
+    await connectToDatabase();
+    const drafts = await ContentIngestionJobModel.find({
+      output_type: "tutorial",
+      status: { $in: ["pending", "processing", "ready"] },
+    })
+      .sort({ created_at: -1 })
+      .limit(100)
+      .select("_id status output_type draft_type publish_target ai_title ai_excerpt created_at updated_at")
+      .lean();
+    return drafts as unknown as TutorialDraft[];
   } catch {
     return [];
   }

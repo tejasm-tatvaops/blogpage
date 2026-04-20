@@ -37,6 +37,7 @@ export type TutorialListOptions = {
   learningPathId?: string | null;
   learningPathSlug?: string | null;
   includeUnpublished?: boolean;
+  includeTestData?: boolean;
 };
 
 export async function getTutorials(opts: TutorialListOptions = {}) {
@@ -51,10 +52,12 @@ export async function getTutorials(opts: TutorialListOptions = {}) {
     learningPathId,
     learningPathSlug,
     includeUnpublished = false,
+    includeTestData = false,
   } = opts;
 
   const filter: FilterQuery<typeof TutorialModel> = {
     deleted_at: null,
+    ...(includeTestData ? {} : { is_test_data: { $ne: true } }),
   };
   if (!includeUnpublished) {
     filter.published = true;
@@ -93,7 +96,12 @@ export async function getTutorials(opts: TutorialListOptions = {}) {
 
 export async function getTutorialBySlug(slug: string) {
   await connectToDatabase();
-  return TutorialModel.findOne({ slug, published: true, deleted_at: null }).lean();
+  return TutorialModel.findOne({
+    slug,
+    published: true,
+    deleted_at: null,
+    is_test_data: { $ne: true },
+  }).lean();
 }
 
 // ─── Mutations ────────────────────────────────────────────────────────────────
@@ -114,6 +122,7 @@ export type CreateTutorialInput = {
   linkedBlogSlug?: string | null;
   estimatedMinutes?: number;
   published?: boolean;
+  isTestData?: boolean;
 };
 
 export async function createTutorial(input: CreateTutorialInput) {
@@ -138,6 +147,7 @@ export async function createTutorial(input: CreateTutorialInput) {
     linked_blog_slug:  input.linkedBlogSlug ?? null,
     estimated_minutes: input.estimatedMinutes ?? 5,
     published: input.published ?? false,
+    is_test_data: input.isTestData ?? false,
   });
 }
 
@@ -199,6 +209,11 @@ export async function deleteTutorial(id: string) {
       { tutorial_ids: tutorialId },
       { $pull: { tutorial_ids: tutorialId } },
     ),
+    // Remove orphaned smoke/test paths that have no remaining tutorials.
+    LearningPathModel.deleteMany({
+      is_test_data: true,
+      tutorial_ids: { $size: 0 },
+    }),
     // Clear published references from ingestion jobs that pointed to this tutorial.
     ContentIngestionJobModel.updateMany(
       { published_content_type: "tutorial", published_slug: tutorialSlug },
@@ -228,12 +243,18 @@ export async function deleteTutorial(id: string) {
 
 export async function getLearningPaths() {
   await connectToDatabase();
-  return LearningPathModel.find({ published: true }).sort({ created_at: -1 }).lean();
+  return LearningPathModel.find({ published: true, is_test_data: { $ne: true } })
+    .sort({ created_at: -1 })
+    .lean();
 }
 
 export async function getLearningPathBySlug(slug: string) {
   await connectToDatabase();
-  const path = await LearningPathModel.findOne({ slug, published: true }).lean();
+  const path = await LearningPathModel.findOne({
+    slug,
+    published: true,
+    is_test_data: { $ne: true },
+  }).lean();
   if (!path) return null;
 
   const tutorials = await TutorialModel.find({

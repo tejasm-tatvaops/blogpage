@@ -18,6 +18,7 @@ async function run() {
     category: "Testing",
     tags: ["smoke", "delete"],
     published: true,
+    isTestData: true,
   });
 
   const tutorialId = String((tutorial as any)._id);
@@ -28,6 +29,7 @@ async function run() {
     slug: `delete-smoke-path-${Date.now()}`,
     description: "Path for delete cleanup smoke test",
     published: true,
+    is_test_data: true,
     tutorial_ids: [(tutorial as any)._id],
   });
 
@@ -75,6 +77,13 @@ async function run() {
     LearningPathModel.findById((path as any)._id).select("tutorial_ids").lean(),
     ContentIngestionJobModel.findOne({ published_slug: null, published_content_type: "tutorial_deleted" }).lean(),
     ReputationEventModel.findOne({ reason: "tutorial_completed", note: "smoke" }).select("source_content_slug").lean(),
+  ]);
+
+  // Cleanup all smoke fixtures created by this script.
+  await Promise.all([
+    LearningPathModel.deleteOne({ _id: (path as any)._id }),
+    ContentIngestionJobModel.deleteMany({ initiator_identity_key: "smoke:test" }),
+    ReputationEventModel.deleteMany({ note: "smoke", identity_key: "fp:smoke-delete" }),
   ]);
 
   console.log(

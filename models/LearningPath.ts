@@ -17,6 +17,7 @@ const learningPathSchema = new mongoose.Schema(
     cover_image: { type: String, default: null, trim: true },
     tags:        { type: [String], default: [] },
     published:   { type: Boolean, default: false, index: true },
+    is_test_data:{ type: Boolean, default: false, index: true },
     // Ordered list of tutorial IDs (denormalised for fast path rendering)
     tutorial_ids: { type: [mongoose.Schema.Types.ObjectId], default: [] },
     estimated_total_minutes: { type: Number, default: 0 },
