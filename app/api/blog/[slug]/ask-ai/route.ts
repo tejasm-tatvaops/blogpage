@@ -24,6 +24,137 @@ const truncateContent = (content: string, maxWords = 3000): string => {
   return `${words.slice(0, maxWords).join(" ")}\n\n[Content truncated for context window]`;
 };
 
+// Safer timeout fetch: wraps AbortSignal.timeout in try/catch and surfaces the reason.
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error(`Timeout after ${timeoutMs}ms`)), timeoutMs);
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function tryGroqCompletion(system: string, user: string): Promise<string | null> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    console.error("[ask-ai] GROQ_API_KEY is not set — skipping Groq");
+    return null;
+  }
+
+  // llama-3.3-70b-versatile is valid; override via env if needed.
+  const model = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
+  console.log(`[ask-ai] Trying Groq model: ${model}`);
+
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          stream: false,
+          max_tokens: 700,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+        }),
+      },
+      30_000,
+    );
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[ask-ai] Groq fetch failed (${msg})`);
+    return null;
+  }
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "(unreadable body)");
+    console.error(`[ask-ai] Groq HTTP ${res.status} for model=${model}: ${body}`);
+    return null;
+  }
+
+  const payload = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+  const text = payload.choices?.[0]?.message?.content?.trim() ?? null;
+  if (!text) console.error("[ask-ai] Groq returned empty content");
+  return text;
+}
+
+async function tryOpenAICompletion(system: string, user: string): Promise<string | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.error("[ask-ai] OPENAI_API_KEY is not set — skipping OpenAI");
+    return null;
+  }
+
+  const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+  console.log(`[ask-ai] Trying OpenAI model: ${model}`);
+
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          stream: false,
+          max_tokens: 700,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+        }),
+      },
+      30_000,
+    );
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[ask-ai] OpenAI fetch failed (${msg})`);
+    return null;
+  }
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "(unreadable body)");
+    console.error(`[ask-ai] OpenAI HTTP ${res.status} for model=${model}: ${body}`);
+    return null;
+  }
+
+  const payload = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+  const text = payload.choices?.[0]?.message?.content?.trim() ?? null;
+  if (!text) console.error("[ask-ai] OpenAI returned empty content");
+  return text;
+}
+
+// Explicit sequential fallback: Groq first, OpenAI if Groq returns null.
+// Both functions return null (never throw) so .catch() was wrong — fixed here.
+async function completeWithFallback(system: string, user: string): Promise<string | null> {
+  const groqResult = await tryGroqCompletion(system, user);
+  if (groqResult) return groqResult;
+
+  console.warn("[ask-ai] Groq returned null — falling back to OpenAI");
+  const openAiResult = await tryOpenAICompletion(system, user);
+  if (!openAiResult) {
+    console.error("[ask-ai] Both Groq and OpenAI returned null — all providers exhausted");
+  }
+  return openAiResult;
+}
+
 export async function POST(req: NextRequest, context: RouteContext) {
   const key = getRateLimitKey(req);
   const rl = askAiLimiter(key);
@@ -67,26 +198,25 @@ export async function POST(req: NextRequest, context: RouteContext) {
       ? `Platform knowledge pack:\n\n${articleContext}\n\nQuestion:\n${question}\n\nReturn concise answer and cite references like [S1], [S2].`
       : `Platform knowledge pack:\n\n${articleContext}\n\nProvide concise output with [S#] citations.`;
   const maxSourceIndex = graphContext?.sources.length ?? 1;
-  const firstAnswer = await tryGroqCompletion(systemPrompt, userPrompt).catch(() =>
-    tryOpenAICompletion(systemPrompt, userPrompt),
-  );
+
+  const firstAnswer = await completeWithFallback(systemPrompt, userPrompt);
   if (!firstAnswer) {
     return NextResponse.json({ error: "AI service unavailable." }, { status: 503 });
   }
+
   const firstValidation = validateCitations(firstAnswer, maxSourceIndex);
   let answer = firstAnswer;
   let correctedUncited = false;
   if (graphEnabled && toggles.askAiCitationEnforcementEnabled && !firstValidation.valid) {
     const correctionPrompt =
       `${userPrompt}\n\nYour last answer had missing/invalid citations. Regenerate with valid [S#] references only in range [S1]...[S${maxSourceIndex}]. If unsupported, reply exactly: I cannot answer from the provided sources.`;
-    const corrected = await tryGroqCompletion(systemPrompt, correctionPrompt).catch(() =>
-      tryOpenAICompletion(systemPrompt, correctionPrompt),
-    );
+    const corrected = await completeWithFallback(systemPrompt, correctionPrompt);
     if (corrected) {
       answer = corrected;
       correctedUncited = true;
     }
   }
+
   let finalValidation = validateCitations(answer, maxSourceIndex);
   if (graphEnabled && toggles.askAiCitationEnforcementEnabled && !finalValidation.valid) {
     answer = "I cannot answer from the provided sources. [S1]";
@@ -222,72 +352,4 @@ function scoreConfidence(input: {
   if (score >= 0.68) return "high";
   if (score >= 0.45) return "medium";
   return "low";
-}
-
-async function tryGroqCompletion(
-  system: string,
-  user: string,
-): Promise<string | null> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return null;
-
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
-      stream: false,
-      max_tokens: 700,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    }),
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error("Groq provider error:", res.status, errorText);
-    return null;
-  }
-  const payload = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  return payload.choices?.[0]?.message?.content?.trim() ?? null;
-}
-
-async function tryOpenAICompletion(
-  system: string,
-  user: string,
-): Promise<string | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-      stream: false,
-      max_tokens: 700,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    }),
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error("OpenAI provider error:", res.status, errorText);
-    return null;
-  }
-  const payload = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  return payload.choices?.[0]?.message?.content?.trim() ?? null;
 }
