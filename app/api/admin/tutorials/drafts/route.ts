@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
   await connectToDatabase();
   const drafts = await ContentIngestionJobModel.find({
-    output_type: "tutorial",
+    $or: [{ output_type: "tutorial" }, { draft_type: "tutorial" }, { publish_target: "tutorials" }],
     status: { $in: ["pending", "processing", "ready"] },
   })
     .sort({ created_at: -1 })

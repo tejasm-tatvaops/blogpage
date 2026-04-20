@@ -8,6 +8,21 @@ import { createForumPost } from "@/lib/forumService";
 import { createTutorial } from "@/lib/tutorialService";
 import { getSystemToggles } from "@/lib/systemToggles";
 import { recordMetric } from "@/lib/observability";
+import type { IngestionOutputType } from "@/models/ContentIngestionJob";
+
+const resolveOutputType = (job: Record<string, unknown>): IngestionOutputType | null => {
+  const draftType = String(job.draft_type ?? "").trim();
+  const outputType = String(job.output_type ?? "").trim();
+  const publishTarget = String(job.publish_target ?? "").trim();
+  const valid = new Set<IngestionOutputType>(["blog", "forum", "short_caption", "tutorial"]);
+  if (valid.has(draftType as IngestionOutputType)) return draftType as IngestionOutputType;
+  if (valid.has(outputType as IngestionOutputType)) return outputType as IngestionOutputType;
+  if (publishTarget === "tutorials") return "tutorial";
+  if (publishTarget === "forum") return "forum";
+  if (publishTarget === "shorts") return "short_caption";
+  if (publishTarget === "blog") return "blog";
+  return null;
+};
 
 export async function POST(
   request: Request,
@@ -32,7 +47,13 @@ export async function POST(
   const tags    = ((job.edited_tags as string[] | null)?.length ? (job.edited_tags as string[]) : ((job.ai_tags as string[] | null) ?? []));
   const category = (job.ai_category as string | null) ?? "General";
   const coverImage = (job.cover_image as string | null) ?? null;
-  const outputType = (job.output_type as string | undefined) ?? "blog";
+  const outputType = resolveOutputType(job as unknown as Record<string, unknown>);
+  if (!outputType) {
+    return NextResponse.json(
+      { error: "Job output type is invalid. Cannot publish safely." },
+      { status: 409 },
+    );
+  }
   const toggles = getSystemToggles();
   const quizBlocks = Array.isArray(job.ai_quiz_items)
     ? (job.ai_quiz_items as unknown as Array<Record<string, unknown>>)

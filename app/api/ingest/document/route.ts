@@ -17,7 +17,7 @@ const schema = z.object({
   extracted_text: z.string().trim().min(50).max(200_000),
   filename:       z.string().trim().max(255).optional(),
   source_type:    z.enum(["pdf", "doc", "paste", "research_paper"]).default("paste"),
-  output_type:    z.enum(["blog", "forum", "short_caption", "tutorial"]).optional(),
+  output_type:    z.enum(["blog", "forum", "short_caption", "tutorial"]),
 });
 
 export async function POST(request: Request) {
@@ -39,8 +39,25 @@ export async function POST(request: Request) {
     sourceType:   parsed.data.source_type as IngestionSourceType,
     sourceText:   parsed.data.extracted_text,
     sourceFilename: parsed.data.filename ?? null,
-    outputType:   (parsed.data.output_type ?? "blog") as IngestionOutputType,
+    outputType:   parsed.data.output_type as IngestionOutputType,
   });
-
-  return NextResponse.json({ job_id: String(job._id), status: job.status }, { status: 201 });
+  const outputType = String(job.output_type ?? parsed.data.output_type) as IngestionOutputType;
+  const draftType = String(job.draft_type ?? outputType);
+  const publishTarget = String(job.publish_target ?? "blog");
+  return NextResponse.json(
+    {
+      job_id: String(job._id),
+      status: job.status,
+      output_type: outputType,
+      draft_type: draftType,
+      publish_target: publishTarget,
+      destination_message:
+        outputType === "tutorial"
+          ? "Tutorial draft created. Review in Tutorial Drafts."
+          : outputType === "forum"
+            ? "Forum draft created. Review in Forums workflow."
+            : "Blog draft created. Review in Blog Drafts.",
+    },
+    { status: 201 },
+  );
 }

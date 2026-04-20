@@ -8,6 +8,10 @@ type Tab = "url" | "paste";
 type JobResult = {
   job_id: string;
   status: string;
+  output_type?: string;
+  draft_type?: string;
+  publish_target?: string;
+  destination_message?: string;
 };
 
 type JobDetail = {
@@ -49,6 +53,7 @@ export default function IngestPage() {
   const [polling, setPolling]   = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<string | null>(null);
+  const [destinationHint, setDestinationHint] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
   const [editedExcerpt, setEditedExcerpt] = useState("");
@@ -96,6 +101,7 @@ export default function IngestPage() {
     setJob(null);
     setJobDetail(null);
     setPublishResult(null);
+    setDestinationHint(null);
 
     try {
       let res: Response;
@@ -125,6 +131,17 @@ export default function IngestPage() {
 
       const data = (await res.json()) as JobResult;
       setJob(data);
+      if (data.destination_message) {
+        setDestinationHint(data.destination_message);
+      } else {
+        setDestinationHint(
+          outputType === "tutorial"
+            ? "Tutorial draft created. Review in Tutorial Drafts."
+            : outputType === "forum"
+              ? "Forum draft created. Review in Forums workflow."
+              : "Blog draft created. Review in Blog Drafts.",
+        );
+      }
       void pollJob(data.job_id);
     } finally {
       setSubmitting(false);
@@ -303,6 +320,12 @@ export default function IngestPage() {
       {error && (
         <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
           {error}
+        </p>
+      )}
+
+      {destinationHint && (
+        <p className="mt-4 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
+          {destinationHint}
         </p>
       )}
 
