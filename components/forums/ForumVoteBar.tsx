@@ -95,7 +95,7 @@ export function ForumVoteBar({
         className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
           hasUpvoted
             ? "border-indigo-300 bg-indigo-50 text-indigo-700"
-            : "border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+            : "border-app bg-surface text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
         }`}
       >
         <svg
@@ -123,7 +123,7 @@ export function ForumVoteBar({
         className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
           hasDownvoted
             ? "border-rose-300 bg-rose-50 text-rose-700"
-            : "border-slate-200 bg-white text-slate-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700"
+            : "border-app bg-surface text-slate-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700"
         }`}
       >
         <svg
@@ -156,7 +156,7 @@ export function ForumVoteBar({
       </span>
 
       {/* Comment count */}
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-app bg-surface px-3 py-1.5 text-sm text-slate-600">
         <svg
           width="14"
           height="14"
@@ -177,7 +177,7 @@ export function ForumVoteBar({
       <button
         type="button"
         onClick={handleShare}
-        className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+        className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-app bg-surface px-3 py-1.5 text-sm text-slate-600 transition hover:border-slate-300 hover:bg-subtle"
       >
         {copied ? (
           <>

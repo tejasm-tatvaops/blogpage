@@ -19,7 +19,7 @@ export function AdminTopBar() {
   const parent = route?.parent;
 
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
+    <header className="flex h-12 shrink-0 items-center justify-between border-b border-app bg-surface px-4">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href="/admin/forums" className="text-slate-400 transition hover:text-slate-700">
@@ -47,7 +47,7 @@ export function AdminTopBar() {
         >
           View site ↗
         </Link>
-        <div className="hidden items-center gap-1 rounded border border-slate-200 px-1.5 py-0.5 text-[11px] text-slate-400 sm:flex">
+        <div className="hidden items-center gap-1 rounded border border-app px-1.5 py-0.5 text-[11px] text-slate-400 sm:flex">
           <kbd className="font-mono">⌘</kbd>
           <kbd className="font-mono">K</kbd>
         </div>

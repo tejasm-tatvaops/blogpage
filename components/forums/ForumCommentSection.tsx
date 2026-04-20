@@ -243,7 +243,7 @@ export function ForumCommentSection({
   };
 
   const inputClass =
-    "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-indigo-400 transition placeholder:text-slate-400 focus:ring-2";
+    "w-full rounded-lg border border-app bg-surface px-3 py-2 text-sm text-app outline-none ring-indigo-400 transition placeholder:text-slate-400 focus:ring-2";
 
   const renderComment = (c: Comment, isReply = false) => {
     const isBest = c.id === bestCommentId;
@@ -264,7 +264,7 @@ export function ForumCommentSection({
           <div className="flex flex-wrap items-center gap-2">
             <UserProfileQuickView
               displayName={c.author_name}
-              trigger={<span className="text-sm font-semibold text-slate-900 hover:underline">{c.author_name}</span>}
+              trigger={<span className="text-sm font-semibold text-app hover:underline">{c.author_name}</span>}
             />
             <time className="text-xs text-slate-400" dateTime={c.created_at}>
               {formatDate(c.created_at)}
@@ -284,7 +284,7 @@ export function ForumCommentSection({
               type="button"
               disabled={votingCommentId === c.id}
               onClick={() => onVote(c.id, "up")}
-              className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 hover:bg-slate-50 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
             >
               ▲ {c.upvote_count}
             </button>
@@ -292,7 +292,7 @@ export function ForumCommentSection({
               type="button"
               disabled={votingCommentId === c.id}
               onClick={() => onVote(c.id, "down")}
-              className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 hover:bg-slate-50 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
             >
               ▼ {c.downvote_count}
             </button>
@@ -300,7 +300,7 @@ export function ForumCommentSection({
               <button
                 type="button"
                 onClick={() => setActiveReplyFor((prev) => (prev === c.id ? null : c.id))}
-                className="rounded-md border border-slate-200 px-2 py-1 hover:bg-slate-50"
+                className="rounded-md border border-app px-2 py-1 hover:bg-subtle"
               >
                 Reply
               </button>
@@ -313,8 +313,8 @@ export function ForumCommentSection({
                 onClick={() => onMarkBest(c.id)}
                 className={`rounded-md border px-2 py-1 text-xs transition disabled:opacity-50 ${
                   isBest
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-white"
-                    : "border-slate-200 text-slate-500 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-surface"
+                    : "border-app text-slate-500 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
                 }`}
               >
                 {isBest ? "Unmark best" : "Mark as best"}
@@ -323,7 +323,7 @@ export function ForumCommentSection({
           </div>
 
           {activeReplyFor === c.id && (
-            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="mt-3 rounded-lg border border-app bg-subtle p-3">
               <textarea
                 value={replyDrafts[c.id] ?? ""}
                 onChange={(e) =>
@@ -360,9 +360,9 @@ export function ForumCommentSection({
   };
 
   return (
-    <section className="mt-12 border-t border-slate-200 pt-10">
+    <section className="mt-12 border-t border-app pt-10">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-900">
+        <h2 className="text-xl font-bold text-app">
           {comments.length > 0
             ? `${comments.length} Repl${comments.length !== 1 ? "ies" : "y"}`
             : "Discussion"}
@@ -399,7 +399,7 @@ export function ForumCommentSection({
       )}
 
       {/* Comment form */}
-      <form onSubmit={onSubmit} className="mb-10 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+      <form onSubmit={onSubmit} className="mb-10 rounded-2xl border border-app bg-subtle p-5">
         <p className="mb-4 text-sm font-semibold text-slate-700">Join the discussion</p>
         {error && (
           <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
@@ -442,7 +442,7 @@ export function ForumCommentSection({
       </form>
 
       {comments.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+        <p className="rounded-xl border border-dashed border-app p-6 text-center text-sm text-slate-500">
           No replies yet. Start the discussion!
         </p>
       ) : (

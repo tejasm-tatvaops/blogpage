@@ -415,10 +415,10 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-subtle">
 
       {/* ── Top bar ── */}
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-app bg-surface">
         <div className="mx-auto flex max-w-[1500px] items-center gap-4 px-6 py-3">
           {/* Title + status badge */}
           <div className="flex items-center gap-3">
@@ -467,7 +467,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
               type="button"
               disabled={isSubmitting}
               onClick={(e) => { void onSubmit(e, false); }}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-lg border border-slate-300 bg-surface px-4 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-subtle disabled:opacity-50"
             >
               Save draft
             </button>
@@ -508,7 +508,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                 onKeyDown={(e) => { if (e.key === "Enter") onGenerate(); }}
                 placeholder="e.g. BOQ software for contractors in India"
                 maxLength={200}
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm outline-none ring-indigo-400 transition placeholder:text-slate-400 focus:ring-2"
+                className="flex-1 rounded-xl border border-app bg-surface px-4 py-2.5 text-sm shadow-sm outline-none ring-indigo-400 transition placeholder:text-slate-400 focus:ring-2"
               />
               <button
                 type="button"
@@ -551,7 +551,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
           <div className="space-y-5">
 
             {/* Title */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-app bg-surface p-5 shadow-sm">
               <div className="mb-1.5 flex items-center justify-between">
                 <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
                   Post title
@@ -571,11 +571,11 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                 placeholder="Enter a compelling title…"
                 maxLength={200}
                 required
-                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-lg font-semibold text-slate-900 outline-none ring-sky-400 transition placeholder:font-normal placeholder:text-slate-400 focus:ring-2"
+                className="w-full rounded-xl border border-app px-4 py-2.5 text-lg font-semibold text-app outline-none ring-sky-400 transition placeholder:font-normal placeholder:text-slate-400 focus:ring-2"
               />
 
               {/* Slug row */}
-              <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+              <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-100 bg-subtle px-3 py-2">
                 <span className="shrink-0 text-xs text-slate-400">/blog/</span>
                 <input
                   value={form.slug}
@@ -592,7 +592,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
             </div>
 
             {/* Excerpt */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-app bg-surface p-5 shadow-sm">
               <div className="mb-1.5 flex items-center justify-between">
                 <SectionLabel icon={
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
@@ -606,12 +606,12 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                 maxLength={300}
                 rows={3}
                 required
-                className="w-full resize-none rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none ring-sky-400 transition placeholder:text-slate-400 focus:ring-2"
+                className="w-full resize-none rounded-xl border border-app px-4 py-2.5 text-sm text-slate-700 outline-none ring-sky-400 transition placeholder:text-slate-400 focus:ring-2"
               />
             </div>
 
             {/* Content */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-app bg-surface p-5 shadow-sm">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <SectionLabel icon={
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -629,7 +629,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                   type="button"
                   onClick={runQualityScore}
                   disabled={isScoring || !form.title.trim() || !form.content.trim()}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  className="rounded-lg border border-app bg-surface px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-subtle disabled:opacity-50"
                 >
                   {isScoring ? "Scoring..." : "AI quality score"}
                 </button>
@@ -637,7 +637,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                   type="button"
                   onClick={runDuplicateCheck}
                   disabled={isCheckingDup || form.content.trim().length < 100}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  className="rounded-lg border border-app bg-surface px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-subtle disabled:opacity-50"
                 >
                   {isCheckingDup ? "Checking..." : "Check duplicate"}
                 </button>
@@ -645,7 +645,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                   type="button"
                   onClick={runAutoLinking}
                   disabled={isAutoLinking || form.content.trim().length < 50}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  className="rounded-lg border border-app bg-surface px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-subtle disabled:opacity-50"
                 >
                   {isAutoLinking ? "Linking..." : "Auto internal links"}
                 </button>
@@ -681,7 +681,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                 placeholder="Write your blog content in Markdown…&#10;&#10;## Introduction&#10;&#10;Start writing here…"
                 maxLength={150_000}
                 required
-                className="w-full resize-y rounded-xl border border-slate-200 px-4 py-3 font-mono text-sm leading-relaxed text-slate-700 outline-none ring-sky-400 transition placeholder:font-sans placeholder:text-slate-400 focus:ring-2"
+                className="w-full resize-y rounded-xl border border-app px-4 py-3 font-mono text-sm leading-relaxed text-slate-700 outline-none ring-sky-400 transition placeholder:font-sans placeholder:text-slate-400 focus:ring-2"
               />
             </div>
           </div>
@@ -690,12 +690,12 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
           <div className="space-y-5">
 
             {/* Publish status */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-app bg-surface p-5 shadow-sm">
               <SectionLabel icon={
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               }>Status</SectionLabel>
 
-              <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+              <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-subtle px-4 py-3">
                 <div>
                   <p className="text-sm font-medium text-slate-700">
                     {form.published ? "Published" : "Draft"}
@@ -714,7 +714,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                   aria-checked={form.published}
                 >
                   <span
-                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ${
                       form.published ? "translate-x-5" : "translate-x-0"
                     }`}
                   />
@@ -730,7 +730,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                   type="datetime-local"
                   value={form.publish_at}
                   onChange={(e) => setForm((prev) => ({ ...prev, publish_at: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 outline-none ring-sky-400 transition focus:ring-2"
+                  className="w-full rounded-xl border border-app bg-subtle px-3 py-2 text-xs text-slate-700 outline-none ring-sky-400 transition focus:ring-2"
                 />
                 {form.publish_at && (
                   <p className="mt-1 text-[11px] text-slate-400">
@@ -744,7 +744,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                   type="button"
                   disabled={isSubmitting}
                   onClick={(e) => { void onSubmit(e, false); }}
-                  className="flex-1 rounded-xl border border-slate-200 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                  className="flex-1 rounded-xl border border-app py-2 text-xs font-semibold text-slate-600 transition hover:bg-subtle disabled:opacity-50"
                 >
                   Save draft
                 </button>
@@ -760,7 +760,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
             </div>
 
             {/* Cover image */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-app bg-surface p-5 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <SectionLabel icon={
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -800,7 +800,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                   className={`mb-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed py-8 text-center transition ${
                     isDraggingImage
                       ? "border-sky-400 bg-sky-50"
-                      : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100"
+                      : "border-app bg-subtle hover:border-slate-300 hover:bg-slate-100"
                   }`}
                 >
                   <svg className="h-8 w-8 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -825,12 +825,12 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                   onChange={(e) => setForm((prev) => ({ ...prev, cover_image: e.target.value }))}
                   placeholder="Or paste image URL…"
                   type="text"
-                  className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none ring-sky-400 transition focus:ring-2"
+                  className="min-w-0 flex-1 rounded-lg border border-app bg-subtle px-3 py-2 text-xs outline-none ring-sky-400 transition focus:ring-2"
                 />
                 <button
                   type="button"
                   onClick={() => imageFileInputRef.current?.click()}
-                  className="flex-shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                  className="flex-shrink-0 rounded-lg border border-app bg-surface px-2.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-subtle"
                   title="Upload from device"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
@@ -839,7 +839,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
             </div>
 
             {/* Post details */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-app bg-surface p-5 shadow-sm">
               <SectionLabel icon={
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               }>Post details</SectionLabel>
@@ -853,7 +853,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                     placeholder="Author name"
                     maxLength={100}
                     required
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-sky-400 transition focus:ring-2"
+                    className="w-full rounded-lg border border-app px-3 py-2 text-sm outline-none ring-sky-400 transition focus:ring-2"
                   />
                 </div>
 
@@ -865,14 +865,14 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                     placeholder="e.g. Construction Tech"
                     maxLength={100}
                     required
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-sky-400 transition focus:ring-2"
+                    className="w-full rounded-lg border border-app px-3 py-2 text-sm outline-none ring-sky-400 transition focus:ring-2"
                   />
                 </div>
               </div>
             </div>
 
             {/* Tags */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-app bg-surface p-5 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <SectionLabel icon={
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
@@ -891,7 +891,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
 
               {/* Tag input */}
               <div
-                className="flex cursor-text items-center gap-2 rounded-lg border border-slate-200 px-3 py-2"
+                className="flex cursor-text items-center gap-2 rounded-lg border border-app px-3 py-2"
                 onClick={() => tagInputRef.current?.focus()}
               >
                 <svg width="12" height="12" className="flex-shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -912,7 +912,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
 
             {/* Stats card (read-only) */}
             {(words > 0 || form.title) && (
-              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+              <div className="rounded-2xl border border-slate-100 bg-surface p-5 shadow-sm">
                 <SectionLabel icon={
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 }>Post stats</SectionLabel>
@@ -923,7 +923,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                     { label: "Title", value: `${form.title.length} chars` },
                     { label: "Tags", value: form.tags.length },
                   ].map(({ label, value }) => (
-                    <div key={label} className="rounded-lg bg-slate-50 px-3 py-2">
+                    <div key={label} className="rounded-lg bg-subtle px-3 py-2">
                       <dt className="text-[11px] text-slate-400">{label}</dt>
                       <dd className="mt-0.5 text-sm font-semibold text-slate-700">{value}</dd>
                     </div>

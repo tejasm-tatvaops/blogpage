@@ -115,7 +115,7 @@ export function VideoOverlayActions({
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <SourceBadge sourceType={post.sourceType} />
           {post.tags[0] && (
-            <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white/90 backdrop-blur-sm">
+            <span className="rounded-full bg-surface/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white/90 backdrop-blur-sm">
               {post.tags[0]}
             </span>
           )}
@@ -141,7 +141,7 @@ export function VideoOverlayActions({
         {post.linkedBlogSlug && (
           <Link
             href={`/blog/${post.linkedBlogSlug}`}
-            className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/25"
+            className="mt-3 inline-flex items-center gap-2 rounded-full bg-surface/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-surface/25"
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
               <rect x="2" y="3" width="12" height="1.5" rx=".75" fill="currentColor" opacity=".9" />
@@ -154,7 +154,7 @@ export function VideoOverlayActions({
         {post.linkedForumSlug && !post.linkedBlogSlug && (
           <Link
             href={`/forums/${post.linkedForumSlug}`}
-            className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/25"
+            className="mt-3 inline-flex items-center gap-2 rounded-full bg-surface/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-surface/25"
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
               <path d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v6A1.5 1.5 0 0112.5 11H9l-3 3v-3H3.5A1.5 1.5 0 012 9.5v-6z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />

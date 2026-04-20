@@ -49,7 +49,7 @@ export function BookmarkButton({ slug, title, excerpt }: Props) {
       className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition ${
         saved
           ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
-          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+          : "border-app bg-surface text-slate-600 hover:border-slate-300 hover:bg-subtle"
       }`}
     >
       <svg

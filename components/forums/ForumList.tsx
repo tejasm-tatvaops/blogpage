@@ -8,7 +8,7 @@ type ForumListProps = {
 export function ForumList({ posts }: ForumListProps) {
   if (posts.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 p-12 text-center">
+      <div className="rounded-2xl border border-dashed border-app p-12 text-center">
         <p className="text-sm text-slate-500">No posts yet. Be the first to start a discussion.</p>
       </div>
     );
@@ -30,7 +30,7 @@ export function ForumListSkeleton({ count = 5 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="animate-pulse rounded-2xl border border-slate-200 bg-white p-5"
+          className="animate-pulse rounded-2xl border border-app bg-surface p-5"
         >
           {/* Tags */}
           <div className="mb-3 flex gap-2">

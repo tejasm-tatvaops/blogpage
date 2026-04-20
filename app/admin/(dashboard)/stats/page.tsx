@@ -28,7 +28,7 @@ export default async function AdminStatsPage() {
   }
 
   const statCards = [
-    { label: "Total posts", value: fmt(stats.totalPosts), accent: "text-slate-900", sub: "text-slate-500" },
+    { label: "Total posts", value: fmt(stats.totalPosts), accent: "text-app", sub: "text-slate-500" },
     { label: "Published", value: fmt(stats.publishedPosts), accent: "text-emerald-700", sub: "text-emerald-600" },
     { label: "Drafts", value: fmt(stats.draftPosts), accent: "text-amber-700", sub: "text-amber-600" },
     { label: "Total views", value: fmt(stats.totalViews), accent: "text-sky-700", sub: "text-sky-600" },
@@ -38,10 +38,10 @@ export default async function AdminStatsPage() {
   const maxViewsInWindow = Math.max(1, ...stats.viewsByDay.map((item) => item.views));
 
   return (
-    <div className="min-h-full bg-slate-50">
+    <div className="min-h-full bg-subtle">
       <div className="mx-auto max-w-[1500px] space-y-6 px-6 py-6">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">Analytics</h1>
+          <h1 className="text-lg font-semibold text-app">Analytics</h1>
           <p className="text-sm text-slate-500">Platform performance overview</p>
         </div>
         <AdminObservabilityDashboard />
@@ -49,7 +49,7 @@ export default async function AdminStatsPage() {
         {/* ── Stat cards ── */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {statCards.map((card) => (
-            <div key={card.label} className="rounded-xl border border-slate-200 bg-white p-4">
+            <div key={card.label} className="rounded-xl border border-app bg-surface p-4">
               <p className={`text-[10px] font-semibold uppercase tracking-widest ${card.sub}`}>
                 {card.label}
               </p>
@@ -59,8 +59,8 @@ export default async function AdminStatsPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="border-b border-slate-200 px-5 py-3">
+          <div className="overflow-hidden rounded-xl border border-app bg-surface">
+            <div className="border-b border-app px-5 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
                 Views trend (14 days)
               </p>
@@ -80,8 +80,8 @@ export default async function AdminStatsPage() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="border-b border-slate-200 px-5 py-3">
+          <div className="overflow-hidden rounded-xl border border-app bg-surface">
+            <div className="border-b border-app px-5 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
                 Traffic sources (14 days)
               </p>
@@ -101,8 +101,8 @@ export default async function AdminStatsPage() {
             </ul>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="border-b border-slate-200 px-5 py-3">
+          <div className="overflow-hidden rounded-xl border border-app bg-surface">
+            <div className="border-b border-app px-5 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Top posts by views</p>
             </div>
             <ul className="divide-y divide-slate-100">
@@ -126,8 +126,8 @@ export default async function AdminStatsPage() {
             </ul>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="border-b border-slate-200 px-5 py-3">
+          <div className="overflow-hidden rounded-xl border border-app bg-surface">
+            <div className="border-b border-app px-5 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Top posts by upvotes</p>
             </div>
             <ul className="divide-y divide-slate-100">
@@ -152,8 +152,8 @@ export default async function AdminStatsPage() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 px-5 py-3">
+        <div className="overflow-hidden rounded-xl border border-app bg-surface">
+          <div className="border-b border-app px-5 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Newsletter automation</p>
           </div>
           <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -164,8 +164,8 @@ export default async function AdminStatsPage() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 px-5 py-3">
+        <div className="overflow-hidden rounded-xl border border-app bg-surface">
+          <div className="border-b border-app px-5 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Recently published</p>
           </div>
           <ul className="divide-y divide-slate-100">

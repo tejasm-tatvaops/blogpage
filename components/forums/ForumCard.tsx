@@ -48,9 +48,9 @@ export function ForumCard({ post }: ForumCardProps) {
 
         <Link
           href={`/forums/${post.slug}`}
-          className="relative block min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm transition duration-200 hover:border-slate-300 hover:shadow-md"
+          className="relative block min-w-0 flex-1 rounded-2xl border border-app bg-surface px-4 py-4 shadow-sm transition duration-200 hover:border-slate-300 hover:shadow-md"
         >
-          <span className="absolute -left-2 top-4 h-3 w-3 rotate-45 border-b border-l border-slate-200 bg-white" />
+          <span className="absolute -left-2 top-4 h-3 w-3 rotate-45 border-b border-l border-app bg-surface" />
 
           <div className="mb-1 flex flex-wrap items-center gap-1.5">
             {post.is_featured && (
@@ -78,7 +78,7 @@ export function ForumCard({ post }: ForumCardProps) {
             ))}
           </div>
 
-          <h2 className="line-clamp-2 text-[1.72rem] font-bold leading-snug text-slate-900 transition group-hover:text-indigo-700">
+          <h2 className="line-clamp-2 text-[1.72rem] font-bold leading-snug text-app transition group-hover:text-indigo-700">
             {post.title}
           </h2>
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{post.excerpt}</p>

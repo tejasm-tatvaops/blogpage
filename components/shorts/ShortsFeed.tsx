@@ -201,7 +201,7 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
       <div className="flex h-screen w-full flex-col items-center justify-center bg-black text-white">
         <p className="text-lg font-semibold text-white/60">No shorts available yet.</p>
         <p className="mt-2 text-sm text-white/40">Check back soon — content is added regularly.</p>
-        <Link href="/blog" className="mt-6 rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/20">
+        <Link href="/blog" className="mt-6 rounded-full bg-surface/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-surface/20">
           Browse articles instead
         </Link>
       </div>
@@ -214,9 +214,9 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
       <div className="pointer-events-none absolute left-0 right-0 top-0 z-30">
         <div className="pointer-events-auto sticky top-0 bg-black/20 px-4 pt-2 backdrop-blur-lg">
           {/* Progress bar */}
-          <div className="mb-2 h-0.5 w-full overflow-hidden rounded-full bg-white/20">
+          <div className="mb-2 h-0.5 w-full overflow-hidden rounded-full bg-surface/20">
             <motion.div
-              className="h-full rounded-full bg-white/80"
+              className="h-full rounded-full bg-surface/80"
               animate={{ width: `${progressPct}%` }}
               transition={{ duration: 0.3, ease: "easeOut" }}
             />
@@ -227,7 +227,7 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
             <div className="flex items-center gap-3">
               <Link
                 href="/"
-                className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/20"
+                className="flex items-center gap-1.5 rounded-full bg-surface/10 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-surface/20"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <path d="M15 18l-6-6 6-6" />
@@ -240,8 +240,8 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
 
             {/* Content type chips */}
             <div className="flex items-center gap-1.5">
-              <Link href="/blog"   className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:bg-white/20 hover:text-white">Articles</Link>
-              <Link href="/forums" className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:bg-white/20 hover:text-white">Forums</Link>
+              <Link href="/blog"   className="rounded-full bg-surface/10 px-3 py-1 text-xs font-medium text-white/70 hover:bg-surface/20 hover:text-white">Articles</Link>
+              <Link href="/forums" className="rounded-full bg-surface/10 px-3 py-1 text-xs font-medium text-white/70 hover:bg-surface/20 hover:text-white">Forums</Link>
               <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-black">Shorts</span>
             </div>
           </div>
@@ -286,7 +286,7 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
                 type="button"
                 onClick={() => scrollToIndex(i)}
                 className={`pointer-events-auto rounded-full transition-all ${
-                  i === activeIndex ? "h-5 w-1.5 bg-white" : "h-1.5 w-1.5 bg-white/35"
+                  i === activeIndex ? "h-5 w-1.5 bg-surface" : "h-1.5 w-1.5 bg-surface/35"
                 }`}
                 aria-label={`Go to video ${i + 1}`}
               />

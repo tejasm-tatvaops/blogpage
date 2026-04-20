@@ -64,7 +64,7 @@ export default function SuggestEditPage() {
         <a href={`/blog/${slug}`} className="text-sm text-sky-600 hover:underline">
           ← Back to article
         </a>
-        <h1 className="mt-4 text-2xl font-bold text-slate-900">Suggest an Edit</h1>
+        <h1 className="mt-4 text-2xl font-bold text-app">Suggest an Edit</h1>
         <p className="mt-2 text-sm text-slate-500">
           Propose improvements to this article. A peer reviewer (Expert tier or above) will evaluate
           your suggestion before it goes live.
@@ -83,7 +83,7 @@ export default function SuggestEditPage() {
             required
             maxLength={120}
             placeholder="Display name"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-app focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
           />
         </div>
 
@@ -98,7 +98,7 @@ export default function SuggestEditPage() {
             onChange={(e) => setEditSummary(e.target.value)}
             maxLength={300}
             placeholder="Briefly describe what you changed and why"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-app focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
           />
         </div>
 
@@ -117,7 +117,7 @@ export default function SuggestEditPage() {
             minLength={50}
             rows={20}
             placeholder="# Article Title&#10;&#10;Your revised content here..."
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm text-app focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
           />
         </div>
 

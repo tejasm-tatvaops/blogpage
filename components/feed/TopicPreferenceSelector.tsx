@@ -23,7 +23,7 @@ export function TopicPreferenceSelector({ topics, preferences, onChange }: Props
           ? `${baseChip} border-emerald-300 bg-emerald-50 text-emerald-800`
           : isUninterested
           ? `${baseChip} border-rose-300 bg-rose-50 text-rose-700`
-          : `${baseChip} border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100`;
+          : `${baseChip} border-app bg-subtle text-slate-700 hover:border-slate-300 hover:bg-slate-100`;
 
         return (
           <div key={topic} className={chipStyle}>

@@ -116,7 +116,7 @@ export function ForumComposer() {
   };
 
   const inputClass =
-    "w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 transition placeholder:text-slate-400 focus:ring-2";
+    "w-full rounded-lg border border-app bg-surface px-3 py-2.5 text-sm text-app outline-none ring-indigo-400 transition placeholder:text-slate-400 focus:ring-2";
 
   const tags = parseTags(tagsRaw);
 
@@ -213,7 +213,7 @@ export function ForumComposer() {
               type="button"
               title={btnTitle}
               onClick={action}
-              className="rounded border border-slate-200 bg-white px-2 py-1 text-xs font-mono text-slate-600 transition hover:bg-slate-100"
+              className="rounded border border-app bg-surface px-2 py-1 text-xs font-mono text-slate-600 transition hover:bg-slate-100"
             >
               {label}
             </button>
@@ -265,7 +265,7 @@ export function ForumComposer() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          className="rounded-lg border border-app px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-subtle"
         >
           Cancel
         </button>

@@ -47,6 +47,10 @@ const tutorialSchema = new mongoose.Schema(
     published:  { type: Boolean, default: false, index: true },
     deleted_at: { type: Date, default: null },
 
+    // Global display order in admin list — managed via drag-and-drop
+    // Lower value = higher position. Default 0 so existing docs sort to top.
+    sort_order: { type: Number, default: 0, index: true },
+
     // Engagement
     view_count: { type: Number, default: 0, min: 0 },
     like_count: { type: Number, default: 0, min: 0 },
@@ -57,6 +61,7 @@ const tutorialSchema = new mongoose.Schema(
   },
 );
 
+tutorialSchema.index({ sort_order: 1, created_at: -1 }); // admin list ordering
 tutorialSchema.index({ published: 1, created_at: -1 });
 tutorialSchema.index({ difficulty: 1, published: 1 });
 tutorialSchema.index({ learning_path_id: 1, step_number: 1 });

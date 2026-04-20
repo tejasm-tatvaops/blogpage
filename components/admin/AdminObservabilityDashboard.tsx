@@ -128,7 +128,7 @@ export default function AdminObservabilityDashboard() {
   }, [fetchDashboard]);
 
   const queueTone = useMemo(() => {
-    if (!data) return "bg-slate-50 text-slate-700 border-slate-200";
+    if (!data) return "bg-subtle text-slate-700 border-app";
     if (data.queue.failed_event_count >= 10 || data.queue.replay_backlog_size >= 150) {
       return "bg-rose-50 text-rose-700 border-rose-200";
     }
@@ -156,7 +156,7 @@ export default function AdminObservabilityDashboard() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500">
+      <div className="rounded-2xl border border-app bg-surface p-5 text-sm text-slate-500">
         Loading observability dashboard...
       </div>
     );
@@ -172,7 +172,7 @@ export default function AdminObservabilityDashboard() {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-app bg-surface px-4 py-3">
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-semibold text-slate-800">Reliability Observability</h2>
           <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badgeByStatus[data.status]}`}>
@@ -183,7 +183,7 @@ export default function AdminObservabilityDashboard() {
           <span>Updated {toRelative(data.generated_at)}</span>
           <button
             type="button"
-            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-medium text-slate-700 transition hover:bg-slate-50"
+            className="rounded-lg border border-app bg-surface px-2.5 py-1 font-medium text-slate-700 transition hover:bg-subtle"
             onClick={() => void fetchDashboard("refresh")}
             disabled={refreshing}
           >
@@ -208,12 +208,12 @@ export default function AdminObservabilityDashboard() {
           <p className="mt-2 text-xs opacity-70">Replay worker: {data.queue.replaying ? "active" : "idle"}</p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-700">
+        <div className="rounded-2xl border border-app bg-surface p-4 text-slate-700">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Reconciliation</p>
             <button
               type="button"
-              className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-app px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => void runReconciliationNow()}
               disabled={runningRecon}
             >
@@ -230,7 +230,7 @@ export default function AdminObservabilityDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="rounded-2xl border border-app bg-surface p-4">
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Live feed signals</p>
           <div className="mt-3 space-y-2 text-sm text-slate-700">
             <div className="flex items-center justify-between"><span>Events/sec</span><span className="font-semibold">{fmtRate(data.live_signals.events_per_sec)}</span></div>
@@ -239,10 +239,10 @@ export default function AdminObservabilityDashboard() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 xl:col-span-2">
+        <div className="rounded-2xl border border-app bg-surface p-4 xl:col-span-2">
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Feed latency (before vs after)</p>
           <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div className="rounded-xl bg-slate-50 p-3">
+            <div className="rounded-xl bg-subtle p-3">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">Feed total p50/p95</p>
               <p className="mt-1 text-sm font-semibold text-slate-800">
                 {fmtMs(data.latency.feed_request_total_ms.p50)} / {fmtMs(data.latency.feed_request_total_ms.p95)}
@@ -251,7 +251,7 @@ export default function AdminObservabilityDashboard() {
                 vs baseline: {baselineDelta(data.latency.feed_request_total_ms.p95, data.latency.feed_request_total_ms.baseline_p95)}
               </p>
             </div>
-            <div className="rounded-xl bg-slate-50 p-3">
+            <div className="rounded-xl bg-subtle p-3">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">Cache hit p50/p95</p>
               <p className="mt-1 text-sm font-semibold text-slate-800">
                 {fmtMs(data.latency.feed_cache_hit_total_ms.p50)} / {fmtMs(data.latency.feed_cache_hit_total_ms.p95)}
@@ -260,7 +260,7 @@ export default function AdminObservabilityDashboard() {
                 samples: {fmtInt(data.latency.feed_cache_hit_total_ms.count)}
               </p>
             </div>
-            <div className="rounded-xl bg-slate-50 p-3">
+            <div className="rounded-xl bg-subtle p-3">
               <p className="text-[11px] uppercase tracking-wide text-slate-500">Cache miss p50/p95</p>
               <p className="mt-1 text-sm font-semibold text-slate-800">
                 {fmtMs(data.latency.feed_cache_miss_total_ms.p50)} / {fmtMs(data.latency.feed_cache_miss_total_ms.p95)}
@@ -271,32 +271,32 @@ export default function AdminObservabilityDashboard() {
             </div>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 md:grid-cols-5">
-            <div className="rounded-lg bg-slate-50 px-2 py-1.5">cache: {fmtMs(data.latency.feed_stage_ms.cache_read.p95)} p95</div>
-            <div className="rounded-lg bg-slate-50 px-2 py-1.5">persona: {fmtMs(data.latency.feed_stage_ms.persona_fetch.p95)} p95</div>
-            <div className="rounded-lg bg-slate-50 px-2 py-1.5">candidates: {fmtMs(data.latency.feed_stage_ms.candidate_generation.p95)} p95</div>
-            <div className="rounded-lg bg-slate-50 px-2 py-1.5">scoring: {fmtMs(data.latency.feed_stage_ms.scoring.p95)} p95</div>
-            <div className="rounded-lg bg-slate-50 px-2 py-1.5">build total: {fmtMs(data.latency.feed_stage_ms.build_feed_total.p95)} p95</div>
-            <div className="rounded-lg bg-slate-50 px-2 py-1.5">write: {fmtMs(data.latency.feed_stage_ms.cache_write.p95)} p95</div>
-            <div className="rounded-lg bg-slate-50 px-2 py-1.5">event: {fmtMs(data.latency.feed_stage_ms.event_enqueue.p95)} p95</div>
+            <div className="rounded-lg bg-subtle px-2 py-1.5">cache: {fmtMs(data.latency.feed_stage_ms.cache_read.p95)} p95</div>
+            <div className="rounded-lg bg-subtle px-2 py-1.5">persona: {fmtMs(data.latency.feed_stage_ms.persona_fetch.p95)} p95</div>
+            <div className="rounded-lg bg-subtle px-2 py-1.5">candidates: {fmtMs(data.latency.feed_stage_ms.candidate_generation.p95)} p95</div>
+            <div className="rounded-lg bg-subtle px-2 py-1.5">scoring: {fmtMs(data.latency.feed_stage_ms.scoring.p95)} p95</div>
+            <div className="rounded-lg bg-subtle px-2 py-1.5">build total: {fmtMs(data.latency.feed_stage_ms.build_feed_total.p95)} p95</div>
+            <div className="rounded-lg bg-subtle px-2 py-1.5">write: {fmtMs(data.latency.feed_stage_ms.cache_write.p95)} p95</div>
+            <div className="rounded-lg bg-subtle px-2 py-1.5">event: {fmtMs(data.latency.feed_stage_ms.event_enqueue.p95)} p95</div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 xl:col-span-3">
+        <div className="rounded-2xl border border-app bg-surface p-4 xl:col-span-3">
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Reconciliation stage latency p95</p>
           <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-700 md:grid-cols-5">
             {Object.entries(data.latency.reconciliation_stage_ms).map(([stage, stats]) => (
-              <div key={stage} className="rounded-lg bg-slate-50 px-2 py-1.5">
+              <div key={stage} className="rounded-lg bg-subtle px-2 py-1.5">
                 {stage.replace(/_/g, " ")}: {fmtMs(stats.p95)}
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 xl:col-span-2">
+        <div className="rounded-2xl border border-app bg-surface p-4 xl:col-span-2">
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Drift events (last hour)</p>
           <div className="mt-3 max-h-72 overflow-auto">
             <table className="min-w-full divide-y divide-slate-100 text-xs">
-              <thead className="bg-slate-50 text-slate-500">
+              <thead className="bg-subtle text-slate-500">
                 <tr>
                   <th className="px-2 py-2 text-left font-semibold">Entity</th>
                   <th className="px-2 py-2 text-left font-semibold">Metric</th>

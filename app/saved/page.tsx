@@ -30,14 +30,14 @@ export default function SavedPostsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Saved articles</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-app">Saved articles</h1>
         <p className="mt-1 text-sm text-slate-500">
           {bookmarks.length === 0 ? "Nothing saved yet." : `${bookmarks.length} article${bookmarks.length === 1 ? "" : "s"} saved`}
         </p>
       </div>
 
       {bookmarks.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center">
+        <div className="rounded-2xl border border-dashed border-app bg-subtle px-6 py-12 text-center">
           <p className="text-sm text-slate-500">
             Tap the <strong>Save</strong> button on any article to bookmark it here.
           </p>
@@ -55,12 +55,12 @@ export default function SavedPostsPage() {
       ) : (
         <ul className="space-y-4">
           {bookmarks.map((b) => (
-            <li key={b.slug} className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
+            <li key={b.slug} className="group rounded-2xl border border-slate-100 bg-surface p-5 shadow-sm transition hover:shadow-md">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/blog/${b.slug}`}
-                    className="text-base font-bold leading-snug text-slate-900 transition group-hover:text-sky-700 line-clamp-2"
+                    className="text-base font-bold leading-snug text-app transition group-hover:text-sky-700 line-clamp-2"
                   >
                     {b.title}
                   </Link>

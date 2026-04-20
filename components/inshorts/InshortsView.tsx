@@ -2,12 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import type { ForumPost } from "@/lib/forumService";
-
-type SwipeModeProps = {
-  posts: ForumPost[];
-  onClose: () => void;
-};
 
 const formatCount = (n: number): string => {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -84,7 +80,19 @@ const shortText = (post: ForumPost): string => {
   return source.split(" ").slice(0, 110).join(" ");
 };
 
-export function SwipeMode({ posts, onClose }: SwipeModeProps) {
+const toneForPost = (post: ForumPost): string => {
+  const signal = `${post.title} ${post.tags.join(" ")}`.toLowerCase();
+  if (signal.includes("design") || signal.includes("interior")) return "from-indigo-500/20 via-transparent to-transparent";
+  if (signal.includes("cost") || signal.includes("budget")) return "from-amber-500/20 via-transparent to-transparent";
+  if (signal.includes("material") || signal.includes("concrete")) return "from-emerald-500/20 via-transparent to-transparent";
+  return "from-sky-500/20 via-transparent to-transparent";
+};
+
+type InshortsViewProps = {
+  initialPosts: ForumPost[];
+};
+
+export function InshortsView({ initialPosts }: InshortsViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartXRef = useRef(0);
   const touchStartAtRef = useRef(0);
@@ -92,6 +100,9 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
   const interactionDepthRef = useRef<"low" | "medium" | "high">("low");
   const dwellStartedAtRef = useRef(Date.now());
   const lastTrackedIndexRef = useRef(0);
+
+  const [posts, setPosts] = useState<ForumPost[]>(initialPosts);
+  const [loading, setLoading] = useState(initialPosts.length === 0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showGestureHint, setShowGestureHint] = useState(true);
   const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
@@ -99,23 +110,31 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
   const [swipeGlow, setSwipeGlow] = useState(false);
   const [interactionAck, setInteractionAck] = useState(false);
 
-  // Close on Escape
+  // Load posts if not provided server-side
+  useEffect(() => {
+    if (initialPosts.length > 0) return;
+    setLoading(true);
+    fetch("/api/forums?sort=hot&limit=50")
+      .then((r) => r.json() as Promise<{ posts: ForumPost[] }>)
+      .then(({ posts: fetched }) => setPosts(fetched ?? []))
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
+  }, [initialPosts.length]);
+
+  // Keyboard nav
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
       if (e.key === "ArrowRight" || e.key === "ArrowDown") scrollTo(activeIndex + 1);
       if (e.key === "ArrowLeft" || e.key === "ArrowUp") scrollTo(activeIndex - 1);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [activeIndex, onClose, posts.length]);
+  }, [activeIndex, posts.length]);
 
-  // Prevent body scroll while swipe mode is open
+  // Lock body scroll
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, []);
 
   useEffect(() => {
@@ -126,16 +145,15 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
   useEffect(() => {
     const next = posts[activeIndex + 1];
     if (!next) return;
-    const preloadImage = new Image();
-    preloadImage.src = imageForPost(next.id);
+    const img = new Image();
+    img.src = imageForPost(next.id);
   }, [activeIndex, posts]);
 
-  // Track active slide via IntersectionObserver
+  // IntersectionObserver to track active slide
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const slides = Array.from(container.querySelectorAll("[data-slide]"));
-
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -147,7 +165,6 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
       },
       { root: container, threshold: 0.6 },
     );
-
     slides.forEach((s) => observer.observe(s));
     return () => observer.disconnect();
   }, [posts]);
@@ -156,15 +173,13 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
     const clamped = Math.max(0, Math.min(posts.length - 1, index));
     const container = containerRef.current;
     if (!container) return;
-    const slide = container.querySelector(`[data-slide="${clamped}"]`);
-    slide?.scrollIntoView({ behavior, block: "nearest", inline: "start" });
+    container.querySelector(`[data-slide="${clamped}"]`)?.scrollIntoView({ behavior, block: "nearest", inline: "start" });
   };
 
   const emitFeedEvent = (
     eventType: "dwell_time" | "skip",
     post: ForumPost,
     dwellMs?: number,
-    interactionDepth: "low" | "medium" | "high" = interactionDepthRef.current,
   ) => {
     void fetch("/api/feed/events", {
       method: "POST",
@@ -174,7 +189,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
         postSlug: post.slug,
         tags: post.tags,
         dwellMs,
-        interactionDepth,
+        interactionDepth: interactionDepthRef.current,
       }),
     }).catch(() => undefined);
   };
@@ -184,9 +199,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
     if (!prev) return;
     const dwellMs = Math.max(0, Date.now() - dwellStartedAtRef.current);
     emitFeedEvent("dwell_time", prev, dwellMs);
-    if (toIndex !== fromIndex && dwellMs < 5000) {
-      emitFeedEvent("skip", prev, dwellMs);
-    }
+    if (toIndex !== fromIndex && dwellMs < 5000) emitFeedEvent("skip", prev, dwellMs);
     dwellStartedAtRef.current = Date.now();
   };
 
@@ -200,42 +213,46 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
     return () => {
       const current = posts[lastTrackedIndexRef.current];
       if (!current) return;
-      const dwellMs = Math.max(0, Date.now() - dwellStartedAtRef.current);
-      emitFeedEvent("dwell_time", current, dwellMs);
+      emitFeedEvent("dwell_time", current, Math.max(0, Date.now() - dwellStartedAtRef.current));
     };
   }, [posts]);
 
-  const visibleDotStart = Math.max(0, activeIndex - 4);
-  const visibleDotEnd = Math.min(posts.length, visibleDotStart + 9);
-  const visibleDots = posts.slice(visibleDotStart, visibleDotEnd);
+  const progressPct = posts.length > 1 ? ((activeIndex + 1) / posts.length) * 100 : 100;
+  const progressComplete = progressPct >= 100;
   const topTags = [...new Set(posts.flatMap((p) => p.tags).filter(Boolean))].slice(0, 12);
   const activePost = posts[activeIndex];
   const interestSignal = activePost?.tags[0] ?? "construction";
-  const progressPct = posts.length > 1 ? ((activeIndex + 1) / posts.length) * 100 : 100;
-  const progressComplete = progressPct >= 100;
+  const visibleDotStart = Math.max(0, activeIndex - 4);
+  const visibleDots = posts.slice(visibleDotStart, visibleDotStart + 9);
+
   const easingPool: [number, number, number, number][] = [
     [0.16, 1, 0.3, 1],
     [0.22, 1, 0.36, 1],
     [0.2, 0.95, 0.25, 1],
   ];
   const transitionEase = easingPool[activeIndex % easingPool.length];
-  const toneForPost = (post: ForumPost): string => {
-    const signal = `${post.title} ${post.tags.join(" ")}`.toLowerCase();
-    if (signal.includes("design") || signal.includes("interior")) return "from-indigo-500/20 via-transparent to-transparent";
-    if (signal.includes("cost") || signal.includes("budget")) return "from-amber-500/20 via-transparent to-transparent";
-    if (signal.includes("material") || signal.includes("concrete")) return "from-emerald-500/20 via-transparent to-transparent";
-    return "from-sky-500/20 via-transparent to-transparent";
-  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-black text-white">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+        <p className="mt-4 text-sm text-white/50">Loading Tatva Inshorts…</p>
+      </div>
+    );
+  }
 
   if (posts.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 h-screen w-screen bg-black text-white">
-        <div className="mx-auto flex h-full w-full max-w-xl items-center justify-center px-6">
-          <div className="w-full space-y-3">
-            <div className="h-4 w-32 animate-pulse rounded bg-surface/20" />
-            <div className="h-7 w-full animate-pulse rounded bg-surface/20" />
-            <div className="h-24 w-full animate-pulse rounded bg-surface/10" />
-          </div>
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-black text-white">
+        <p className="text-lg font-semibold text-white/60">No insights available yet.</p>
+        <p className="mt-2 text-sm text-white/40">Check back soon — content is added regularly.</p>
+        <div className="mt-6 flex gap-3">
+          <Link href="/forums" className="rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/20">
+            Browse Forums
+          </Link>
+          <Link href="/blog" className="rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/20">
+            Read Articles
+          </Link>
         </div>
       </div>
     );
@@ -243,7 +260,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 h-screen w-screen bg-black text-white"
+      className="fixed inset-0 z-10 h-screen w-screen bg-black text-white"
       animate={{ scale: selectedPost ? 0.985 : 1 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
     >
@@ -259,11 +276,14 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
           />
         )}
       </AnimatePresence>
+
+      {/* Top bar */}
       <div className="pointer-events-none absolute left-0 right-0 top-0 z-20">
         <div className="pointer-events-auto sticky top-0 bg-black/20 px-3 pt-2 backdrop-blur-lg">
-          <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-surface/15">
+          {/* Progress bar */}
+          <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-white/15">
             <motion.div
-              className="h-full rounded-full bg-surface/85"
+              className="h-full rounded-full bg-white/85"
               animate={{
                 width: `${progressPct}%`,
                 boxShadow: progressComplete
@@ -273,23 +293,33 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
               transition={{ duration: 0.34, ease: transitionEase }}
             />
           </div>
+
+          {/* Header row */}
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-bold tracking-wide text-white/95">My Feed</span>
-              <span className="text-xs text-white/65">{activeIndex + 1}/{posts.length}</span>
+              <Link
+                href="/"
+                className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/20"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+                Back
+              </Link>
+              <div>
+                <span className="text-sm font-bold tracking-wide text-white">Tatva Inshorts</span>
+                <span className="ml-2 text-xs text-white/50">{activeIndex + 1}/{posts.length}</span>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Exit swipe mode"
-              className="rounded-full bg-surface/10 p-2 text-white transition hover:bg-surface/20"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+            {/* Cross-content chips */}
+            <div className="flex items-center gap-1.5">
+              <Link href="/blog"   className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:bg-white/20 hover:text-white">Articles</Link>
+              <Link href="/forums" className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:bg-white/20 hover:text-white">Forums</Link>
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-black">Inshorts</span>
+            </div>
           </div>
+
+          {/* Personalisation signal */}
           <AnimatePresence mode="wait">
             <motion.p
               key={`${activeIndex}-${interestSignal}`}
@@ -302,10 +332,12 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
               Because you like <span className="font-semibold text-white">{interestSignal}</span>
             </motion.p>
           </AnimatePresence>
+
+          {/* Topic chips */}
           <div className="flex gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <span className="whitespace-nowrap rounded-full bg-surface px-3 py-1 text-xs font-semibold text-app">All</span>
+            <span className="whitespace-nowrap rounded-full bg-white px-3 py-1 text-xs font-semibold text-black">All</span>
             {topTags.map((tag) => (
-              <span key={tag} className="whitespace-nowrap rounded-full bg-surface/15 px-3 py-1 text-xs font-medium text-white/90">
+              <span key={tag} className="whitespace-nowrap rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white/90">
                 {tag}
               </span>
             ))}
@@ -313,9 +345,10 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
         </div>
       </div>
 
+      {/* Horizontal scroll card strip */}
       <div
         ref={containerRef}
-        className="h-screen whitespace-nowrap overflow-x-scroll overflow-y-hidden snap-x snap-mandatory px-2 pb-2 pt-16 [scroll-behavior:smooth]"
+        className="h-screen whitespace-nowrap overflow-x-scroll overflow-y-hidden snap-x snap-mandatory px-2 pb-2 pt-[7.5rem] [scroll-behavior:smooth]"
         style={{ scrollbarWidth: "none" }}
         onTouchStart={(event) => {
           const point = event.touches[0];
@@ -351,7 +384,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
           <div
             key={post.id}
             data-slide={i}
-            className="mr-3 inline-block h-[calc(100vh-4.5rem)] w-[calc(100vw-2.75rem)] align-top snap-center"
+            className="mr-3 inline-block h-[calc(100vh-8rem)] w-[calc(100vw-2.75rem)] align-top snap-center"
           >
             {Math.abs(i - activeIndex) > 1 ? (
               <div className="h-full w-full bg-black" />
@@ -368,14 +401,15 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
                   ease: transitionEase,
                 }}
                 onClick={() => setSelectedPost(post)}
-                layoutId={`forum-card-${post.id}`}
+                layoutId={`inshorts-card-${post.id}`}
                 className={`relative h-full w-full overflow-hidden whitespace-normal rounded-2xl bg-gradient-to-br ${gradientForPost(post.id)} bg-cover bg-center bg-no-repeat`}
                 style={{ backgroundImage: `url(${imageForPost(post.id)})` }}
               >
                 <div className={`absolute inset-0 bg-gradient-to-b ${toneForPost(post)} transition duration-500`} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-                <div className="absolute bottom-28 right-4 z-10 flex flex-col gap-3">
+                {/* Side actions */}
+                <div className="absolute bottom-24 right-4 z-10 flex flex-col gap-3">
                   <motion.button
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
@@ -384,8 +418,8 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
                     className={`rounded-full px-3 py-2 text-xs font-semibold backdrop-blur-md ${
                       likedById[post.id] ? "bg-pink-500/80" : "bg-black/35"
                     }`}
-                    onClick={(event) => {
-                      event.stopPropagation();
+                    onClick={(e) => {
+                      e.stopPropagation();
                       interactionDepthRef.current = "high";
                       setInteractionAck(true);
                       window.setTimeout(() => setInteractionAck(false), 500);
@@ -398,7 +432,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.94 }}
                     className="rounded-full bg-black/35 px-3 py-2 text-xs font-semibold backdrop-blur-md"
-                    onClick={(event) => event.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                   >
                     💬 {formatCount(post.comment_count)}
                   </motion.button>
@@ -406,15 +440,13 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.94 }}
                     className="rounded-full bg-black/35 px-3 py-2 text-xs font-semibold backdrop-blur-md"
-                    onClick={(event) => {
-                      event.stopPropagation();
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (typeof navigator !== "undefined" && navigator.share) {
-                        const shareUrl = `${window.location.origin}/forums/${post.slug}`;
-                        const preview = shortText(post).split(" ").slice(0, 45).join(" ");
                         void navigator.share({
                           title: post.title,
-                          text: `${preview}\n\n#${(post.tags[0] ?? "construction").replace(/[^a-z0-9]/gi, "")} #TatvaOps`,
-                          url: shareUrl,
+                          text: shortText(post).split(" ").slice(0, 45).join(" "),
+                          url: `${window.location.origin}/forums/${post.slug}`,
                         }).catch(() => undefined);
                       }
                     }}
@@ -423,20 +455,17 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
                   </motion.button>
                 </div>
 
+                {/* Bottom content */}
                 <div className="absolute inset-x-0 bottom-0 z-10 p-4 pb-10 sm:p-6">
                   <div className="mb-2 flex flex-wrap items-center gap-1.5">
                     {(post.view_count >= 80 || post.upvote_count >= 12) && (
-                      <span className="rounded-full bg-orange-500/90 px-2 py-0.5 text-[10px] font-bold">
-                        🔥 Popular
-                      </span>
+                      <span className="rounded-full bg-orange-500/90 px-2 py-0.5 text-[10px] font-bold">🔥 Popular</span>
                     )}
                     {post.comment_count >= 6 && (
-                      <span className="rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-bold">
-                        💬 Active
-                      </span>
+                      <span className="rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-bold">💬 Active</span>
                     )}
                   </div>
-                  <div className="mb-2 inline-flex rounded-full bg-surface/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
+                  <div className="mb-2 inline-flex rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
                     {post.tags[0] ?? "discussion"}
                   </div>
                   <motion.h2
@@ -460,6 +489,14 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
                     <span>{formatCount(post.comment_count)} replies</span>
                     <span>{formatRelativeTime(post.created_at)} ago</span>
                   </div>
+                  {/* Discuss in forum deep-link */}
+                  <a
+                    href={`/forums/${post.slug}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/25"
+                  >
+                    Discuss in Forums →
+                  </a>
                 </div>
               </motion.article>
             )}
@@ -467,6 +504,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
         ))}
       </div>
 
+      {/* Dot progress */}
       <div className="pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
         <div className="mb-2 flex items-center justify-center gap-1.5">
           {visibleDots.map((_, offset) => {
@@ -477,7 +515,7 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
                 type="button"
                 onClick={() => scrollTo(i)}
                 aria-label={`Go to post ${i + 1}`}
-                className={`pointer-events-auto h-1.5 rounded-full transition-all ${i === activeIndex ? "w-5 bg-surface" : "w-1.5 bg-surface/35"}`}
+                className={`pointer-events-auto h-1.5 rounded-full transition-all ${i === activeIndex ? "w-5 bg-white" : "w-1.5 bg-white/35"}`}
               />
             );
           })}
@@ -501,6 +539,8 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
           </p>
         )}
       </div>
+
+      {/* Post detail overlay */}
       <AnimatePresence>
         {selectedPost && (
           <motion.div
@@ -511,22 +551,30 @@ export function SwipeMode({ posts, onClose }: SwipeModeProps) {
             onClick={() => setSelectedPost(null)}
           >
             <motion.div
-              layoutId={`forum-card-${selectedPost.id}`}
+              layoutId={`inshorts-card-${selectedPost.id}`}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               className="absolute inset-x-4 bottom-6 top-24 overflow-auto rounded-2xl border border-white/15 bg-zinc-950/90 p-5 text-white"
-              onClick={(event) => event.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-3 flex items-center justify-between">
-                <span className="rounded-full bg-surface/10 px-3 py-1 text-xs uppercase tracking-wide text-white/80">
+                <span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-wide text-white/80">
                   {selectedPost.tags[0] ?? "discussion"}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPost(null)}
-                  className="rounded-full bg-surface/10 px-2.5 py-1 text-xs text-white/90"
-                >
-                  Close
-                </button>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`/forums/${selectedPost.slug}`}
+                    className="rounded-full bg-indigo-600/80 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-500"
+                  >
+                    Open in Forums →
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPost(null)}
+                    className="rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/90 hover:bg-white/20"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
               <h3 className="text-2xl font-bold leading-tight">{selectedPost.title}</h3>
               <p className="mt-3 text-sm leading-7 text-white/85">{selectedPost.content || selectedPost.excerpt}</p>

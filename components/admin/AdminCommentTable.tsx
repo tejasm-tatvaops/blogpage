@@ -46,7 +46,7 @@ export function AdminCommentTable({ comments, initialType = "all" }: AdminCommen
     <section className="mx-auto w-full max-w-[1500px] px-6 py-6">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">Comments</h1>
+          <h1 className="text-lg font-semibold text-app">Comments</h1>
           <p className="text-sm text-slate-500">{comments.length} total</p>
         </div>
       </div>
@@ -72,13 +72,13 @@ export function AdminCommentTable({ comments, initialType = "all" }: AdminCommen
       )}
 
       {comments.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
+        <div className="rounded-xl border border-dashed border-app p-8 text-center text-sm text-slate-400">
           No comments found.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
+        <div className="overflow-x-auto rounded-xl border border-app">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-white">
+            <thead className="bg-surface">
               <tr>
                 <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Author</th>
                 <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Comment</th>
@@ -88,9 +88,9 @@ export function AdminCommentTable({ comments, initialType = "all" }: AdminCommen
                 <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-slate-100 bg-surface">
               {comments.map((comment) => (
-                <tr key={comment.id} className="hover:bg-slate-50">
+                <tr key={comment.id} className="hover:bg-subtle">
                   <td className="px-4 py-2.5 text-sm font-medium text-slate-800">{comment.author_name}</td>
                   <td className="max-w-xl px-4 py-2.5 text-sm text-slate-600">
                     <p className="line-clamp-2">{comment.content}</p>

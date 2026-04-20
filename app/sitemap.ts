@@ -74,6 +74,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.8,
     },
+    {
+      url: `${siteUrl}/inshorts`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.75,
+    },
   ];
 
   const videoRoutes: MetadataRoute.Sitemap = videoSlugs.map((slug) => ({

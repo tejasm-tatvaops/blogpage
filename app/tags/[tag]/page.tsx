@@ -63,9 +63,9 @@ export default async function TagHubPage({ params }: PageProps) {
     <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-10">
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-2 text-sm text-slate-500" aria-label="Breadcrumb">
-        <Link href="/" className="transition hover:text-slate-900">Home</Link>
+        <Link href="/" className="transition hover:text-app">Home</Link>
         <span aria-hidden>/</span>
-        <Link href="/blog" className="transition hover:text-slate-900">Blog</Link>
+        <Link href="/blog" className="transition hover:text-app">Blog</Link>
         <span aria-hidden>/</span>
         <span className="font-medium text-slate-700">#{decoded}</span>
       </nav>
@@ -79,7 +79,7 @@ export default async function TagHubPage({ params }: PageProps) {
           </svg>
           #{decoded}
         </div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="text-3xl font-extrabold tracking-tight text-app sm:text-4xl">
           All content tagged &ldquo;{decoded}&rdquo;
         </h1>
         <p className="mt-2 text-slate-500">
@@ -91,7 +91,7 @@ export default async function TagHubPage({ params }: PageProps) {
       <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
         {/* Articles */}
         <section aria-labelledby="articles-heading">
-          <h2 id="articles-heading" className="mb-5 text-lg font-bold text-slate-900">
+          <h2 id="articles-heading" className="mb-5 text-lg font-bold text-app">
             Articles
           </h2>
           {blogs.length === 0 ? (
@@ -99,12 +99,12 @@ export default async function TagHubPage({ params }: PageProps) {
           ) : (
             <ul className="space-y-4">
               {blogs.map((post) => (
-                <li key={post.id} className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
+                <li key={post.id} className="group rounded-2xl border border-slate-100 bg-surface p-5 shadow-sm transition hover:shadow-md">
                   <Link href={`/blog/${post.slug}`} className="block">
                     <span className="mb-1.5 inline-block rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-600">
                       {post.category}
                     </span>
-                    <h3 className="text-base font-semibold leading-snug text-slate-900 transition group-hover:text-sky-700 line-clamp-2">
+                    <h3 className="text-base font-semibold leading-snug text-app transition group-hover:text-sky-700 line-clamp-2">
                       {post.title}
                     </h3>
                     <p className="mt-1.5 text-sm leading-relaxed text-slate-500 line-clamp-2">
@@ -130,7 +130,7 @@ export default async function TagHubPage({ params }: PageProps) {
 
         {/* Discussions */}
         <section aria-labelledby="discussions-heading">
-          <h2 id="discussions-heading" className="mb-5 text-lg font-bold text-slate-900">
+          <h2 id="discussions-heading" className="mb-5 text-lg font-bold text-app">
             Discussions
           </h2>
           {forums.length === 0 ? (
@@ -141,7 +141,7 @@ export default async function TagHubPage({ params }: PageProps) {
                 <li key={post.id}>
                   <Link
                     href={`/forums/${post.slug}`}
-                    className="group flex flex-col gap-1 rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md"
+                    className="group flex flex-col gap-1 rounded-xl border border-slate-100 bg-surface p-4 shadow-sm transition hover:shadow-md"
                   >
                     <h3 className="text-sm font-semibold leading-snug text-slate-800 transition group-hover:text-indigo-700 line-clamp-2">
                       {post.title}

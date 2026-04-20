@@ -79,7 +79,7 @@ export function JobQueuePanel({ refreshTick }: Props) {
 
   if (loading) {
     return (
-      <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-4">
+      <div className="space-y-2 rounded-xl border border-app bg-surface p-4">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="h-8 animate-pulse rounded bg-slate-100" />
         ))}
@@ -96,9 +96,9 @@ export function JobQueuePanel({ refreshTick }: Props) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-xl border border-app bg-surface shadow-sm">
       <table className="min-w-full divide-y divide-slate-100 text-sm">
-        <thead className="bg-slate-50">
+        <thead className="bg-subtle">
           <tr>
             <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Type</th>
             <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Status</th>
@@ -110,7 +110,7 @@ export function JobQueuePanel({ refreshTick }: Props) {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {jobs.map((job) => (
-            <tr key={job._id} className="hover:bg-slate-50">
+            <tr key={job._id} className="hover:bg-subtle">
               <td className="px-4 py-2.5 font-medium text-slate-800">{TYPE_LABEL[job.type]}</td>
               <td className="px-4 py-2.5">
                 <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[job.status]}`}>

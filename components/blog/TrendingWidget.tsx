@@ -19,7 +19,7 @@ export function TrendingWidget() {
   if (!loading && posts.length === 0) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white">
+    <div className="overflow-hidden rounded-2xl border border-orange-100 bg-surface">
       <div className="flex items-center gap-2 border-b border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-3.5">
         <span className="text-base leading-none" aria-hidden>🔥</span>
         <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-orange-700">Trending now</span>

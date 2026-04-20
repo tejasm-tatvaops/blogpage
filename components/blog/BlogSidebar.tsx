@@ -56,7 +56,7 @@ export function BlogSidebar({
 
       {/* ── Table of Contents ── */}
       {toc.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="overflow-hidden rounded-2xl border border-app bg-surface">
           <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400" aria-hidden>
               <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
@@ -70,12 +70,12 @@ export function BlogSidebar({
                 <li key={entry.anchor}>
                   <a
                     href={`#${entry.anchor}`}
-                    className={`group flex items-start gap-2 rounded-lg px-2 py-1.5 transition hover:bg-slate-50 ${
+                    className={`group flex items-start gap-2 rounded-lg px-2 py-1.5 transition hover:bg-subtle ${
                       entry.level === 3 ? "pl-5" : ""
                     }`}
                   >
                     <span className="mt-[5px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-slate-300 transition group-hover:bg-sky-400" />
-                    <span className="text-[13px] leading-snug text-slate-600 transition group-hover:text-slate-900">
+                    <span className="text-[13px] leading-snug text-slate-600 transition group-hover:text-app">
                       {entry.text}
                     </span>
                   </a>
@@ -88,14 +88,14 @@ export function BlogSidebar({
 
       {/* ── FAQs ── */}
       {faqs.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="overflow-hidden rounded-2xl border border-app bg-surface">
           <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
             <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">FAQs</span>
           </div>
           <ul className="divide-y divide-slate-100">
             {faqs.slice(0, 6).map((faq) => (
               <li key={faq.question} className="px-4 py-3.5">
-                <p className="text-xs font-semibold text-slate-900">{faq.question}</p>
+                <p className="text-xs font-semibold text-app">{faq.question}</p>
                 <p className="mt-1 text-xs leading-relaxed text-slate-600">{faq.answer}</p>
               </li>
             ))}
@@ -105,7 +105,7 @@ export function BlogSidebar({
 
       {/* ── References ── */}
       {references.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="overflow-hidden rounded-2xl border border-app bg-surface">
           <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
             <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">References</span>
           </div>
@@ -136,7 +136,7 @@ export function BlogSidebar({
 
       {/* ── Topics / Categories ── */}
       {categories.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="overflow-hidden rounded-2xl border border-app bg-surface">
           <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400" aria-hidden>
               <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
@@ -152,7 +152,7 @@ export function BlogSidebar({
                 className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
                   cat === post.category
                     ? "bg-slate-900 !text-white shadow-sm"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-app"
                 }`}
               >
                 {cat}
@@ -164,7 +164,7 @@ export function BlogSidebar({
 
       {/* ── Tags ── */}
       {post.tags.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="overflow-hidden rounded-2xl border border-app bg-surface">
           <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400" aria-hidden>
               <circle cx="9" cy="9" r="2" />
@@ -188,7 +188,7 @@ export function BlogSidebar({
 
       {/* ── Related Posts ── */}
       {relatedPosts.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="overflow-hidden rounded-2xl border border-app bg-surface">
           <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400" aria-hidden>
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -202,7 +202,7 @@ export function BlogSidebar({
               <li key={related.id}>
                 <Link
                   href={`/blog/${related.slug}`}
-                  className="group flex items-start gap-3 px-4 py-3.5 transition hover:bg-slate-50"
+                  className="group flex items-start gap-3 px-4 py-3.5 transition hover:bg-subtle"
                 >
                   <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 transition group-hover:bg-sky-100">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 group-hover:text-sky-600 transition" aria-hidden>
@@ -238,7 +238,7 @@ export function BlogSidebar({
             <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
             TatvaOps
           </div>
-          <h3 className="text-[15px] font-bold leading-snug text-slate-900">
+          <h3 className="text-[15px] font-bold leading-snug text-app">
             Build smarter, not harder
           </h3>
           <p className="mt-1.5 text-xs leading-relaxed text-slate-600">

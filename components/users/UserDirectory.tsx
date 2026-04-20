@@ -149,7 +149,7 @@ const TIER_STYLES: Record<string, { label: string; className: string }> = {
   elite:       { label: "Elite",       className: "bg-yellow-100 text-yellow-800 border border-yellow-300" },
   expert:      { label: "Expert",      className: "bg-purple-100 text-purple-700 border border-purple-300" },
   contributor: { label: "Contributor", className: "bg-sky-100 text-sky-700 border border-sky-300" },
-  member:      { label: "Member",      className: "bg-slate-100 text-slate-600 border border-slate-200" },
+  member:      { label: "Member",      className: "bg-slate-100 text-slate-600 border border-app" },
 };
 
 function ReputationBadge({ tier, score }: { tier: string; score: number }) {
@@ -217,17 +217,17 @@ function ForumGamification({ user }: { user: UserProfile }) {
       <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">Reputation highlights</p>
       <div className="mt-2 flex flex-wrap gap-1.5">
         {badges.map((badge) => (
-          <span key={badge} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
+          <span key={badge} className="rounded-full bg-surface px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
             {badgeLabel(badge)}
           </span>
         ))}
         {(user.forum_posting_streak_days ?? 0) > 0 ? (
-          <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
+          <span className="rounded-full bg-surface px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
             📅 {user.forum_posting_streak_days}d posting streak
           </span>
         ) : null}
         {(user.forum_quality_streak_days ?? 0) > 0 ? (
-          <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
+          <span className="rounded-full bg-surface px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
             ⭐ {user.forum_quality_streak_days}d quality streak
           </span>
         ) : null}
@@ -441,7 +441,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
   return (
     <section className="mx-auto w-full max-w-[1500px] px-6 py-12">
       <header className="mb-10 max-w-3xl">
-        <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">Users</h1>
+        <h1 className="text-4xl font-bold tracking-tight text-app sm:text-5xl">Users</h1>
         <p className="mt-3 text-base leading-8 text-slate-600">
           A live directory of readers and contributors who have interacted with TatvaOps through blog
           reading, comments, forum discussions, and community activity.
@@ -452,46 +452,46 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
       </header>
 
       <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div className="rounded-2xl border border-app bg-surface px-5 py-4 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-slate-400">Blog Views (DB)</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{formatNumber(safeTotals.blogViews)}</p>
+          <p className="mt-1 text-2xl font-bold text-app">{formatNumber(safeTotals.blogViews)}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div className="rounded-2xl border border-app bg-surface px-5 py-4 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-slate-400">Forum Views (DB)</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{formatNumber(safeTotals.forumViews)}</p>
+          <p className="mt-1 text-2xl font-bold text-app">{formatNumber(safeTotals.forumViews)}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div className="rounded-2xl border border-app bg-surface px-5 py-4 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs uppercase tracking-wide text-slate-400">User Blog Views</p>
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${blogViewsMatch ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
               {blogViewsMatch ? "Verified" : "Updating"}
             </span>
           </div>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{formatNumber(safeUserTotals.blogViews)}</p>
+          <p className="mt-1 text-2xl font-bold text-app">{formatNumber(safeUserTotals.blogViews)}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div className="rounded-2xl border border-app bg-surface px-5 py-4 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs uppercase tracking-wide text-slate-400">User Forum Views</p>
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${forumViewsMatch ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
               {forumViewsMatch ? "Verified" : "Updating"}
             </span>
           </div>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{formatNumber(safeUserTotals.forumViews)}</p>
+          <p className="mt-1 text-2xl font-bold text-app">{formatNumber(safeUserTotals.forumViews)}</p>
         </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-app bg-surface p-4">
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search users, bio, or interests"
-          className="min-w-[220px] flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-sky-500 focus:ring-2"
+          className="min-w-[220px] flex-1 rounded-lg border border-app px-3 py-2 text-sm outline-none ring-sky-500 focus:ring-2"
         />
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as "recent" | "blog_views" | "forum_activity")}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+          className="rounded-lg border border-app bg-surface px-3 py-2 text-sm"
         >
           <option value="recent">Most recent</option>
           <option value="blog_views">Most blog views</option>
@@ -500,7 +500,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
         <select
           value={tierFilter}
           onChange={(e) => setTierFilter(e.target.value as "all" | "elite" | "expert" | "contributor" | "member")}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+          className="rounded-lg border border-app bg-surface px-3 py-2 text-sm"
         >
           <option value="all">All reputation</option>
           <option value="elite">Elite</option>
@@ -511,7 +511,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
         <select
           value={segmentFilter}
           onChange={(e) => setSegmentFilter(e.target.value as "all" | "expert" | "contributor" | "reader" | "explorer")}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+          className="rounded-lg border border-app bg-surface px-3 py-2 text-sm"
         >
           <option value="all">All segments</option>
           <option value="expert">Expert</option>
@@ -519,7 +519,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           <option value="reader">Reader</option>
           <option value="explorer">Explorer</option>
         </select>
-        <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600">
+        <label className="inline-flex items-center gap-2 rounded-lg border border-app px-3 py-2 text-sm text-slate-600">
           <input
             type="checkbox"
             checked={photosOnly}
@@ -527,7 +527,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           />
           Real photos only
         </label>
-        <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600">
+        <label className="inline-flex items-center gap-2 rounded-lg border border-app px-3 py-2 text-sm text-slate-600">
           <input
             type="checkbox"
             checked={activeOnly}
@@ -535,7 +535,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           />
           Active now
         </label>
-        <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600">
+        <label className="inline-flex items-center gap-2 rounded-lg border border-app px-3 py-2 text-sm text-slate-600">
           <input
             type="checkbox"
             checked={gamifiedOnly}
@@ -553,7 +553,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Recently Helpful</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {helpfulUsers.map((user) => (
-              <span key={user.id} className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-sm text-slate-700 shadow-sm">
+              <span key={user.id} className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-sm text-slate-700 shadow-sm">
                 <img src={user.avatar_url} alt={`${user.display_name} avatar`} className="h-5 w-5 rounded-full object-cover" />
                 {user.display_name}
               </span>
@@ -569,7 +569,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           ))}
         </div>
       ) : confirmedEmpty ? (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-8 py-14 text-center text-slate-600">
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-surface px-8 py-14 text-center text-slate-600">
           {photosOnly
             ? "No real-photo profiles match your current filters yet."
             : "No user profiles yet. Once visitors start reading blogs or joining discussions, they will show up here."}
@@ -579,7 +579,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           {visibleUsers.map((user) => (
             <article
               key={user.id}
-              className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="rounded-3xl border border-app bg-surface p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
               {(() => {
                 const context = deriveProfileContext(user);
@@ -592,12 +592,12 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
                 <img
                   src={user.avatar_url}
                   alt={`${user.display_name} avatar`}
-                  className="h-14 w-14 rounded-full border border-slate-200 bg-slate-50 object-cover shadow-sm"
+                  className="h-14 w-14 rounded-full border border-app bg-subtle object-cover shadow-sm"
                   loading="lazy"
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="truncate text-lg font-semibold text-slate-900">{user.display_name}</h2>
+                    <h2 className="truncate text-lg font-semibold text-app">{user.display_name}</h2>
                     <ReputationBadge tier={user.reputation_tier} score={user.reputation_score} />
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${segment.className}`}>
                       {segment.label}
@@ -614,7 +614,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
                   </p>
                   <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">
                     <span>Reputation</span>
-                    <span className="rounded-full bg-white/20 px-2 py-0.5">{formatNumber(user.reputation_score)}</span>
+                    <span className="rounded-full bg-surface/20 px-2 py-0.5">{formatNumber(user.reputation_score)}</span>
                   </div>
                 </div>
               </div>
@@ -624,17 +624,17 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
               <ActivityBadges user={user} />
 
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-slate-50 px-3 py-2 text-center">
+                <div className="rounded-xl bg-subtle px-3 py-2 text-center">
                   <p className="text-[10px] uppercase tracking-wide text-slate-400">Blog views</p>
-                  <p className="mt-0.5 text-base font-semibold text-slate-900">{formatNumber(user.blog_views)}</p>
+                  <p className="mt-0.5 text-base font-semibold text-app">{formatNumber(user.blog_views)}</p>
                 </div>
-                <div className="rounded-xl bg-slate-50 px-3 py-2 text-center">
+                <div className="rounded-xl bg-subtle px-3 py-2 text-center">
                   <p className="text-[10px] uppercase tracking-wide text-slate-400">Forum posts</p>
-                  <p className="mt-0.5 text-base font-semibold text-slate-900">{formatNumber(user.forum_posts)}</p>
+                  <p className="mt-0.5 text-base font-semibold text-app">{formatNumber(user.forum_posts)}</p>
                 </div>
-                <div className="rounded-xl bg-slate-50 px-3 py-2 text-center">
+                <div className="rounded-xl bg-subtle px-3 py-2 text-center">
                   <p className="text-[10px] uppercase tracking-wide text-slate-400">Likes cast</p>
-                  <p className="mt-0.5 text-base font-semibold text-slate-900">{formatNumber(user.blog_likes)}</p>
+                  <p className="mt-0.5 text-base font-semibold text-app">{formatNumber(user.blog_likes)}</p>
                 </div>
               </div>
 

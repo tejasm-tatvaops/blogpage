@@ -25,7 +25,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
   return (
     <div className="mx-auto w-full max-w-3xl px-6 py-20">
       <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
-        <h2 className="text-2xl font-bold text-slate-900">Something went wrong</h2>
+        <h2 className="text-2xl font-bold text-app">Something went wrong</h2>
         <p className="mt-2 text-sm text-slate-700">
           We hit an unexpected error while loading this page. Please try again.
         </p>

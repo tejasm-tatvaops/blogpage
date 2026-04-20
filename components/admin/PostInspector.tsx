@@ -28,8 +28,8 @@ const ScoreBar = ({ label, value, color }: { label: string; value: number; color
 );
 
 const StatPill = ({ label, value }: { label: string; value: string | number }) => (
-  <div className="flex flex-col items-center rounded-lg bg-slate-50 px-3 py-2">
-    <span className="text-sm font-semibold tabular-nums text-slate-900">{value}</span>
+  <div className="flex flex-col items-center rounded-lg bg-subtle px-3 py-2">
+    <span className="text-sm font-semibold tabular-nums text-app">{value}</span>
     <span className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-400">{label}</span>
   </div>
 );
@@ -54,12 +54,12 @@ export function PostInspector({
   const isUpdatingFeature = isFeatureUpdatingId === post.id;
 
   return (
-    <aside className="flex w-[360px] shrink-0 flex-col border-l border-slate-200 bg-white">
+    <aside className="flex w-[360px] shrink-0 flex-col border-l border-app bg-surface">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3">
+      <div className="flex items-start justify-between gap-3 border-b border-app px-4 py-3">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Inspect</p>
-          <h2 className="mt-0.5 line-clamp-2 text-sm font-medium leading-snug text-slate-900">
+          <h2 className="mt-0.5 line-clamp-2 text-sm font-medium leading-snug text-app">
             {post.title}
           </h2>
         </div>
@@ -171,12 +171,12 @@ export function PostInspector({
       </div>
 
       {/* Actions footer */}
-      <div className="space-y-2 border-t border-slate-200 px-4 py-3">
+      <div className="space-y-2 border-t border-app px-4 py-3">
         <Link
           href={`/forums/${post.slug}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-app px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-subtle"
         >
           View on site
           <svg width="10" height="10" viewBox="0 0 11 11" fill="none">
@@ -191,7 +191,7 @@ export function PostInspector({
             className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition disabled:opacity-50 ${
               post.is_featured
                 ? "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
-                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                : "border-app bg-surface text-slate-700 hover:bg-subtle"
             }`}
           >
             {isUpdatingFeature ? "…" : post.is_featured ? "Unfeature" : "Feature"}

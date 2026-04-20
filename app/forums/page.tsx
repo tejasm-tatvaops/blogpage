@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ForumList, ForumListSkeleton } from "@/components/forums/ForumList";
-import { SwipeMode } from "@/components/forums/SwipeMode";
 import type { ForumPost, ForumFeedSort } from "@/lib/forumService";
 import {
   applyPersonalisationBoost,
@@ -28,7 +27,6 @@ export default function ForumsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [swipeMode, setSwipeMode] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -106,24 +104,12 @@ export default function ForumsPage() {
       {/* Header */}
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900">Forums</h1>
+          <h1 className="text-3xl font-extrabold text-app">Forums</h1>
           <p className="mt-1 text-sm text-slate-500">
             Discuss construction, share insights, ask questions.
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setSwipeMode(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-            title="Swipe mode — browse posts one by one"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <rect x="2" y="3" width="20" height="18" rx="3" />
-              <path d="M8 12h8M12 8v8" />
-            </svg>
-            Swipe
-          </button>
           <Link
             href="/forums/new"
             className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-indigo-700"
@@ -136,7 +122,7 @@ export default function ForumsPage() {
         </div>
       </div>
 
-      <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-6 rounded-2xl border border-app bg-surface p-4 shadow-sm">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           {SORT_OPTIONS.map(({ value, label, icon }) => (
             <button
@@ -157,7 +143,7 @@ export default function ForumsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search threads..."
-            className="ml-auto w-full min-w-[220px] rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 outline-none ring-indigo-500 transition focus:ring-2 sm:w-72"
+            className="ml-auto w-full min-w-[220px] rounded-lg border border-app px-3 py-1.5 text-sm text-slate-700 outline-none ring-indigo-500 transition focus:ring-2 sm:w-72"
           />
         </div>
 
@@ -191,7 +177,7 @@ export default function ForumsPage() {
                       <Link
                         key={post.id}
                         href={`/forums/${post.slug}`}
-                        className="block rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-orange-100/40"
+                        className="block rounded-lg bg-surface px-3 py-2 text-sm font-medium text-slate-700 hover:bg-orange-100/40"
                       >
                         🔥 {post.title}
                       </Link>
@@ -207,7 +193,7 @@ export default function ForumsPage() {
                     type="button"
                     onClick={loadMore}
                     disabled={loadingMore}
-                    className="rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
+                    className="rounded-xl border border-app bg-surface px-6 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-subtle disabled:opacity-60"
                   >
                     {loadingMore ? "Loading…" : "Load more"}
                   </button>
@@ -218,8 +204,8 @@ export default function ForumsPage() {
         </section>
 
         <aside className="space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-900">Trending tags</h3>
+          <div className="rounded-2xl border border-app bg-surface p-4 shadow-sm">
+            <h3 className="text-sm font-bold text-app">Trending tags</h3>
             {topTags.length === 0 ? (
               <p className="mt-2 text-xs text-slate-500">No tags yet.</p>
             ) : (
@@ -238,13 +224,13 @@ export default function ForumsPage() {
             )}
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-900">Quick actions</h3>
+          <div className="rounded-2xl border border-app bg-surface p-4 shadow-sm">
+            <h3 className="text-sm font-bold text-app">Quick actions</h3>
             <div className="mt-3 space-y-2">
-              <Link href="/forums/new" className="block rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+              <Link href="/forums/new" className="block rounded-lg border border-app px-3 py-2 text-sm font-medium text-slate-700 hover:bg-subtle">
                 Start a new thread
               </Link>
-              <Link href="/blog" className="block rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+              <Link href="/blog" className="block rounded-lg border border-app px-3 py-2 text-sm font-medium text-slate-700 hover:bg-subtle">
                 Read related blog posts
               </Link>
             </div>
@@ -252,10 +238,6 @@ export default function ForumsPage() {
         </aside>
       </div>
 
-      {/* Swipe overlay */}
-      {swipeMode && posts.length > 0 && (
-        <SwipeMode posts={posts} onClose={() => setSwipeMode(false)} />
-      )}
     </main>
   );
 }

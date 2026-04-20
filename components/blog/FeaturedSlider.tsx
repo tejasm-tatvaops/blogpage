@@ -58,7 +58,7 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
   return (
     <section className="mx-auto w-full max-w-[1500px] px-6 pt-10">
       <div
-        className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 shadow-xl"
+        className="relative overflow-hidden rounded-3xl border border-app bg-slate-950 shadow-xl"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onTouchStart={(e) => {
@@ -94,7 +94,7 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
-                    <p className="mb-2 inline-flex rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-white backdrop-blur">
+                    <p className="mb-2 inline-flex rounded-full bg-surface/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-white backdrop-blur">
                       Featured
                     </p>
                     <h2 className="max-w-3xl text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">
@@ -141,7 +141,7 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
                   aria-label={`Go to featured slide ${idx + 1}`}
                   onClick={() => setActive(idx)}
                   className={`h-2.5 rounded-full transition-all ${
-                    idx === active ? "w-8 bg-white" : "w-2.5 bg-white/50 hover:bg-white/80"
+                    idx === active ? "w-8 bg-surface" : "w-2.5 bg-surface/50 hover:bg-surface/80"
                   }`}
                 />
               ))}

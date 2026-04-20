@@ -54,7 +54,7 @@ export function NewsletterSignup() {
           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
           <polyline points="22,6 12,13 2,6" />
         </svg>
-        <p className="text-sm font-bold text-slate-900">Stay in the loop</p>
+        <p className="text-sm font-bold text-app">Stay in the loop</p>
       </div>
       <p className="mb-4 text-xs leading-relaxed text-slate-500">
         Get the latest construction cost insights and estimation guides straight to your inbox.
@@ -77,7 +77,7 @@ export function NewsletterSignup() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             disabled={status === "loading"}
-            className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-sky-400 transition placeholder:text-slate-400 focus:ring-2 disabled:opacity-50"
+            className="flex-1 rounded-xl border border-app bg-surface px-3 py-2 text-sm outline-none ring-sky-400 transition placeholder:text-slate-400 focus:ring-2 disabled:opacity-50"
           />
           <button
             type="submit"

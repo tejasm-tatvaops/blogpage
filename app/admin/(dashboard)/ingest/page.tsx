@@ -132,14 +132,14 @@ export default function IngestPage() {
   const tabClass = (t: Tab) =>
     `px-4 py-2 text-sm font-medium rounded-t-lg transition ${
       tab === t
-        ? "bg-white border border-b-white text-slate-800 -mb-px z-10 relative"
+        ? "bg-surface border border-b-white text-slate-800 -mb-px z-10 relative"
         : "text-slate-500 hover:text-slate-700"
     }`;
 
   return (
     <div className="mx-auto max-w-3xl p-6">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-slate-900">AI Content Ingestion</h1>
+        <h1 className="text-xl font-semibold text-app">AI Content Ingestion</h1>
         <p className="mt-1 text-sm text-slate-500">
           Feed a URL or paste text — the AI will extract insights and draft content for you.
         </p>
@@ -157,7 +157,7 @@ export default function IngestPage() {
               className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
                 outputType === t
                   ? "border-sky-400 bg-sky-50 text-sky-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  : "border-app bg-surface text-slate-600 hover:border-slate-300"
               }`}
             >
               {t === "short_caption" ? "Short Caption" : t.charAt(0).toUpperCase() + t.slice(1)}
@@ -167,12 +167,12 @@ export default function IngestPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-200 mb-0">
+      <div className="flex gap-1 border-b border-app mb-0">
         <button type="button" onClick={() => setTab("url")} className={tabClass("url")}>URL</button>
         <button type="button" onClick={() => setTab("paste")} className={tabClass("paste")}>Paste / Document</button>
       </div>
 
-      <div className="rounded-b-xl rounded-tr-xl border border-slate-200 bg-white p-5">
+      <div className="rounded-b-xl rounded-tr-xl border border-app bg-surface p-5">
         {tab === "url" ? (
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Article or webpage URL</label>
@@ -217,7 +217,7 @@ export default function IngestPage() {
 
       {/* Status + preview */}
       {(job || polling) && (
-        <div className="mt-6 rounded-xl border border-slate-200 bg-white">
+        <div className="mt-6 rounded-xl border border-app bg-surface">
           <div className="border-b border-slate-100 px-5 py-3">
             <div className="flex items-center gap-2">
               {polling && (
@@ -246,7 +246,7 @@ export default function IngestPage() {
             <div className="px-5 py-5 space-y-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">AI Title</p>
-                <p className="mt-1 text-base font-medium text-slate-900">{jobDetail.ai_title}</p>
+                <p className="mt-1 text-base font-medium text-app">{jobDetail.ai_title}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Summary</p>
@@ -266,7 +266,7 @@ export default function IngestPage() {
               )}
               <div className="flex flex-wrap gap-1.5">
                 {(jobDetail.ai_tags ?? []).map((tag) => (
-                  <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs text-slate-600">
+                  <span key={tag} className="rounded-full border border-app bg-subtle px-2.5 py-0.5 text-xs text-slate-600">
                     {tag}
                   </span>
                 ))}

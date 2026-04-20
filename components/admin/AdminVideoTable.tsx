@@ -98,7 +98,7 @@ function AddVideoForm({ onCreated }: AddVideoFormProps) {
     }
   };
 
-  const inputClass = "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400";
+  const inputClass = "w-full rounded-lg border border-app bg-surface px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400";
 
   return (
     <div>
@@ -115,7 +115,7 @@ function AddVideoForm({ onCreated }: AddVideoFormProps) {
       {open && (
         <form
           onSubmit={handleSubmit}
-          className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+          className="mb-6 rounded-xl border border-app bg-surface p-5 shadow-sm"
         >
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-800">Add video post</h3>
@@ -377,7 +377,7 @@ function VideoRow({ post, onDelete, onTogglePublish }: {
   };
 
   return (
-    <tr className="group border-b border-slate-100 hover:bg-slate-50">
+    <tr className="group border-b border-slate-100 hover:bg-subtle">
       {/* Thumbnail */}
       <td className="py-3 pl-4 pr-3 w-20">
         {post.thumbnailUrl ? (
@@ -397,7 +397,7 @@ function VideoRow({ post, onDelete, onTogglePublish }: {
       {/* Title + meta */}
       <td className="py-3 pr-4">
         <div className="flex flex-col gap-0.5">
-          <Link href={`/shorts/${post.slug}`} target="_blank" className="text-sm font-medium text-slate-900 hover:text-slate-600 line-clamp-1">
+          <Link href={`/shorts/${post.slug}`} target="_blank" className="text-sm font-medium text-app hover:text-slate-600 line-clamp-1">
             {post.title}
           </Link>
           <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
@@ -480,10 +480,10 @@ export function AdminVideoTable({ initialPosts }: AdminVideoTableProps) {
     <div className="space-y-5">
       <AddVideoForm onCreated={handleCreated} />
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-app bg-surface">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-50">
+            <tr className="border-b border-slate-100 bg-subtle">
               <th className="py-3 pl-4 pr-3 text-left text-[10px] font-semibold uppercase tracking-widest text-slate-400 w-20">Thumb</th>
               <th className="py-3 pr-4 text-left text-[10px] font-semibold uppercase tracking-widest text-slate-400">Title</th>
               <th className="py-3 pr-4 text-center text-[10px] font-semibold uppercase tracking-widest text-slate-400">Views</th>

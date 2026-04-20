@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
         <UnhandledRejectionGuard />
-        <div className="min-h-screen bg-white text-slate-900">
+        <div className="min-h-screen bg-app text-app">
           <Navbar />
           <main>{children}</main>
         </div>

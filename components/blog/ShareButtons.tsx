@@ -68,7 +68,7 @@ export function ShareButtons({
   };
 
   const btnClass =
-    "flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50";
+    "flex items-center gap-1.5 rounded-full border border-app bg-surface px-3 py-2 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-subtle";
 
   return (
     <div className="flex flex-wrap items-center gap-2">

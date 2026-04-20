@@ -199,7 +199,7 @@ export function ForumTable() {
         {/* Page header */}
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold text-slate-900">Forums</h1>
+            <h1 className="text-lg font-semibold text-app">Forums</h1>
             <p className="text-sm text-slate-500">{total} posts total</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -207,7 +207,7 @@ export function ForumTable() {
               type="button"
               onClick={onAutopopulate}
               disabled={isAutopopulating}
-              className="rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200 hover:text-slate-900 disabled:opacity-50"
+              className="rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200 hover:text-app disabled:opacity-50"
             >
               {isAutopopulating ? "Populating…" : "AutoPopulate"}
             </button>
@@ -267,19 +267,19 @@ export function ForumTable() {
 
         {/* Table */}
         {loading ? (
-          <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-4">
+          <div className="space-y-2 rounded-xl border border-app bg-surface p-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="h-9 animate-pulse rounded-md bg-slate-100" />
             ))}
           </div>
         ) : posts.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-400">
+          <div className="rounded-xl border border-dashed border-app p-10 text-center text-sm text-slate-400">
             No forum posts found.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="overflow-x-auto rounded-xl border border-app">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-white">
+              <thead className="bg-surface">
                 <tr>
                   <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Title</th>
                   <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">Quality</th>
@@ -289,7 +289,7 @@ export function ForumTable() {
                   <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Created</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-slate-100 bg-surface">
                 {posts.map((post) => {
                   const isSelected = selectedPost?.id === post.id;
                   return (
@@ -301,7 +301,7 @@ export function ForumTable() {
                           ? "bg-violet-50"
                           : post.is_featured
                           ? "bg-amber-50 hover:bg-amber-100"
-                          : "hover:bg-slate-50"
+                          : "hover:bg-subtle"
                       }`}
                     >
                       <td className="px-4 py-2.5 text-slate-800">

@@ -73,7 +73,8 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Blogs",    href: "/admin/blog",     icon: <IconBlogs /> },
       { label: "Forums",   href: "/admin/forums",   icon: <IconForums /> },
       { label: "Comments", href: "/admin/comments", icon: <IconComments /> },
-      { label: "Videos",    href: "/admin/videos",    icon: <IconVideos /> },
+      { label: "Videos",         href: "/admin/videos",   icon: <IconVideos /> },
+      { label: "Tatva Inshorts", href: "/admin/inshorts", icon: <IconVideos /> },
       { label: "Tutorials", href: "/admin/tutorials", icon: <IconBlogs /> },
     ],
   },
@@ -105,8 +106,8 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
       title={collapsed ? item.label : undefined}
       className={`group flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors ${
         isActive
-          ? "bg-slate-100 font-medium text-slate-900"
-          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          ? "bg-slate-100 font-medium text-app"
+          : "text-slate-600 hover:bg-subtle hover:text-app"
       } ${collapsed ? "justify-center px-2" : ""}`}
     >
       <span className={`shrink-0 ${isActive ? "text-slate-800" : "text-slate-400 group-hover:text-slate-600"}`}>
@@ -125,12 +126,12 @@ export function AdminSidebar() {
 
   return (
     <aside
-      className={`flex shrink-0 flex-col border-r border-slate-200 bg-white transition-all duration-200 ${
+      className={`flex shrink-0 flex-col border-r border-app bg-surface transition-all duration-200 ${
         collapsed ? "w-[52px]" : "w-[210px]"
       }`}
     >
       {/* Logo / workspace */}
-      <div className={`flex h-14 items-center border-b border-slate-200 px-3 ${collapsed ? "justify-center" : "gap-2.5"}`}>
+      <div className={`flex h-14 items-center border-b border-app px-3 ${collapsed ? "justify-center" : "gap-2.5"}`}>
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-900 text-xs font-bold text-white">
           T
         </div>
@@ -161,12 +162,12 @@ export function AdminSidebar() {
       </nav>
 
       {/* Collapse toggle */}
-      <div className="border-t border-slate-200 p-2">
+      <div className="border-t border-app p-2">
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={`flex w-full items-center rounded-lg px-2.5 py-1.5 text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 ${
+          className={`flex w-full items-center rounded-lg px-2.5 py-1.5 text-slate-400 transition hover:bg-subtle hover:text-slate-600 ${
             collapsed ? "justify-center" : "gap-2"
           }`}
         >

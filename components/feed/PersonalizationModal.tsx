@@ -146,7 +146,7 @@ export function PersonalizationModal({ isOpen, onClose, onSaved }: Props) {
       >
         <div
           ref={dialogRef}
-          className="relative flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-w-lg sm:rounded-2xl"
+          className="relative flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface shadow-2xl sm:max-w-lg sm:rounded-2xl"
         >
           {/* ── Close button ──────────────────────────────────────── */}
           <button
@@ -176,7 +176,7 @@ export function PersonalizationModal({ isOpen, onClose, onSaved }: Props) {
             <div className="mb-6 pr-6">
               <h2
                 id="pref-modal-title"
-                className="text-xl font-bold tracking-tight text-slate-900"
+                className="text-xl font-bold tracking-tight text-app"
               >
                 Personalize Your Feed
               </h2>
@@ -219,7 +219,7 @@ export function PersonalizationModal({ isOpen, onClose, onSaved }: Props) {
             <button
               type="button"
               onClick={handleContinueWithout}
-              className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:flex-none"
+              className="flex-1 rounded-lg border border-app bg-surface px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-subtle sm:flex-none"
             >
               Continue Without Login
             </button>

@@ -52,7 +52,7 @@ export default async function TutorialsPage({
     <div className="mx-auto max-w-5xl px-4 py-10">
       {/* Header */}
       <div className="mb-10 text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="text-3xl font-bold tracking-tight text-app sm:text-4xl">
           Tutorials & Guides
         </h1>
         <p className="mx-auto mt-3 max-w-2xl text-slate-500">
@@ -70,7 +70,7 @@ export default async function TutorialsPage({
               <Link
                 key={path._id.toString()}
                 href={`/tutorials?path=${path.slug}`}
-                className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-sky-200 hover:shadow"
+                className="group rounded-xl border border-app bg-surface p-5 shadow-sm transition hover:border-sky-200 hover:shadow"
               >
                 <h3 className="font-semibold text-slate-800 group-hover:text-sky-700">
                   {path.title}
@@ -97,7 +97,7 @@ export default async function TutorialsPage({
               className={`rounded-full border px-4 py-1.5 text-sm font-medium capitalize transition ${
                 active
                   ? "border-sky-400 bg-sky-50 text-sky-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  : "border-app bg-surface text-slate-600 hover:border-slate-300"
               }`}
             >
               {d}
@@ -116,7 +116,7 @@ export default async function TutorialsPage({
             <Link
               key={t._id.toString()}
               href={`/tutorials/${t.slug}`}
-              className="group flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-sky-200 hover:shadow"
+              className="group flex flex-col rounded-xl border border-app bg-surface p-5 shadow-sm transition hover:border-sky-200 hover:shadow"
             >
               <div className="mb-3 flex items-center gap-2">
                 <span

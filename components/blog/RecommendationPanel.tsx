@@ -78,7 +78,7 @@ export function RecommendationPanel({ currentPost, allPosts }: Props) {
   if (!mounted || recs.length === 0) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-white">
+    <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-surface">
       <div className="flex items-center gap-2 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 px-4 py-3.5">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500" aria-hidden>
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />

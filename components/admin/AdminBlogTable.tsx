@@ -195,7 +195,7 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
     <section className="mx-auto w-full max-w-[1500px] px-6 py-6">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">Blogs</h1>
+          <h1 className="text-lg font-semibold text-app">Blogs</h1>
           <p className="text-sm text-slate-500">{posts.length} posts</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -203,7 +203,7 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
             type="button"
             onClick={onAutopopulate}
             disabled={isAutopopulating}
-            className="rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200 hover:text-slate-900 disabled:opacity-50"
+            className="rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200 hover:text-app disabled:opacity-50"
           >
             {isAutopopulating ? "Populating…" : "AutoPopulate"}
           </button>
@@ -223,7 +223,7 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
             type="button"
             onClick={onGenerateBulk}
             disabled={isBulkGenerating}
-            className="rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200 hover:text-slate-900 disabled:opacity-50"
+            className="rounded-md border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200 hover:text-app disabled:opacity-50"
           >
             {isBulkGenerating ? "Generating…" : "Generate Blogs"}
           </button>
@@ -278,13 +278,13 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
+        <div className="rounded-xl border border-dashed border-app p-8 text-center text-sm text-slate-400">
           {posts.length === 0 ? "No posts found." : "No posts match your filter."}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
+        <div className="overflow-x-auto rounded-xl border border-app">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-white">
+            <thead className="bg-surface">
               <tr>
                 <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Title
@@ -297,9 +297,9 @@ export function AdminBlogTable({ posts }: AdminBlogTableProps) {
                 <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-slate-100 bg-surface">
               {filtered.map((post) => (
-                <tr key={post.id} className="hover:bg-slate-50">
+                <tr key={post.id} className="hover:bg-subtle">
                   <td className="px-4 py-2.5 text-sm text-slate-800">
                     <Link
                       href={`/blog/${post.slug}`}

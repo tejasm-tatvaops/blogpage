@@ -125,7 +125,7 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
               </span>
 
               {/* Title */}
-              <h1 className="mt-4 text-[2.1rem] font-extrabold leading-[1.18] tracking-[-0.02em] text-slate-900 sm:text-5xl">
+              <h1 className="mt-4 text-[2.1rem] font-extrabold leading-[1.18] tracking-[-0.02em] text-app sm:text-5xl">
                 {post.title}
               </h1>
 
@@ -209,7 +209,7 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
                   <Link
                     key={`${post.id}-detail-${tag}`}
                     href={`/tags/${encodeURIComponent(tag)}`}
-                    className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                    className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-200 hover:text-app"
                   >
                     #{tag}
                   </Link>
@@ -218,7 +218,7 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
             )}
 
             {/* ── Article body ── */}
-            <div className="prose prose-lg max-w-none prose-slate prose-headings:font-bold prose-headings:tracking-tight prose-p:leading-[1.85] prose-a:text-sky-700 prose-a:no-underline prose-a:font-medium hover:prose-a:underline prose-code:rounded-md prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:text-sm prose-code:text-slate-800 prose-pre:overflow-x-auto prose-pre:rounded-2xl prose-pre:bg-slate-950 prose-pre:p-5 prose-pre:text-slate-100 prose-blockquote:not-italic prose-blockquote:border-l-4 prose-blockquote:border-sky-300 prose-blockquote:bg-sky-50/60 prose-blockquote:rounded-r-xl prose-blockquote:py-1 prose-blockquote:text-slate-700 prose-img:rounded-xl prose-img:shadow-md prose-table:text-sm prose-th:bg-slate-50 prose-thead:border-slate-200 prose-tr:border-slate-100">
+            <div className="prose prose-lg max-w-none prose-slate prose-headings:font-bold prose-headings:tracking-tight prose-p:leading-[1.85] prose-a:text-sky-700 prose-a:no-underline prose-a:font-medium hover:prose-a:underline prose-code:rounded-md prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:text-sm prose-code:text-slate-800 prose-pre:overflow-x-auto prose-pre:rounded-2xl prose-pre:bg-slate-950 prose-pre:p-5 prose-pre:text-slate-100 prose-blockquote:not-italic prose-blockquote:border-l-4 prose-blockquote:border-sky-300 prose-blockquote:bg-sky-50/60 prose-blockquote:rounded-r-xl prose-blockquote:py-1 prose-blockquote:text-slate-700 prose-img:rounded-xl prose-img:shadow-md prose-table:text-sm prose-th:bg-subtle prose-thead:border-app prose-tr:border-slate-100">
               <MarkdownRenderer content={mainContent} />
             </div>
 
@@ -239,7 +239,7 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
                     <li key={thread.id}>
                       <Link
                         href={`/forums/${thread.slug}`}
-                        className="group flex items-start gap-3 rounded-xl border border-indigo-100 bg-white px-4 py-3 transition hover:border-indigo-300 hover:shadow-sm"
+                        className="group flex items-start gap-3 rounded-xl border border-indigo-100 bg-surface px-4 py-3 transition hover:border-indigo-300 hover:shadow-sm"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0 text-indigo-400" aria-hidden>
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -286,7 +286,7 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
 
             {/* ── Comments ── */}
             <TopicActiveUsersStrip title="People active on this topic" users={topicUsers} />
-            <div className="mt-10 rounded-2xl border border-slate-100 bg-white p-1">
+            <div className="mt-10 rounded-2xl border border-slate-100 bg-surface p-1">
               <CommentSection slug={post.slug} initialComments={comments} />
             </div>
           </article>

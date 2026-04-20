@@ -32,14 +32,14 @@ export default async function ReviewQueuePage() {
   return (
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-slate-900">Revision Review Queue</h1>
+        <h1 className="text-xl font-semibold text-app">Revision Review Queue</h1>
         <p className="mt-1 text-sm text-slate-500">
           Proposed article edits awaiting review. Only Expert+ users and admins can approve.
         </p>
       </div>
 
       {revisions.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-slate-400">
+        <div className="rounded-xl border border-app bg-surface p-10 text-center text-slate-400">
           No pending revisions. All caught up.
         </div>
       ) : (
@@ -47,7 +47,7 @@ export default async function ReviewQueuePage() {
           {revisions.map((rev) => (
             <div
               key={rev._id}
-              className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-4"
+              className="flex items-center justify-between rounded-xl border border-app bg-surface px-5 py-4"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-slate-800">
@@ -74,7 +74,7 @@ export default async function ReviewQueuePage() {
               <div className="ml-4 flex shrink-0 gap-2">
                 <a
                   href={`/blog/${rev.blog_slug}/revisions`}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                  className="rounded-lg border border-app bg-surface px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-subtle"
                 >
                   View Diff
                 </a>

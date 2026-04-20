@@ -92,7 +92,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
       <main className="mx-auto min-h-screen w-full max-w-3xl px-4 py-10">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-2 text-sm text-slate-500" aria-label="Breadcrumb">
-          <Link href="/forums" className="transition hover:text-slate-900">
+          <Link href="/forums" className="transition hover:text-app">
             Forums
           </Link>
           {post.tags[0] && (
@@ -100,7 +100,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
               <span aria-hidden>/</span>
               <Link
                 href={`/forums?tag=${encodeURIComponent(post.tags[0])}`}
-                className="transition hover:text-slate-900"
+                className="transition hover:text-app"
               >
                 #{post.tags[0]}
               </Link>
@@ -150,7 +150,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
         )}
 
         {/* Title */}
-        <h1 className="mb-3 text-3xl font-extrabold leading-tight text-slate-900">{post.title}</h1>
+        <h1 className="mb-3 text-3xl font-extrabold leading-tight text-app">{post.title}</h1>
 
         {/* Meta */}
         <div className="mb-6 flex flex-wrap items-center gap-3 text-sm text-slate-500">
@@ -185,7 +185,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
         )}
 
         {/* Engagement bar */}
-        <div className="-mx-4 mb-8 border-y border-slate-200 bg-white px-4 py-3">
+        <div className="-mx-4 mb-8 border-y border-app bg-surface px-4 py-3">
           <ForumVoteBar
             slug={post.slug}
             initialUpvotes={post.upvote_count}
@@ -214,7 +214,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
                 <li key={blog.id}>
                   <Link
                     href={`/blog/${blog.slug}`}
-                    className="group flex items-start gap-3 rounded-xl border border-sky-100 bg-white px-4 py-3 transition hover:border-sky-300 hover:shadow-sm"
+                    className="group flex items-start gap-3 rounded-xl border border-sky-100 bg-surface px-4 py-3 transition hover:border-sky-300 hover:shadow-sm"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0 text-sky-400" aria-hidden>
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -243,10 +243,10 @@ export default async function ForumThreadPage({ params }: PageProps) {
         />
 
         {/* Footer nav */}
-        <div className="mt-12 border-t border-slate-200 pt-6">
+        <div className="mt-12 border-t border-app pt-6">
           <Link
             href="/forums"
-            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slate-900"
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-app"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />

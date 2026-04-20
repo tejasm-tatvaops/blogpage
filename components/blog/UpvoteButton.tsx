@@ -43,7 +43,7 @@ export function UpvoteButton({ slug, initialCount }: UpvoteButtonProps) {
       className={`group flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition
         ${upvoted
           ? "border-sky-200 bg-sky-50 text-sky-700 cursor-default"
-          : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
+          : "border-app bg-surface text-slate-700 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
         } disabled:opacity-70`}
     >
       {/* Thumbs-up icon */}

@@ -51,8 +51,6 @@ export async function generateMetadata({
   };
 }
 
-// ─── Video JSON-LD (VideoObject schema) ──────────────────────────────────────
-
 function buildVideoJsonLd(post: NonNullable<Awaited<ReturnType<typeof getVideoPostBySlug>>>) {
   return {
     "@context": "https://schema.org",
@@ -78,8 +76,6 @@ function buildVideoJsonLd(post: NonNullable<Awaited<ReturnType<typeof getVideoPo
     ],
   };
 }
-
-// ─── Page component ───────────────────────────────────────────────────────────
 
 export default async function ShortDetailPage({
   params,

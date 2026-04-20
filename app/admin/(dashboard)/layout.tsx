@@ -10,11 +10,11 @@ export default async function AdminDashboardLayout({
   await requireAdminPageAccess();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-subtle">
       <AdminSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <AdminTopBar />
-        <main className="flex-1 overflow-auto bg-slate-50">{children}</main>
+        <main className="flex-1 overflow-auto bg-subtle">{children}</main>
       </div>
     </div>
   );

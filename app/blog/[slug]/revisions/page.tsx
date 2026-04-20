@@ -24,7 +24,7 @@ const STATUS_BADGE: Record<string, string> = {
   pending:    "bg-amber-50 text-amber-700 border-amber-200",
   approved:   "bg-emerald-50 text-emerald-700 border-emerald-200",
   rejected:   "bg-red-50 text-red-600 border-red-200",
-  rolled_back:"bg-slate-100 text-slate-600 border-slate-200",
+  rolled_back:"bg-slate-100 text-slate-600 border-app",
 };
 
 export default async function RevisionHistoryPage({
@@ -48,7 +48,7 @@ export default async function RevisionHistoryPage({
         <a href={`/blog/${decodedSlug}`} className="text-sm text-sky-600 hover:underline">
           ← Back to article
         </a>
-        <h1 className="mt-4 text-2xl font-bold text-slate-900">Revision History</h1>
+        <h1 className="mt-4 text-2xl font-bold text-app">Revision History</h1>
         <p className="mt-1 text-sm text-slate-500">
           {(blog as unknown as { title: string }).title}
         </p>
@@ -67,14 +67,14 @@ export default async function RevisionHistoryPage({
       </div>
 
       {revisions.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-slate-400">
+        <div className="rounded-xl border border-app bg-surface p-10 text-center text-slate-400">
           No revisions yet. Be the first to suggest an improvement.
         </div>
       ) : (
-        <ol className="relative border-l border-slate-200">
+        <ol className="relative border-l border-app">
           {(revisions as unknown as Revision[]).map((rev) => (
             <li key={rev._id.toString()} className="mb-6 ml-5">
-              <span className="absolute -left-2 flex h-4 w-4 items-center justify-center rounded-full bg-white ring-2 ring-slate-200">
+              <span className="absolute -left-2 flex h-4 w-4 items-center justify-center rounded-full bg-surface ring-2 ring-slate-200">
                 {rev.is_live ? (
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 ) : (
@@ -82,7 +82,7 @@ export default async function RevisionHistoryPage({
                 )}
               </span>
 
-              <div className="rounded-xl border border-slate-200 bg-white px-5 py-4">
+              <div className="rounded-xl border border-app bg-surface px-5 py-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${

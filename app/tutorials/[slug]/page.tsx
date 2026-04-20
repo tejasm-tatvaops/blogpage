@@ -64,7 +64,7 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
           <span className="text-xs text-slate-400">{t.estimated_minutes} min read</span>
           <span className="text-xs text-slate-400">By {t.author}</span>
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t.title}</h1>
+        <h1 className="text-2xl font-bold text-app sm:text-3xl">{t.title}</h1>
         <p className="mt-3 text-slate-500">{t.excerpt}</p>
       </div>
 
@@ -93,7 +93,7 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
             <Link
               key={tag}
               href={`/tutorials?tag=${encodeURIComponent(tag)}`}
-              className="rounded-full border border-slate-200 bg-slate-50 px-3 py-0.5 text-xs text-slate-600 hover:bg-slate-100 transition"
+              className="rounded-full border border-app bg-subtle px-3 py-0.5 text-xs text-slate-600 hover:bg-slate-100 transition"
             >
               {tag}
             </Link>
@@ -103,7 +103,7 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
 
       {/* Linked blog */}
       {t.linked_blog_slug && (
-        <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4">
+        <div className="mt-8 rounded-xl border border-app bg-subtle px-5 py-4">
           <p className="text-sm text-slate-500">
             Want to go deeper?{" "}
             <Link href={`/blog/${t.linked_blog_slug}`} className="font-medium text-sky-600 hover:underline">
@@ -114,7 +114,7 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
       )}
 
       {/* Footer navigation */}
-      <div className="mt-10 border-t border-slate-200 pt-6">
+      <div className="mt-10 border-t border-app pt-6">
         <Link href="/tutorials" className="text-sm font-medium text-sky-600 hover:underline">
           ← Browse all tutorials
         </Link>

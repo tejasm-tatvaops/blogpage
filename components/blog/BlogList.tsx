@@ -276,7 +276,7 @@ export function BlogList({
     <section className="mx-auto w-full max-w-[1500px] px-6 py-12">
       <header className="mb-10 flex flex-col gap-6">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">TatvaOps Blog</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-app sm:text-5xl">TatvaOps Blog</h1>
           <p className="mt-3 max-w-3xl text-base leading-8 text-slate-600">
             Tactical insights on BOQ workflows, construction estimation, procurement strategy, and
             vendor decisions to help teams execute with confidence.
@@ -295,7 +295,7 @@ export function BlogList({
           <select
             name="sort"
             defaultValue={sort}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-sky-500 transition focus:ring-2"
+            className="rounded-lg border border-slate-300 bg-surface px-3 py-2 text-sm text-slate-700 outline-none ring-sky-500 transition focus:ring-2"
           >
             <option value="latest">Latest</option>
             <option value="most_viewed">Most viewed</option>
@@ -361,7 +361,7 @@ export function BlogList({
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 pb-6">
+        <div className="flex flex-wrap items-center gap-3 border-b border-app pb-6">
           <div className="flex flex-wrap gap-2.5">
             <Link
               href={buildBlogHref({ query, sort })}
@@ -388,7 +388,7 @@ export function BlogList({
           <button
             type="button"
             onClick={() => setShowPersonalizationModal(true)}
-            className="ml-auto flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+            className="ml-auto flex items-center gap-1.5 rounded-full border border-app bg-surface px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-subtle hover:text-app"
           >
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
               <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />

@@ -95,7 +95,7 @@ export function AiAssistant({ slug }: AiAssistantProps) {
           </svg>
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-bold text-slate-900">Ask AI about this article</p>
+          <p className="text-[13px] font-bold text-app">Ask AI about this article</p>
           <p className="text-[11px] text-slate-500">Summaries, explanations, Q&amp;A — powered by AI</p>
         </div>
         <svg
@@ -117,7 +117,7 @@ export function AiAssistant({ slug }: AiAssistantProps) {
                 key={m}
                 onClick={() => quickAction(m)}
                 disabled={loading}
-                className="rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-50 disabled:opacity-50"
+                className="rounded-lg border border-indigo-200 bg-surface px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-50 disabled:opacity-50"
               >
                 {m === "summarize" ? "Summarize article" : "Explain simply (ELI5)"}
               </button>
@@ -133,7 +133,7 @@ export function AiAssistant({ slug }: AiAssistantProps) {
               onKeyDown={(e) => e.key === "Enter" && submit("ask")}
               placeholder="Ask a question about this article…"
               maxLength={500}
-              className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 shadow-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              className="min-w-0 flex-1 rounded-xl border border-app bg-surface px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 shadow-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
             />
             <button
               onClick={() => submit("ask")}
@@ -152,7 +152,7 @@ export function AiAssistant({ slug }: AiAssistantProps) {
 
           {/* Answer */}
           {(answer || loading) && (
-            <div className="mt-4 rounded-xl border border-indigo-100 bg-white p-4">
+            <div className="mt-4 rounded-xl border border-indigo-100 bg-surface p-4">
               {answer ? (
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
                   {answer}
