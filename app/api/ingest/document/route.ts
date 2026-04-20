@@ -16,7 +16,7 @@ import type { IngestionSourceType, IngestionOutputType } from "@/models/ContentI
 const schema = z.object({
   extracted_text: z.string().trim().min(50).max(200_000),
   filename:       z.string().trim().max(255).optional(),
-  source_type:    z.enum(["pdf", "doc", "paste"]).default("paste"),
+  source_type:    z.enum(["pdf", "doc", "paste", "research_paper"]).default("paste"),
   output_type:    z.enum(["blog", "forum", "short_caption", "tutorial"]).optional(),
 });
 

@@ -13,9 +13,11 @@ import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
 export const TUTORIAL_DIFFICULTIES = ["beginner", "intermediate", "advanced"] as const;
 export const TUTORIAL_CONTENT_TYPES = ["article", "video", "hybrid"] as const;
+export const TUTORIAL_BLOCK_TYPES = ["quiz", "exercise", "challenge"] as const;
 
 export type TutorialDifficulty = (typeof TUTORIAL_DIFFICULTIES)[number];
 export type TutorialContentType = (typeof TUTORIAL_CONTENT_TYPES)[number];
+export type TutorialBlockType = (typeof TUTORIAL_BLOCK_TYPES)[number];
 
 const tutorialSchema = new mongoose.Schema(
   {
@@ -43,6 +45,20 @@ const tutorialSchema = new mongoose.Schema(
 
     // Estimated reading/completion time in minutes
     estimated_minutes: { type: Number, default: 5, min: 1 },
+    interactive_blocks: {
+      type: [
+        {
+          block_id: { type: String, required: true, trim: true, maxlength: 60 },
+          type: { type: String, enum: TUTORIAL_BLOCK_TYPES, required: true },
+          title: { type: String, required: true, trim: true, maxlength: 200 },
+          prompt: { type: String, required: true, trim: true, maxlength: 4000 },
+          options: { type: [String], default: [] },
+          answer_index: { type: Number, default: null, min: 0, max: 5 },
+          explanation: { type: String, default: null, trim: true, maxlength: 1000 },
+        },
+      ],
+      default: [],
+    },
 
     published:  { type: Boolean, default: false, index: true },
     deleted_at: { type: Date, default: null },

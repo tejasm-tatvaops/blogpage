@@ -7,9 +7,16 @@ type Progress = {
   completed: boolean;
   totalSteps: number;
   completedSteps: number;
+  completedStepKeys?: string[];
 };
 
-export function TutorialProgressCard({ slug }: { slug: string }) {
+export function TutorialProgressCard({
+  slug,
+  onProgressChange,
+}: {
+  slug: string;
+  onProgressChange?: (progress: Progress | null) => void;
+}) {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
@@ -21,7 +28,10 @@ export function TutorialProgressCard({ slug }: { slug: string }) {
       try {
         const res = await fetch(`/api/tutorials/${encodeURIComponent(slug)}/progress`, { cache: "no-store" });
         const data = (await res.json()) as { progress?: Progress };
-        if (active) setProgress(data.progress ?? null);
+        if (active) {
+          setProgress(data.progress ?? null);
+          onProgressChange?.(data.progress ?? null);
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -45,6 +55,13 @@ export function TutorialProgressCard({ slug }: { slug: string }) {
           ? { ...prev, completed: true, completionPercent: 100, completedSteps: Math.max(prev.totalSteps, prev.completedSteps) }
           : { completionPercent: 100, completed: true, totalSteps: 1, completedSteps: 1 },
       );
+      onProgressChange?.({
+        completionPercent: 100,
+        completed: true,
+        totalSteps: Math.max(progress?.totalSteps ?? 1, progress?.completedSteps ?? 1),
+        completedSteps: Math.max(progress?.totalSteps ?? 1, progress?.completedSteps ?? 1),
+        completedStepKeys: progress?.completedStepKeys ?? [],
+      });
     } finally {
       setWorking(false);
     }

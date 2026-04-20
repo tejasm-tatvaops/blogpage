@@ -26,6 +26,39 @@ type ObservabilityPayload = {
     dwell_events_per_sec: number;
     skip_rate: number;
   };
+  recommendations: {
+    impressions_last_hour: number;
+    clicks_last_hour: number;
+    ctr_last_hour: number;
+    position_performance: Array<{
+      position: number;
+      impressions: number;
+      clicks: number;
+      ctr: number;
+    }>;
+    quality: {
+      ranking_runs: number;
+      by_scope: { blog: number; tutorial: number };
+      avg_candidate_count: number;
+      avg_selected_count: number;
+      avg_behavioral_influence: number;
+      avg_freshness_influence: number;
+      avg_diversity_unique_primary_tags: number;
+    };
+  };
+  ask_ai: {
+    total_requests: number;
+    citation_compliance_rate: number;
+    uncited_correction_rate: number;
+    confidence_distribution: { high: number; medium: number; low: number };
+    conflict_detection_rate: number;
+    retrieval_source_mix_avg: {
+      tutorial: number;
+      blog: number;
+      forum: number;
+      short: number;
+    };
+  };
   latency: {
     feed_request_total_ms: LatencyStats;
     feed_cache_hit_total_ms: LatencyStats;
@@ -239,6 +272,28 @@ export default function AdminObservabilityDashboard() {
           </div>
         </div>
 
+        <div className="rounded-2xl border border-app bg-surface p-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Recommendation quality</p>
+          <div className="mt-3 space-y-2 text-sm text-slate-700">
+            <div className="flex items-center justify-between"><span>Impressions (1h)</span><span className="font-semibold">{fmtInt(data.recommendations.impressions_last_hour)}</span></div>
+            <div className="flex items-center justify-between"><span>Clicks (1h)</span><span className="font-semibold">{fmtInt(data.recommendations.clicks_last_hour)}</span></div>
+            <div className="flex items-center justify-between"><span>CTR (1h)</span><span className="font-semibold">{fmtPct(data.recommendations.ctr_last_hour * 100)}</span></div>
+            <div className="flex items-center justify-between"><span>Ranking runs</span><span className="font-semibold">{fmtInt(data.recommendations.quality.ranking_runs)}</span></div>
+            <div className="flex items-center justify-between"><span>Avg diversity tags</span><span className="font-semibold">{fmtRate(data.recommendations.quality.avg_diversity_unique_primary_tags)}</span></div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-app bg-surface p-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Ask AI quality</p>
+          <div className="mt-3 space-y-2 text-sm text-slate-700">
+            <div className="flex items-center justify-between"><span>Requests</span><span className="font-semibold">{fmtInt(data.ask_ai.total_requests)}</span></div>
+            <div className="flex items-center justify-between"><span>Citation compliance</span><span className="font-semibold">{fmtPct(data.ask_ai.citation_compliance_rate * 100)}</span></div>
+            <div className="flex items-center justify-between"><span>Correction rate</span><span className="font-semibold">{fmtPct(data.ask_ai.uncited_correction_rate * 100)}</span></div>
+            <div className="flex items-center justify-between"><span>Conflict detections</span><span className="font-semibold">{fmtPct(data.ask_ai.conflict_detection_rate * 100)}</span></div>
+            <div className="flex items-center justify-between"><span>High confidence</span><span className="font-semibold">{fmtPct(data.ask_ai.confidence_distribution.high * 100)}</span></div>
+          </div>
+        </div>
+
         <div className="rounded-2xl border border-app bg-surface p-4 xl:col-span-2">
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Feed latency (before vs after)</p>
           <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -278,6 +333,20 @@ export default function AdminObservabilityDashboard() {
             <div className="rounded-lg bg-subtle px-2 py-1.5">build total: {fmtMs(data.latency.feed_stage_ms.build_feed_total.p95)} p95</div>
             <div className="rounded-lg bg-subtle px-2 py-1.5">write: {fmtMs(data.latency.feed_stage_ms.cache_write.p95)} p95</div>
             <div className="rounded-lg bg-subtle px-2 py-1.5">event: {fmtMs(data.latency.feed_stage_ms.event_enqueue.p95)} p95</div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-app bg-surface p-4 xl:col-span-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Recommendation position performance (1h)</p>
+          <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-700 md:grid-cols-6">
+            {data.recommendations.position_performance.map((item) => (
+              <div key={item.position} className="rounded-lg bg-subtle px-2 py-1.5">
+                pos {item.position}: {fmtPct(item.ctr * 100)} ({fmtInt(item.clicks)}/{fmtInt(item.impressions)})
+              </div>
+            ))}
+            {data.recommendations.position_performance.length === 0 && (
+              <div className="rounded-lg bg-subtle px-2 py-1.5 text-slate-500">No recommendation position data yet.</div>
+            )}
           </div>
         </div>
 

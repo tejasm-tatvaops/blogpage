@@ -11,7 +11,11 @@ import {
 } from "@/lib/blogService";
 import { getComments } from "@/lib/commentService";
 import { getForumPostByBlogSlug, getRelatedForumPosts, type ForumPost } from "@/lib/forumService";
+import { getTutorials } from "@/lib/tutorialService";
+import { getVideosByTags } from "@/lib/videoService";
 import { getActiveUsersByTopic } from "@/lib/userProfileService";
+import { rankSemanticBlogRecommendations } from "@/lib/semanticRecommendations";
+import { getSystemToggles } from "@/lib/systemToggles";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com";
 
@@ -94,13 +98,25 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   // Fetch the linked forum post first so its slug can be excluded from related forum posts.
   const forumPost = await getForumPostByBlogSlug(post.slug).catch(() => null);
 
-  const [relatedPosts, categories, comments, topicUsers, relatedForumPosts] = await Promise.all([
+  const [relatedPosts, categories, comments, topicUsers, relatedForumPosts, semanticCandidatePosts, tutorialResult, relatedShorts] = await Promise.all([
     getRelatedPosts(post, 4).catch(() => [] as BlogPost[]),
     getCategories().catch(() => [] as string[]),
     getComments(post.id).catch(() => []),
     getActiveUsersByTopic([post.category, ...post.tags], 8).catch(() => []),
     getRelatedForumPosts(post.tags, forumPost?.slug ?? undefined, 4).catch(() => [] as ForumPost[]),
+    getAllPosts({ limit: 120 }).catch(() => [] as BlogPost[]),
+    getTutorials({ tag: post.tags[0] ?? null, limit: 4, includeUnpublished: false }).catch(() => ({ tutorials: [] })),
+    getVideosByTags(post.tags, 4).catch(() => []),
   ]);
+  const recommendationToggles = getSystemToggles();
+  const semanticRecommendations = recommendationToggles.semanticRecommendationsEnabled
+    ? await rankSemanticBlogRecommendations(post, semanticCandidatePosts, 6, {
+        behavioralBoostEnabled: recommendationToggles.behavioralBoostEnabled,
+        recommendationDiversityEnabled: recommendationToggles.recommendationDiversityEnabled,
+        recommendationFreshnessEnabled: recommendationToggles.recommendationFreshnessEnabled,
+        requestId: `blog:${post.slug}`,
+      })
+    : [];
 
   const faqItems = extractFaqItems(post.content);
   const articleJsonLd = buildArticleJsonLd(post, SITE_URL);
@@ -126,11 +142,23 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       <BlogDetail
         post={post}
         relatedPosts={relatedPosts}
+        semanticRecommendations={semanticRecommendations}
         categories={categories}
         comments={comments}
         forumSlug={forumPost?.slug ?? null}
         topicUsers={topicUsers}
         relatedForumPosts={relatedForumPosts}
+        relatedTutorials={(tutorialResult.tutorials as Array<{ slug: string; title: string; excerpt: string; difficulty?: string }>).map((t) => ({
+          slug: t.slug,
+          title: t.title,
+          excerpt: t.excerpt,
+          difficulty: t.difficulty,
+        }))}
+        relatedShorts={relatedShorts.map((item) => ({
+          slug: item.slug,
+          title: item.title,
+          summary: item.summary ?? item.shortCaption,
+        }))}
       />
     </>
   );

@@ -95,8 +95,8 @@ export function AiAssistant({ slug }: AiAssistantProps) {
           </svg>
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-bold text-app">Ask AI about this article</p>
-          <p className="text-[11px] text-slate-500">Summaries, explanations, Q&amp;A — powered by AI</p>
+          <p className="text-[13px] font-bold text-app">Ask AI from platform knowledge</p>
+          <p className="text-[11px] text-slate-500">Grounded in blogs, tutorials, forums, and shorts</p>
         </div>
         <svg
           width="16" height="16" viewBox="0 0 24 24" fill="none"

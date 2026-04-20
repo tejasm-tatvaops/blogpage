@@ -121,6 +121,15 @@ export type CreateTutorialInput = {
   linkedVideoSlug?: string | null;
   linkedBlogSlug?: string | null;
   estimatedMinutes?: number;
+  interactiveBlocks?: Array<{
+    blockId: string;
+    type: "quiz" | "exercise" | "challenge";
+    title: string;
+    prompt: string;
+    options?: string[];
+    answerIndex?: number | null;
+    explanation?: string | null;
+  }>;
   published?: boolean;
   isTestData?: boolean;
 };
@@ -146,6 +155,15 @@ export async function createTutorial(input: CreateTutorialInput) {
     linked_video_slug: input.linkedVideoSlug ?? null,
     linked_blog_slug:  input.linkedBlogSlug ?? null,
     estimated_minutes: input.estimatedMinutes ?? 5,
+    interactive_blocks: (input.interactiveBlocks ?? []).map((block) => ({
+      block_id: block.blockId,
+      type: block.type,
+      title: block.title,
+      prompt: block.prompt,
+      options: (block.options ?? []).slice(0, 6),
+      answer_index: block.answerIndex ?? null,
+      explanation: block.explanation ?? null,
+    })),
     published: input.published ?? false,
     is_test_data: input.isTestData ?? false,
   });
@@ -172,6 +190,19 @@ export async function updateTutorial(id: string, updates: Partial<CreateTutorial
         ...(updates.linkedVideoSlug !== undefined ? { linked_video_slug: updates.linkedVideoSlug } : {}),
         ...(updates.linkedBlogSlug !== undefined ? { linked_blog_slug: updates.linkedBlogSlug } : {}),
         ...(updates.estimatedMinutes !== undefined ? { estimated_minutes: updates.estimatedMinutes } : {}),
+        ...(updates.interactiveBlocks !== undefined
+          ? {
+              interactive_blocks: updates.interactiveBlocks.map((block) => ({
+                block_id: block.blockId,
+                type: block.type,
+                title: block.title,
+                prompt: block.prompt,
+                options: (block.options ?? []).slice(0, 6),
+                answer_index: block.answerIndex ?? null,
+                explanation: block.explanation ?? null,
+              })),
+            }
+          : {}),
       },
     },
     { new: true },

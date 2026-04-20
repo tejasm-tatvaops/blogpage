@@ -9,6 +9,7 @@ import type { IngestionOutputType } from "@/models/ContentIngestionJob";
 const schema = z.object({
   url:         z.string().url().max(2048),
   output_type: z.enum(["blog", "forum", "short_caption", "tutorial"]).optional(),
+  source_type: z.enum(["url", "youtube", "github_repo", "research_paper"]).optional(),
 });
 
 export async function POST(request: Request) {
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
 
   const job = await createIngestionJob({
     initiatorIdentityKey: "admin:system",
-    sourceType: "url",
+    sourceType: (parsed.data.source_type ?? "url") as "url" | "youtube" | "github_repo" | "research_paper",
     sourceUrl:  parsed.data.url,
     outputType: (parsed.data.output_type ?? "blog") as IngestionOutputType,
   });

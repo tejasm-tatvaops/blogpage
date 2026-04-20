@@ -10,7 +10,9 @@ export type FeedEventType =
   | "dwell_time"
   | "skip"
   | "share"
-  | "cross_content_click";
+  | "cross_content_click"
+  | "recommendation_click"
+  | "recommendation_impression";
 
 export type FeedEventInput = {
   identityKey: string;
@@ -44,6 +46,10 @@ export const getFeedMetrics = async (windowHours = 24): Promise<{
   avgDwellMs: number;
   ctr: number;
   likeRate: number;
+  recommendationImpressions: number;
+  recommendationClicks: number;
+  recommendationCtr: number;
+  recommendationPositionPerformance: Array<{ position: number; clicks: number; ctr: number }>;
 }> => {
   await connectToDatabase();
   const cutoff = new Date(Date.now() - windowHours * 3_600_000);
@@ -56,22 +62,62 @@ export const getFeedMetrics = async (windowHours = 24): Promise<{
         clicked: { $sum: { $cond: [{ $eq: ["$event_type", "post_clicked"] }, 1, 0] } },
         liked: { $sum: { $cond: [{ $eq: ["$event_type", "post_liked"] }, 1, 0] } },
         dwellEvents: { $sum: { $cond: [{ $eq: ["$event_type", "dwell_time"] }, 1, 0] } },
+        recommendationImpressions: { $sum: { $cond: [{ $eq: ["$event_type", "recommendation_impression"] }, 1, 0] } },
+        recommendationClicks: { $sum: { $cond: [{ $eq: ["$event_type", "recommendation_click"] }, 1, 0] } },
         totalDwellMs: { $sum: { $cond: [{ $eq: ["$event_type", "dwell_time"] }, { $ifNull: ["$dwell_ms", 0] }, 0] } },
       },
     },
+  ]);
+  const positionRows = await FeedEventModel.aggregate<{ _id: number; impressions: number; clicks: number }>([
+    {
+      $match: {
+        created_at: { $gte: cutoff },
+        event_type: { $in: ["recommendation_click", "recommendation_impression"] },
+        position: { $ne: null },
+      },
+    },
+    {
+      $group: {
+        _id: "$position",
+        impressions: { $sum: { $cond: [{ $eq: ["$event_type", "recommendation_impression"] }, 1, 0] } },
+        clicks: { $sum: { $cond: [{ $eq: ["$event_type", "recommendation_click"] }, 1, 0] } },
+      },
+    },
+    { $sort: { _id: 1 } },
+    { $limit: 8 },
   ]);
 
   const served = Number(agg?.served ?? 0);
   const clicked = Number(agg?.clicked ?? 0);
   const liked = Number(agg?.liked ?? 0);
   const dwellEvents = Number(agg?.dwellEvents ?? 0);
+  const recommendationImpressions = Number(agg?.recommendationImpressions ?? 0);
+  const recommendationClicks = Number(agg?.recommendationClicks ?? 0);
   const totalDwellMs = Number(agg?.totalDwellMs ?? 0);
   const ctr = served > 0 ? clicked / served : 0;
   const likeRate = clicked > 0 ? liked / clicked : 0;
   const avgDwellMs = dwellEvents > 0 ? totalDwellMs / dwellEvents : 0;
+  const recommendationCtr = recommendationImpressions > 0 ? recommendationClicks / recommendationImpressions : 0;
+  const recommendationPositionPerformance = positionRows.map((row) => ({
+    position: Number(row._id),
+    clicks: Number(row.clicks),
+    ctr: Number(row.impressions > 0 ? row.clicks / row.impressions : 0),
+  }));
 
-  logger.info({ served, clicked, liked, ctr, likeRate, avgDwellMs }, "feed metrics snapshot");
-  return { served, clicked, liked, dwellEvents, avgDwellMs, ctr, likeRate };
+  logger.info({ served, clicked, liked, ctr, likeRate, avgDwellMs, recommendationCtr }, "feed metrics snapshot");
+  return {
+    served,
+    clicked,
+    liked,
+    dwellEvents,
+    avgDwellMs,
+    ctr,
+    likeRate,
+    recommendationImpressions,
+    recommendationClicks,
+    recommendationCtr,
+    recommendationPositionPerformance,
+  };
 };
 
 export const getFeedObservabilityHealth = (): {

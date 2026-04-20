@@ -19,6 +19,17 @@ const createSchema = z.object({
   linked_video_slug: z.string().trim().optional(),
   linked_blog_slug:  z.string().trim().optional(),
   estimated_minutes: z.number().int().min(1).max(600).optional(),
+  interactive_blocks: z.array(
+    z.object({
+      block_id: z.string().trim().min(2).max(60),
+      type: z.enum(["quiz", "exercise", "challenge"]),
+      title: z.string().trim().min(3).max(200),
+      prompt: z.string().trim().min(5).max(4000),
+      options: z.array(z.string().trim().min(1).max(240)).max(6).optional(),
+      answer_index: z.number().int().min(0).max(5).optional().nullable(),
+      explanation: z.string().trim().max(1000).optional().nullable(),
+    }),
+  ).max(30).optional(),
   published:  z.boolean().optional(),
 });
 
@@ -65,6 +76,15 @@ export async function POST(request: Request) {
     linkedVideoSlug: parsed.data.linked_video_slug,
     linkedBlogSlug:  parsed.data.linked_blog_slug,
     estimatedMinutes: parsed.data.estimated_minutes,
+    interactiveBlocks: parsed.data.interactive_blocks?.map((block) => ({
+      blockId: block.block_id,
+      type: block.type,
+      title: block.title,
+      prompt: block.prompt,
+      options: block.options,
+      answerIndex: block.answer_index ?? null,
+      explanation: block.explanation ?? null,
+    })),
     published: parsed.data.published,
   });
 

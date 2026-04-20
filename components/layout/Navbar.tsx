@@ -33,6 +33,9 @@ export function Navbar() {
           <Link href="/inshorts" className={navPillClass}>Tatva Inshorts</Link>
 
           <Link href="/tutorials" className={navPillClass}>Tutorials</Link>
+          <Link href="/ask" className={`${navPillClass} border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:text-sky-800`}>
+            Ask AI
+          </Link>
 
           <Link href="/saved" className={`${navPillClass} gap-1.5`} aria-label="Saved articles">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"

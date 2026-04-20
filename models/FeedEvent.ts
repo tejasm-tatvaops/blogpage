@@ -6,7 +6,7 @@ const feedEventSchema = new mongoose.Schema(
     event_type: {
       type: String,
       required: true,
-      enum: ["feed_served", "post_clicked", "post_liked", "dwell_time", "skip", "share", "cross_content_click"],
+      enum: ["feed_served", "post_clicked", "post_liked", "dwell_time", "skip", "share", "cross_content_click", "recommendation_click", "recommendation_impression"],
       index: true,
     },
     post_slug: { type: String, default: null, trim: true, index: true },

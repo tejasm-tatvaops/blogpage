@@ -28,6 +28,7 @@ const editSchema = z.object({
   tags: z.array(z.string().trim().max(60)).max(12).optional(),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]).optional(),
   learning_path_id: z.string().trim().optional().nullable(),
+  cover_image: z.string().trim().max(2048).optional().nullable(),
 });
 
 export async function PATCH(
@@ -51,6 +52,7 @@ export async function PATCH(
     tags: parsed.data.tags,
     difficulty: parsed.data.difficulty,
     learningPathId: parsed.data.learning_path_id ?? undefined,
+    coverImage: parsed.data.cover_image,
   });
   return NextResponse.json({ ok: true });
 }

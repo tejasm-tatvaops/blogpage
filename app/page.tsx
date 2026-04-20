@@ -1,6 +1,27 @@
 import Link from "next/link";
+import { getAllPosts } from "@/lib/blogService";
+import { getForumPosts } from "@/lib/forumService";
+import { getTutorials } from "@/lib/tutorialService";
+import { getAllVideoTags } from "@/lib/videoService";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [latestBlogs, trendingForums, tutorialsResult, videoTags] = await Promise.all([
+    getAllPosts({ limit: 8 }).catch(() => []),
+    getForumPosts({ sort: "hot", limit: 6 }).then((result) => result.posts).catch(() => []),
+    getTutorials({ limit: 6, includeUnpublished: false }).then((result) => result.tutorials).catch(() => []),
+    getAllVideoTags().catch(() => []),
+  ]);
+  const continueLearning = tutorialsResult.slice(0, 3);
+  const recommendedForYou = latestBlogs.slice(0, 3);
+  const recentlyUpdated = latestBlogs.slice(3, 6);
+  const topicHubs = Array.from(
+    new Set(
+      [...videoTags, ...latestBlogs.flatMap((p) => p.tags ?? [])]
+        .map((item) => String(item).trim())
+        .filter(Boolean),
+    ),
+  ).slice(0, 8);
+
   return (
     <section className="mx-auto w-full max-w-[1500px] px-6 py-12 md:py-16">
 
@@ -118,6 +139,106 @@ export default function HomePage() {
         ))}
       </div>
 
+      {/* ── Smart discovery hub ───────────────────────────────────────────── */}
+      <section className="mt-10 rounded-2xl border border-app bg-surface p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-700">Smart Discovery Hub</p>
+            <h2 className="mt-1 text-2xl font-bold tracking-tight text-app">Your connected knowledge workspace</h2>
+          </div>
+          <Link
+            href="/ask"
+            className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
+          >
+            Ask AI anything on TatvaOps
+          </Link>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <article className="rounded-xl border border-app bg-subtle p-4">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-600">Continue Learning</h3>
+            <ul className="mt-3 space-y-2">
+              {continueLearning.map((tutorial) => (
+                <li key={tutorial.slug}>
+                  <Link href={`/tutorials/${tutorial.slug}`} className="text-sm font-semibold text-app hover:text-sky-700">
+                    {tutorial.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="rounded-xl border border-app bg-subtle p-4">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-600">Recommended For You</h3>
+            <ul className="mt-3 space-y-2">
+              {recommendedForYou.map((blog) => (
+                <li key={blog.slug}>
+                  <Link href={`/blog/${blog.slug}`} className="text-sm font-semibold text-app hover:text-sky-700">
+                    {blog.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="rounded-xl border border-app bg-subtle p-4">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-600">Trending Discussions</h3>
+            <ul className="mt-3 space-y-2">
+              {trendingForums.slice(0, 3).map((forum) => (
+                <li key={forum.slug}>
+                  <Link href={`/forums/${forum.slug}`} className="text-sm font-semibold text-app hover:text-sky-700">
+                    {forum.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </article>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_1.2fr]">
+          <article className="rounded-xl border border-app bg-subtle p-4">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-600">Recently Updated</h3>
+            <ul className="mt-3 space-y-2">
+              {recentlyUpdated.map((blog) => (
+                <li key={blog.slug}>
+                  <Link href={`/blog/${blog.slug}`} className="text-sm font-semibold text-app hover:text-sky-700">
+                    {blog.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="rounded-xl border border-app bg-subtle p-4">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-600">Popular Tutorials</h3>
+            <ul className="mt-3 space-y-2">
+              {tutorialsResult.slice(0, 3).map((tutorial) => (
+                <li key={tutorial.slug}>
+                  <Link href={`/tutorials/${tutorial.slug}`} className="text-sm font-semibold text-app hover:text-sky-700">
+                    {tutorial.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-sky-700">Topic Explorer</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {topicHubs.map((tag) => (
+                <Link
+                  key={tag}
+                  href={`/tags/${encodeURIComponent(tag)}`}
+                  className="rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+                >
+                  {tag}
+                </Link>
+              ))}
+            </div>
+          </article>
+        </div>
+      </section>
+
       {/* ── Section heading ───────────────────────────────────────────────── */}
       <div className="mt-12">
         <h2 className="text-2xl font-bold tracking-tight text-app dark:text-white md:text-3xl">
@@ -182,7 +303,7 @@ export default function HomePage() {
             href="/blog"
             className={[
               "inline-flex min-w-[140px] items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold transition",
-              "bg-sky-700 text-white hover:bg-sky-800",
+              "bg-sky-600 text-white hover:bg-sky-700",
               "dark:bg-sky-400 dark:text-app dark:hover:bg-sky-300",
             ].join(" ")}
           >

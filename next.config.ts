@@ -35,6 +35,9 @@ const nextConfig: NextConfig = {
   // Workaround for Next.js 15.5.x bug: generateBuildId is called without null-check.
   // Returning null tells Next.js to use its nanoid fallback.
   generateBuildId: async () => null,
+  // Prevent dev/build worker races that can produce intermittent PageNotFoundError
+  // when `next dev` and `next build` run concurrently in the same workspace.
+  distDir: process.env.NODE_ENV === "development" ? ".next-dev" : ".next",
   outputFileTracingRoot: path.join(process.cwd()),
 
   images: {
@@ -42,6 +45,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "source.unsplash.com" },
       { protocol: "https", hostname: "picsum.photos" },
+      { protocol: "https", hostname: "img.youtube.com" },
+      { protocol: "https", hostname: "i.ytimg.com" },
     ],
   },
 

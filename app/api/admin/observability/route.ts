@@ -7,6 +7,8 @@ import { CounterDriftEventModel } from "@/models/CounterDriftEvent";
 import { getFeedObservabilityHealth } from "@/lib/feedObservability";
 import { getReconciliationHealth, startReconciliationWorker } from "@/lib/reconciliationService";
 import { getLatencyStats, recordLatency } from "@/lib/perfMetrics";
+import { getAskAiQualitySnapshot } from "@/lib/askAiQualityMetrics";
+import { getRecommendationQualitySnapshot } from "@/lib/recommendationQualityMetrics";
 
 const driftEntityLabel = (value: string): "Blog" | "Forum" | "Other" => {
   if (value.startsWith("blog")) return "Blog";
@@ -27,7 +29,7 @@ export async function GET() {
   const fiveMinutesAgo = new Date(now - 5 * 60_000);
   const oneHourAgo = new Date(now - 60 * 60_000);
 
-  const [events1m, dwell1m, skip5m, total5m, failedPending, failedHighAttempts, recentDrifts] = await Promise.all([
+  const [events1m, dwell1m, skip5m, total5m, failedPending, failedHighAttempts, recentDrifts, recommendationAgg, recommendationPositionRows] = await Promise.all([
     FeedEventModel.countDocuments({ created_at: { $gte: oneMinuteAgo } }),
     FeedEventModel.countDocuments({ event_type: "dwell_time", created_at: { $gte: oneMinuteAgo } }),
     FeedEventModel.countDocuments({ event_type: "skip", created_at: { $gte: fiveMinutesAgo } }),
@@ -35,6 +37,34 @@ export async function GET() {
     FailedFeedEventModel.countDocuments({ status: "pending" }),
     FailedFeedEventModel.countDocuments({ status: "pending", attempts: { $gte: 3 } }),
     CounterDriftEventModel.find({ created_at: { $gte: oneHourAgo } }).sort({ created_at: -1 }).limit(15).lean(),
+    FeedEventModel.aggregate<{ _id: null; impressions: number; clicks: number }>([
+      { $match: { created_at: { $gte: oneHourAgo }, event_type: { $in: ["recommendation_impression", "recommendation_click"] } } },
+      {
+        $group: {
+          _id: null,
+          impressions: { $sum: { $cond: [{ $eq: ["$event_type", "recommendation_impression"] }, 1, 0] } },
+          clicks: { $sum: { $cond: [{ $eq: ["$event_type", "recommendation_click"] }, 1, 0] } },
+        },
+      },
+    ]),
+    FeedEventModel.aggregate<{ _id: number; impressions: number; clicks: number }>([
+      {
+        $match: {
+          created_at: { $gte: oneHourAgo },
+          event_type: { $in: ["recommendation_impression", "recommendation_click"] },
+          position: { $ne: null },
+        },
+      },
+      {
+        $group: {
+          _id: "$position",
+          impressions: { $sum: { $cond: [{ $eq: ["$event_type", "recommendation_impression"] }, 1, 0] } },
+          clicks: { $sum: { $cond: [{ $eq: ["$event_type", "recommendation_click"] }, 1, 0] } },
+        },
+      },
+      { $sort: { _id: 1 } },
+      { $limit: 6 },
+    ]),
   ]);
 
   const queue = getFeedObservabilityHealth().queue;
@@ -43,6 +73,11 @@ export async function GET() {
   const dwellRatePerSec = dwell1m / 60;
   const skipRate = total5m > 0 ? skip5m / total5m : 0;
   const largeDriftRecent = recentDrifts.filter((item) => item.severity === "large").length;
+  const recommendationImpressions = Number(recommendationAgg[0]?.impressions ?? 0);
+  const recommendationClicks = Number(recommendationAgg[0]?.clicks ?? 0);
+  const recommendationCtr = recommendationImpressions > 0 ? recommendationClicks / recommendationImpressions : 0;
+  const askAiQuality = getAskAiQualitySnapshot();
+  const recommendationQuality = getRecommendationQualitySnapshot();
 
   const healthStatus =
     failedHighAttempts >= 10 || largeDriftRecent >= 4 || failedPending >= 150
@@ -87,6 +122,19 @@ export async function GET() {
       window_seconds: 60,
       skip_window_seconds: 300,
     },
+    recommendations: {
+      impressions_last_hour: recommendationImpressions,
+      clicks_last_hour: recommendationClicks,
+      ctr_last_hour: recommendationCtr,
+      position_performance: recommendationPositionRows.map((row) => ({
+        position: Number(row._id),
+        impressions: Number(row.impressions ?? 0),
+        clicks: Number(row.clicks ?? 0),
+        ctr: Number(row.impressions > 0 ? row.clicks / row.impressions : 0),
+      })),
+      quality: recommendationQuality,
+    },
+    ask_ai: askAiQuality,
     latency: {
       feed_request_total_ms: getLatencyStats("feed.request.total"),
       feed_cache_hit_total_ms: getLatencyStats("feed.request.cache_hit_total"),

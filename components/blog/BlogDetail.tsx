@@ -19,15 +19,19 @@ import { ReadingTracker } from "./ReadingTracker";
 import type { UserProfile } from "@/lib/userProfileService";
 import { TopicActiveUsersStrip } from "@/components/users/TopicActiveUsersStrip";
 import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
+import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
 
 type BlogDetailProps = {
   post: BlogPost;
   relatedPosts: BlogPost[];
+  semanticRecommendations?: BlogPost[];
   categories: string[];
   comments: Comment[];
   forumSlug?: string | null;
   topicUsers?: UserProfile[];
   relatedForumPosts?: ForumPost[];
+  relatedTutorials?: Array<{ slug: string; title: string; excerpt: string; difficulty?: string }>;
+  relatedShorts?: Array<{ slug: string; title: string; summary: string }>;
 };
 
 type ParsedFaq = {
@@ -101,7 +105,18 @@ const formatDate = (dateString: string): string =>
     year: "numeric",
   }).format(new Date(dateString));
 
-export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug, topicUsers = [], relatedForumPosts = [] }: BlogDetailProps) {
+export function BlogDetail({
+  post,
+  relatedPosts,
+  semanticRecommendations = [],
+  categories,
+  comments,
+  forumSlug,
+  topicUsers = [],
+  relatedForumPosts = [],
+  relatedTutorials = [],
+  relatedShorts = [],
+}: BlogDetailProps) {
   const readingTimeMinutes = calculateReadingTime(post.content);
   const imageUrl = post.cover_image || "";
   const { mainContent, faqs, references } = parseContentSections(post.content);
@@ -224,6 +239,36 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
 
             <ReadingTracker slug={post.slug} readingTimeMinutes={readingTimeMinutes} />
             <AiAssistant slug={post.slug} />
+            <KnowledgeEcosystemPanel
+              topicLabel={post.category}
+              confidence="high"
+              freshnessLabel={`Updated ${formatDate(post.created_at)}`}
+              askAiHref={`/blog/${post.slug}`}
+              nextLearn={relatedTutorials.slice(0, 4).map((tutorial) => ({
+                title: tutorial.title,
+                href: `/tutorials/${tutorial.slug}`,
+                subtitle: tutorial.excerpt,
+                reason: tutorial.difficulty ? `Next ${tutorial.difficulty}` : "Next learn",
+              }))}
+              relatedDiscussions={relatedForumPosts.slice(0, 4).map((thread) => ({
+                title: thread.title,
+                href: `/forums/${thread.slug}`,
+                subtitle: `${thread.comment_count} replies`,
+                reason: "Related discussion",
+              }))}
+              relatedShorts={relatedShorts.slice(0, 4).map((video) => ({
+                title: video.title,
+                href: `/shorts/${video.slug}`,
+                subtitle: video.summary,
+                reason: "Quick explainer",
+              }))}
+              topicHubs={(post.tags ?? []).slice(0, 3).map((tag) => ({
+                title: `Topic hub: ${tag}`,
+                href: `/tags/${encodeURIComponent(tag)}`,
+                subtitle: "Blogs, tutorials, forums, and shorts",
+                reason: "Knowledge hub",
+              }))}
+            />
 
             {/* ── Related Discussions ── */}
             {relatedForumPosts.length > 0 && (
@@ -297,6 +342,7 @@ export function BlogDetail({ post, relatedPosts, categories, comments, forumSlug
               <BlogSidebar
                 post={post}
                 relatedPosts={relatedPosts}
+                recommendationCandidates={semanticRecommendations}
                 categories={categories}
                 tocMarkdown={mainContent}
                 faqs={faqs}

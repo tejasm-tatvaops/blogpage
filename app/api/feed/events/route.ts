@@ -9,9 +9,10 @@ import { getForumPostBySlug, registerForumDwellSignal } from "@/lib/forumService
 import { onCrossContentLink } from "@/lib/reputationEngine";
 import type { RepContentType } from "@/models/ReputationEvent";
 import { getSystemToggles } from "@/lib/systemToggles";
+import { recordMetric } from "@/lib/observability";
 
 const bodySchema = z.object({
-  eventType: z.enum(["post_clicked", "post_liked", "dwell_time", "skip", "cross_content_click"]),
+  eventType: z.enum(["post_clicked", "post_liked", "dwell_time", "skip", "cross_content_click", "recommendation_click", "recommendation_impression"]),
   postSlug: z.string().trim().min(1).max(220).optional(),
   tags: z.array(z.string().trim().max(100)).max(10).optional(),
   category: z.string().trim().max(100).optional(),
@@ -75,6 +76,17 @@ export async function POST(request: Request) {
     sourceContentType: body.sourceContentType ?? null,
     targetContentType: body.targetContentType ?? null,
   });
+
+  if (body.eventType === "recommendation_click" || body.eventType === "recommendation_impression") {
+    recordMetric("recommendation.click", {
+      event_type: body.eventType,
+      identity_key: identityKey,
+      post_slug: body.postSlug ?? null,
+      source_content_type: body.sourceContentType ?? null,
+      target_content_type: body.targetContentType ?? null,
+      position: body.position ?? null,
+    });
+  }
 
   // Cross-content click: boost persona signal + award reputation multiplier
   if (

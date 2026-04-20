@@ -12,6 +12,9 @@ import { getActiveUsersByTopic } from "@/lib/userProfileService";
 import { TopicActiveUsersStrip } from "@/components/users/TopicActiveUsersStrip";
 import { buildForumPostJsonLd, buildForumBreadcrumbJsonLd } from "@/lib/forumSeo";
 import { generateSEO } from "@/lib/seo";
+import { getTutorials } from "@/lib/tutorialService";
+import { getVideosByTags } from "@/lib/videoService";
+import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com").replace(/\/+$/, "");
 
@@ -70,10 +73,12 @@ export default async function ForumThreadPage({ params }: PageProps) {
 
   const primaryTag = post.tags[0] ?? "";
 
-  const [comments, topicUsers, relatedBlogs] = await Promise.all([
+  const [comments, topicUsers, relatedBlogs, relatedTutorials, relatedShorts] = await Promise.all([
     getComments(post.id),
     getActiveUsersByTopic([...post.tags, post.title], 8).catch(() => []),
     primaryTag ? getPostsByTag(primaryTag, 4).catch(() => []) : Promise.resolve([]),
+    getTutorials({ tag: primaryTag || null, limit: 4, includeUnpublished: false }).then((result) => result.tutorials).catch(() => []),
+    getVideosByTags(post.tags, 4).catch(() => []),
   ]);
 
   const postJsonLd = buildForumPostJsonLd(post, SITE_URL);
@@ -232,6 +237,32 @@ export default async function ForumThreadPage({ params }: PageProps) {
             </ul>
           </section>
         )}
+
+        <KnowledgeEcosystemPanel
+          topicLabel={primaryTag || "this discussion"}
+          confidence="medium"
+          freshnessLabel="Community + editorial signals"
+          askAiHref={post.linked_blog_slug ? `/blog/${post.linked_blog_slug}` : "/ask"}
+          nextLearn={(relatedTutorials as Array<{ slug: string; title: string; excerpt: string; difficulty?: string }>).slice(0, 4).map((tutorial) => ({
+            title: tutorial.title,
+            href: `/tutorials/${tutorial.slug}`,
+            subtitle: tutorial.excerpt,
+            reason: tutorial.difficulty ? `Level ${tutorial.difficulty}` : "Next learn",
+          }))}
+          relatedDiscussions={[]}
+          relatedShorts={relatedShorts.slice(0, 4).map((video) => ({
+            title: video.title,
+            href: `/shorts/${video.slug}`,
+            subtitle: video.summary ?? video.shortCaption,
+            reason: "Visual explainer",
+          }))}
+          topicHubs={post.tags.slice(0, 3).map((tag) => ({
+            title: `Topic hub: ${tag}`,
+            href: `/tags/${encodeURIComponent(tag)}`,
+            subtitle: "Connected blogs, tutorials, and shorts",
+            reason: "Hub",
+          }))}
+        />
 
         {/* Discussion */}
         <TopicActiveUsersStrip title="People active in similar threads" users={topicUsers} />

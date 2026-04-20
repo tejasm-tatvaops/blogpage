@@ -3,8 +3,17 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { getTutorialBySlug } from "@/lib/tutorialService";
 import { TutorialProgressCard } from "@/components/tutorials/TutorialProgressCard";
+import { InteractiveBlocks } from "@/components/tutorials/InteractiveBlocks";
+import { TutorialRecommendations } from "@/components/tutorials/TutorialRecommendations";
+import { getSystemToggles } from "@/lib/systemToggles";
+import { getTutorials } from "@/lib/tutorialService";
+import { rankSemanticTutorialRecommendations } from "@/lib/semanticRecommendations";
+import { getForumPosts } from "@/lib/forumService";
+import { getVideosByTags } from "@/lib/videoService";
+import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
 
 type Params = { slug: string };
 
@@ -28,6 +37,14 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
   const { slug } = await params;
   const tutorial = await getTutorialBySlug(decodeURIComponent(slug)).catch(() => null);
   if (!tutorial) notFound();
+  const toggles = getSystemToggles();
+  const {
+    interactiveBlocksEnabled,
+    semanticRecommendationsEnabled,
+    behavioralBoostEnabled,
+    recommendationDiversityEnabled,
+    recommendationFreshnessEnabled,
+  } = toggles;
 
   const t = tutorial as unknown as {
     title: string;
@@ -38,10 +55,65 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
     author: string;
     tags: string[];
     content_type: string;
+    cover_image: string | null;
     linked_video_slug: string | null;
     linked_blog_slug:  string | null;
+    interactive_blocks?: Array<{
+      block_id: string;
+      type: "quiz" | "exercise" | "challenge";
+      title: string;
+      prompt: string;
+      options?: string[];
+      answer_index?: number | null;
+      explanation?: string | null;
+    }>;
     created_at: Date;
   };
+
+  const sanitizeSchema = {
+    ...defaultSchema,
+    attributes: {
+      ...defaultSchema.attributes,
+      "*": [...(defaultSchema.attributes?.["*"] ?? []), "id", "className"],
+      img: ["src", "alt", "title", "width", "height", "loading"],
+    },
+  };
+  const [semanticRecommendations, relatedForums, relatedShorts] = await Promise.all([
+    semanticRecommendationsEnabled
+    ? await rankSemanticTutorialRecommendations(
+        {
+          slug: decodeURIComponent(slug),
+          title: t.title,
+          excerpt: t.excerpt,
+          tags: t.tags,
+          category: "tutorials",
+          difficulty: t.difficulty,
+        },
+        (
+          (await getTutorials({ limit: 80, includeUnpublished: false })).tutorials as Array<{
+            slug: string;
+            title: string;
+            excerpt: string;
+            tags: string[];
+            category?: string;
+            difficulty?: string;
+          }>
+        ).map((tutorial) => ({
+          ...tutorial,
+          category: tutorial.category ?? "tutorials",
+        })),
+        4,
+        {
+          behavioralBoostEnabled,
+          recommendationDiversityEnabled,
+          recommendationFreshnessEnabled,
+          requestId: `tutorial:${decodeURIComponent(slug)}`,
+        },
+      )
+    : [],
+    getForumPosts({ tag: t.tags[0], limit: 4, sort: "hot" }).then((result) => result.posts).catch(() => []),
+    getVideosByTags(t.tags, 4).catch(() => []),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -82,13 +154,84 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
         </div>
       )}
 
+      {/* Cover image */}
+      {t.cover_image && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={t.cover_image}
+          alt={t.title}
+          loading="lazy"
+          decoding="async"
+          className="mb-8 w-full rounded-xl object-cover"
+          style={{ maxHeight: "420px" }}
+        />
+      )}
+
       {/* Main content */}
       <div className="mb-6">
         <TutorialProgressCard slug={decodeURIComponent(slug)} />
       </div>
-      <article className="prose prose-slate max-w-none">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{t.content}</ReactMarkdown>
+      <article className="prose prose-slate max-w-none prose-img:rounded-lg prose-img:w-full">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
+          components={{
+            img({ src, alt, title }) {
+              if (!src) return null;
+              return (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={src}
+                  alt={alt ?? ""}
+                  title={title}
+                  loading="lazy"
+                  decoding="async"
+                  className="my-4 w-full rounded-lg object-cover"
+                  style={{ maxHeight: "560px" }}
+                />
+              );
+            },
+          }}
+        >
+          {t.content}
+        </ReactMarkdown>
       </article>
+      {interactiveBlocksEnabled && Array.isArray(t.interactive_blocks) && t.interactive_blocks.length > 0 && (
+        <InteractiveBlocks slug={decodeURIComponent(slug)} blocks={t.interactive_blocks} />
+      )}
+      {semanticRecommendationsEnabled && semanticRecommendations.length > 0 && (
+        <TutorialRecommendations tutorials={semanticRecommendations} />
+      )}
+      <KnowledgeEcosystemPanel
+        topicLabel={t.tags[0] ?? "this tutorial topic"}
+        confidence="medium"
+        freshnessLabel="Grounded in platform knowledge"
+        askAiHref={t.linked_blog_slug ? `/blog/${t.linked_blog_slug}` : "/ask"}
+        nextLearn={semanticRecommendations.slice(0, 4).map((item) => ({
+          title: item.title,
+          href: `/tutorials/${item.slug}`,
+          subtitle: item.excerpt,
+          reason: item.difficulty ? `Next ${item.difficulty}` : "Recommended",
+        }))}
+        relatedDiscussions={relatedForums.slice(0, 4).map((forum) => ({
+          title: forum.title,
+          href: `/forums/${forum.slug}`,
+          subtitle: `${forum.comment_count} replies`,
+          reason: "Active discussion",
+        }))}
+        relatedShorts={relatedShorts.slice(0, 4).map((shortItem) => ({
+          title: shortItem.title,
+          href: `/shorts/${shortItem.slug}`,
+          subtitle: shortItem.summary ?? shortItem.shortCaption,
+          reason: "Quick recap",
+        }))}
+        topicHubs={(t.tags ?? []).slice(0, 3).map((tag) => ({
+          title: `Topic hub: ${tag}`,
+          href: `/tags/${encodeURIComponent(tag)}`,
+          subtitle: "Explore all related content",
+          reason: "Hub",
+        }))}
+      />
 
       {/* Tags */}
       {t.tags.length > 0 && (

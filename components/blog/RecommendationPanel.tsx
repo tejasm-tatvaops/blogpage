@@ -62,18 +62,62 @@ function scorePosts(posts: BlogPost[], profile: UserProfile, currentSlug: string
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-type Props = { currentPost: BlogPost; allPosts: BlogPost[] };
+type Props = { currentPost: BlogPost; allPosts: BlogPost[]; usePreRanked?: boolean };
 
-export function RecommendationPanel({ currentPost, allPosts }: Props) {
+export function RecommendationPanel({ currentPost, allPosts, usePreRanked = false }: Props) {
   const [recs, setRecs] = useState<BlogPost[]>([]);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     const profile = getProfile();
+    if (usePreRanked) {
+      setRecs(allPosts.filter((p) => p.slug !== currentPost.slug).slice(0, 4));
+      return;
+    }
     const scored = scorePosts(allPosts, profile, currentPost.slug);
     setRecs(scored);
-  }, [currentPost.slug, allPosts]);
+  }, [currentPost.slug, allPosts, usePreRanked]);
+
+  useEffect(() => {
+    if (!mounted || recs.length === 0) return;
+    for (let i = 0; i < recs.length; i += 1) {
+      const post = recs[i];
+      void fetch("/api/feed/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType: "recommendation_impression",
+          postSlug: post.slug,
+          tags: post.tags,
+          category: post.category,
+          sourceContentType: "blog",
+          targetContentType: "blog",
+          position: i,
+        }),
+      }).catch(() => undefined);
+    }
+  }, [mounted, recs]);
+
+  const recordRecommendationClick = async (post: BlogPost, position: number) => {
+    try {
+      await fetch("/api/feed/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType: "recommendation_click",
+          postSlug: post.slug,
+          tags: post.tags,
+          category: post.category,
+          sourceContentType: "blog",
+          targetContentType: "blog",
+          position,
+        }),
+      });
+    } catch {
+      // non-blocking analytics
+    }
+  };
 
   if (!mounted || recs.length === 0) return null;
 
@@ -86,10 +130,13 @@ export function RecommendationPanel({ currentPost, allPosts }: Props) {
         <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-indigo-700">Recommended for you</span>
       </div>
       <ul className="divide-y divide-slate-100">
-        {recs.map((post) => (
+        {recs.map((post, idx) => (
           <li key={post.id}>
             <Link
               href={`/blog/${post.slug}`}
+              onClick={() => {
+                void recordRecommendationClick(post, idx);
+              }}
               className="group flex items-start gap-3 px-4 py-3.5 transition hover:bg-indigo-50/40"
             >
               <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 transition group-hover:bg-indigo-100">

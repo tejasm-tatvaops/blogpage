@@ -33,6 +33,7 @@ function extractToc(markdown: string): TocEntry[] {
 type BlogSidebarProps = {
   post: BlogPost;
   relatedPosts: BlogPost[];
+  recommendationCandidates?: BlogPost[];
   categories: string[];
   tocMarkdown?: string;
   faqs?: Array<{ question: string; answer: string }>;
@@ -42,6 +43,7 @@ type BlogSidebarProps = {
 export function BlogSidebar({
   post,
   relatedPosts,
+  recommendationCandidates = [],
   categories,
   tocMarkdown,
   faqs = [],
@@ -51,7 +53,11 @@ export function BlogSidebar({
 
   return (
     <aside className="space-y-5">
-      <RecommendationPanel currentPost={post} allPosts={[post, ...relatedPosts]} />
+      <RecommendationPanel
+        currentPost={post}
+        allPosts={[post, ...(recommendationCandidates.length > 0 ? recommendationCandidates : relatedPosts)]}
+        usePreRanked={recommendationCandidates.length > 0}
+      />
       <TrendingWidget />
 
       {/* ── Table of Contents ── */}

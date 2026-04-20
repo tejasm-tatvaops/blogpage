@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { getVideoPostBySlug, getAllVideoSlugs } from "@/lib/videoService";
+import { getForumPosts } from "@/lib/forumService";
+import { getTutorials } from "@/lib/tutorialService";
+import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 
@@ -87,6 +90,11 @@ export default async function ShortDetailPage({
   if (!post) notFound();
 
   const jsonLd = buildVideoJsonLd(post);
+  const primaryTag = post.tags[0] ?? "";
+  const [relatedForums, relatedTutorials] = await Promise.all([
+    getForumPosts({ tag: primaryTag || undefined, sort: "hot", limit: 4 }).then((result) => result.posts).catch(() => []),
+    getTutorials({ tag: primaryTag || null, limit: 4, includeUnpublished: false }).then((result) => result.tutorials).catch(() => []),
+  ]);
 
   const embedSrc =
     post.sourceType === "youtube" && post.youtubeVideoId
@@ -194,6 +202,34 @@ export default async function ShortDetailPage({
             >
               ← Back to Shorts
             </Link>
+          </div>
+
+          <div className="text-slate-900">
+            <KnowledgeEcosystemPanel
+              topicLabel={primaryTag || "this short topic"}
+              confidence="medium"
+              freshnessLabel="Cross-format topic map"
+              askAiHref={post.linkedBlogSlug ? `/blog/${post.linkedBlogSlug}` : "/ask"}
+              nextLearn={(relatedTutorials as Array<{ slug: string; title: string; excerpt: string; difficulty?: string }>).slice(0, 4).map((tutorial) => ({
+                title: tutorial.title,
+                href: `/tutorials/${tutorial.slug}`,
+                subtitle: tutorial.excerpt,
+                reason: tutorial.difficulty ? `Level ${tutorial.difficulty}` : "Next learn",
+              }))}
+              relatedDiscussions={relatedForums.slice(0, 4).map((forum) => ({
+                title: forum.title,
+                href: `/forums/${forum.slug}`,
+                subtitle: `${forum.comment_count} replies`,
+                reason: "Live thread",
+              }))}
+              relatedShorts={[]}
+              topicHubs={post.tags.slice(0, 3).map((tag) => ({
+                title: `Topic hub: ${tag}`,
+                href: `/tags/${encodeURIComponent(tag)}`,
+                subtitle: "Explore the full knowledge graph",
+                reason: "Hub",
+              }))}
+            />
           </div>
         </div>
       </main>
