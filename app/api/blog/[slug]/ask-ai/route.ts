@@ -249,7 +249,11 @@ async function tryGroqCompletion(
     signal: AbortSignal.timeout(30_000),
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("Groq provider error:", res.status, errorText);
+    return null;
+  }
   const payload = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
   return payload.choices?.[0]?.message?.content?.trim() ?? null;
 }
@@ -279,7 +283,11 @@ async function tryOpenAICompletion(
     signal: AbortSignal.timeout(30_000),
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("OpenAI provider error:", res.status, errorText);
+    return null;
+  }
   const payload = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
   return payload.choices?.[0]?.message?.content?.trim() ?? null;
 }
