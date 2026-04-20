@@ -1,7 +1,17 @@
 {
   "/api/feed/events/route": "app/api/feed/events/route.js",
   "/api/notifications/route": "app/api/notifications/route.js",
+  "/api/tutorials/[slug]/progress/route": "app/api/tutorials/[slug]/progress/route.js",
+  "/api/forums/route": "app/api/forums/route.js",
+  "/api/admin/login/route": "app/api/admin/login/route.js",
+  "/api/admin/activity/toggle/route": "app/api/admin/activity/toggle/route.js",
+  "/api/tutorials/route": "app/api/tutorials/route.js",
   "/page": "app/page.js",
   "/inshorts/page": "app/inshorts/page.js",
-  "/ask/page": "app/ask/page.js"
+  "/tutorials/[slug]/page": "app/tutorials/[slug]/page.js",
+  "/tutorials/page": "app/tutorials/page.js",
+  "/forums/page": "app/forums/page.js",
+  "/admin/login/page": "app/admin/login/page.js",
+  "/admin/(dashboard)/blog/page": "app/admin/(dashboard)/blog/page.js",
+  "/admin/(dashboard)/ingest/page": "app/admin/(dashboard)/ingest/page.js"
 }

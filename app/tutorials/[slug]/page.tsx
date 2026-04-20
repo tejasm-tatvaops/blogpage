@@ -114,6 +114,12 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
     getForumPosts({ tag: t.tags[0], limit: 4, sort: "hot" }).then((result) => result.posts).catch(() => []),
     getVideosByTags(t.tags, 4).catch(() => []),
   ]);
+  const plainSemanticRecommendations = semanticRecommendations.map((item) => ({
+    slug: String(item.slug),
+    title: String(item.title),
+    excerpt: String(item.excerpt),
+    difficulty: item.difficulty ? String(item.difficulty) : undefined,
+  }));
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -199,15 +205,15 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
       {interactiveBlocksEnabled && Array.isArray(t.interactive_blocks) && t.interactive_blocks.length > 0 && (
         <InteractiveBlocks slug={decodeURIComponent(slug)} blocks={t.interactive_blocks} />
       )}
-      {semanticRecommendationsEnabled && semanticRecommendations.length > 0 && (
-        <TutorialRecommendations tutorials={semanticRecommendations} />
+      {semanticRecommendationsEnabled && plainSemanticRecommendations.length > 0 && (
+        <TutorialRecommendations tutorials={plainSemanticRecommendations} />
       )}
       <KnowledgeEcosystemPanel
         topicLabel={t.tags[0] ?? "this tutorial topic"}
         confidence="medium"
         freshnessLabel="Grounded in platform knowledge"
         askAiHref={t.linked_blog_slug ? `/blog/${t.linked_blog_slug}` : "/ask"}
-        nextLearn={semanticRecommendations.slice(0, 4).map((item) => ({
+        nextLearn={plainSemanticRecommendations.slice(0, 4).map((item) => ({
           title: item.title,
           href: `/tutorials/${item.slug}`,
           subtitle: item.excerpt,
