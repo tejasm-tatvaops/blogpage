@@ -33,8 +33,7 @@ export async function GET(request: Request) {
   const page  = Math.max(1, Number(searchParams.get("page")  ?? "1"));
   const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") ?? "50")));
 
-  // Admin sees all (including unpublished) — override published filter
-  const result = await getTutorials({ page, limit });
+  const result = await getTutorials({ page, limit, includeUnpublished: true });
   return NextResponse.json(result);
 }
 

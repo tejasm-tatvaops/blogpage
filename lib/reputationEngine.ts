@@ -68,6 +68,10 @@ const BASE_POINTS: Record<RepEventReason, number> = {
   cross_content_link:         8,
   cross_content_engagement:   5,  // multiplier will make it 50
   peer_helpful_vote:          6,
+  tutorial_completed:         12,
+  learning_path_completed:    30,
+  tutorial_peer_review:       8,
+  tutorial_author_contribution: 15,
   content_share:              2,
   badge_unlock_bonus:         0,  // set per-badge below
   anti_abuse_deduction:       -10,
@@ -173,6 +177,20 @@ export const BADGES: Badge[] = [
     description: "Linked content across TatvaOps content types",
     bonus: 40,
     earned: () => false, // awarded explicitly via awardCrossContentBonus
+  },
+  {
+    id: "learner",
+    label: "Learner",
+    description: "Completed at least one tutorial",
+    bonus: 0,
+    earned: () => false, // awarded by tutorial progress subsystem
+  },
+  {
+    id: "mentor",
+    label: "Mentor",
+    description: "Completed a full learning path",
+    bonus: 0,
+    earned: () => false, // awarded by tutorial path completion subsystem
   },
 ];
 
@@ -288,6 +306,8 @@ export type AwardPointsOptions = {
 
   /** Human-readable note for admin UI */
   note?: string | null;
+  /** Optional idempotency key for replay-safe dedupe. */
+  eventKey?: string | null;
 
   /** Internal: skip recursive badge check */
   skipBadgeCheck?: boolean;
@@ -307,6 +327,7 @@ export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
     targetContentType = null,
     pointsOverride = null,
     note = null,
+    eventKey = null,
     skipBadgeCheck = false,
   } = opts;
 
@@ -323,6 +344,15 @@ export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
   }
 
   await connectToDatabase();
+
+  if (eventKey) {
+    const existing = await ReputationEventModel.findOne({ event_key: eventKey })
+      .select("awarded_points")
+      .lean();
+    if (existing) {
+      return Number(existing.awarded_points ?? 0);
+    }
+  }
 
   const base = pointsOverride ?? BASE_POINTS[reason] ?? 0;
 
@@ -341,19 +371,31 @@ export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
     if (earned >= DAILY_CAP) return 0;
   }
 
-  // Write reputation event
-  const event = await ReputationEventModel.create({
-    identity_key: identityKey,
-    reason,
-    base_points: base,
-    multiplier,
-    awarded_points: awarded,
-    source_content_type: sourceContentType,
-    source_content_slug: sourceContentSlug,
-    actor_identity_key: actorIdentityKey,
-    note,
-    is_cross_content: isCrossContent,
-  });
+  let event: { _id: unknown } | null = null;
+  try {
+    event = await ReputationEventModel.create({
+      identity_key: identityKey,
+      reason,
+      base_points: base,
+      multiplier,
+      awarded_points: awarded,
+      source_content_type: sourceContentType,
+      source_content_slug: sourceContentSlug,
+      actor_identity_key: actorIdentityKey,
+      note,
+      event_key: eventKey,
+      is_cross_content: isCrossContent,
+    });
+  } catch (error) {
+    const maybeMongo = error as { code?: number };
+    if (maybeMongo?.code === 11000 && eventKey) {
+      const existing = await ReputationEventModel.findOne({ event_key: eventKey })
+        .select("awarded_points")
+        .lean();
+      return Number(existing?.awarded_points ?? 0);
+    }
+    throw error;
+  }
 
   // Update UserProfile reputation_score
   const updated = await UserProfileModel.findOneAndUpdate(
@@ -364,7 +406,7 @@ export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
     .select("reputation_score")
     .lean();
 
-  if (updated) {
+  if (updated && event?._id) {
     const rawScore = (updated as unknown as { reputation_score: number }).reputation_score;
     const clamped = Math.max(0, rawScore);
     const tier = getReputationTier(clamped);
@@ -426,6 +468,7 @@ export async function onForumUpvoteReceived(
   authorIdentityKey: string,
   actorIdentityKey: string,
   forumSlug: string,
+  eventKey?: string,
 ) {
   return awardPoints({
     identityKey: authorIdentityKey,
@@ -433,6 +476,7 @@ export async function onForumUpvoteReceived(
     actorIdentityKey,
     sourceContentSlug: forumSlug,
     sourceContentType: "forum",
+    eventKey,
   });
 }
 
@@ -443,16 +487,18 @@ export async function onForumPostCreated(identityKey: string, forumSlug: string)
     reason: "forum_post_created",
     sourceContentSlug: forumSlug,
     sourceContentType: "forum",
+    eventKey: `forum-post:${identityKey}:${forumSlug}`,
   });
 }
 
 /** Called when a user posts a forum comment/answer. */
-export async function onForumAnswerGiven(identityKey: string, forumSlug: string) {
+export async function onForumAnswerGiven(identityKey: string, forumSlug: string, eventKey?: string) {
   return awardPoints({
     identityKey,
     reason: "forum_answer_given",
     sourceContentSlug: forumSlug,
     sourceContentType: "forum",
+    eventKey,
   });
 }
 
@@ -460,12 +506,14 @@ export async function onForumAnswerGiven(identityKey: string, forumSlug: string)
 export async function onBestAnswerAwarded(
   authorIdentityKey: string,
   forumSlug: string,
+  eventKey?: string,
 ) {
   return awardPoints({
     identityKey: authorIdentityKey,
     reason: "forum_best_answer_awarded",
     sourceContentSlug: forumSlug,
     sourceContentType: "forum",
+    eventKey,
   });
 }
 
@@ -495,6 +543,7 @@ export async function onCrossContentLink(
   targetType: RepContentType,
   sourceSlug: string,
 ) {
+  const eventKey = `cross-content:${actorIdentityKey}:${sourceType}:${targetType}:${sourceSlug}`;
   // Award bridge_builder badge if not already held
   const profile = await UserProfileModel.findOne({ identity_key: actorIdentityKey })
     .select("forum_badges")
@@ -511,6 +560,7 @@ export async function onCrossContentLink(
       reason: "badge_unlock_bonus",
       pointsOverride: 40,
       note: "Badge unlocked: Bridge Builder",
+      eventKey: `badge-bridge-builder:${actorIdentityKey}`,
       skipBadgeCheck: true,
     });
   }
@@ -522,6 +572,27 @@ export async function onCrossContentLink(
     sourceContentType: sourceType,
     targetContentType: targetType,
     note: `Linked ${sourceType} → ${targetType}`,
+    eventKey,
+  });
+}
+
+export async function onTutorialCompleted(identityKey: string, tutorialSlug: string) {
+  return awardPoints({
+    identityKey,
+    reason: "tutorial_completed",
+    sourceContentSlug: tutorialSlug,
+    sourceContentType: "tutorial",
+    eventKey: `tutorial-completed:${identityKey}:${tutorialSlug}`,
+  });
+}
+
+export async function onLearningPathCompleted(identityKey: string, pathSlug: string) {
+  return awardPoints({
+    identityKey,
+    reason: "learning_path_completed",
+    sourceContentSlug: pathSlug,
+    sourceContentType: "tutorial",
+    eventKey: `learning-path-completed:${identityKey}:${pathSlug}`,
   });
 }
 

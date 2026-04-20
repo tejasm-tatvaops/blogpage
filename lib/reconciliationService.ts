@@ -9,6 +9,8 @@ import { BlogLikeModel } from "@/models/BlogLike";
 import { ForumVoteModel } from "@/models/ForumVote";
 import { CounterDriftEventModel } from "@/models/CounterDriftEvent";
 import { recordLatency } from "@/lib/perfMetrics";
+import { ReputationEventModel } from "@/models/ReputationEvent";
+import { UserProfileModel, getReputationTier } from "@/models/UserProfile";
 
 type ReconciliationSummary = {
   startedAt: string;
@@ -280,6 +282,43 @@ const reconcileForumViewCounts = async (): Promise<{ scanned: number; updated: n
   return { scanned, updated, small, large };
 };
 
+const reconcileReputationScores = async (): Promise<{ scanned: number; updated: number; small: number; large: number }> => {
+  const aggregates = await ReputationEventModel.aggregate([
+    { $group: { _id: "$identity_key", total: { $sum: "$awarded_points" } } },
+  ]);
+  const eventMap = new Map<string, number>(
+    aggregates.map((row) => [String(row._id), Math.max(0, Number(row.total ?? 0))]),
+  );
+  const profiles = await UserProfileModel.find({}).select("identity_key reputation_score").lean();
+
+  const scanned = profiles.length;
+  let updated = 0;
+  let small = 0;
+  let large = 0;
+  for (const profile of profiles) {
+    const identityKey = String(profile.identity_key);
+    const expected = eventMap.get(identityKey) ?? 0;
+    const actual = Number(profile.reputation_score ?? 0);
+    const drift = expected - actual;
+    if (Math.abs(drift) <= SMALL_DRIFT_THRESHOLD) continue;
+    await UserProfileModel.updateOne(
+      { _id: profile._id },
+      { $set: { reputation_score: expected, reputation_tier: getReputationTier(expected) } },
+    );
+    const severity = await logDrift({
+      metric: "user_profile.reputation_score",
+      entityType: "user_profile",
+      entityId: identityKey,
+      actual,
+      expected,
+    });
+    updated += 1;
+    if (severity === "large") large += 1;
+    else small += 1;
+  }
+  return { scanned, updated, small, large };
+};
+
 export const runReconciliationNow = async (): Promise<ReconciliationSummary> => {
   const now = Date.now();
   if (state.running || now - state.lastRunAt < MIN_GAP_MS) {
@@ -315,6 +354,7 @@ export const runReconciliationNow = async (): Promise<ReconciliationSummary> => 
       ["forum_vote_count", reconcileForumVoteCounts],
       ["blog_view_count", reconcileBlogViewCounts],
       ["forum_view_count", reconcileForumViewCounts],
+      ["reputation_score", reconcileReputationScores],
     ];
     for (const [jobName, job] of jobs) {
       try {

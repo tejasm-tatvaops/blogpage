@@ -8,6 +8,7 @@ import { getPostBySlug } from "@/lib/blogService";
 import { getForumPostBySlug, registerForumDwellSignal } from "@/lib/forumService";
 import { onCrossContentLink } from "@/lib/reputationEngine";
 import type { RepContentType } from "@/models/ReputationEvent";
+import { getSystemToggles } from "@/lib/systemToggles";
 
 const bodySchema = z.object({
   eventType: z.enum(["post_clicked", "post_liked", "dwell_time", "skip", "cross_content_click"]),
@@ -76,19 +77,26 @@ export async function POST(request: Request) {
   });
 
   // Cross-content click: boost persona signal + award reputation multiplier
-  if (body.eventType === "cross_content_click" && body.sourceContentType && body.targetContentType) {
+  if (
+    body.eventType === "cross_content_click" &&
+    body.sourceContentType &&
+    body.targetContentType &&
+    getSystemToggles().crossContentSignalsEnabled
+  ) {
     await recordInterest({
       identityKey,
       tags: body.tags ?? postForSignals?.tags ?? forumPostForSignals?.tags ?? [],
       category: body.category ?? postForSignals?.category ?? forumPostForSignals?.tags?.[0],
       action: "view",
     });
-    void onCrossContentLink(
-      identityKey,
-      body.sourceContentType as RepContentType,
-      body.targetContentType as RepContentType,
-      body.postSlug ?? "",
-    );
+    if (getSystemToggles().reputationEnabled) {
+      void onCrossContentLink(
+        identityKey,
+        body.sourceContentType as RepContentType,
+        body.targetContentType as RepContentType,
+        body.postSlug ?? "",
+      );
+    }
     await invalidateFeedCache(identityKey);
   }
 

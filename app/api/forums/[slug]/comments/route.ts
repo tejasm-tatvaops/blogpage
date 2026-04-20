@@ -6,6 +6,7 @@ import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
 import { onForumAnswerGiven } from "@/lib/reputationEngine";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
+import { getSystemToggles } from "@/lib/systemToggles";
 
 export async function GET(
   _request: Request,
@@ -56,7 +57,9 @@ export async function POST(
 
     const fp = getFingerprintFromRequest(request);
     const actorKey = fp ? `fp:${fp}` : `ip:${getRateLimitKey(request)}`;
-    void onForumAnswerGiven(actorKey, post.slug);
+    if (getSystemToggles().reputationEnabled) {
+      void onForumAnswerGiven(actorKey, post.slug, `forum-comment:${actorKey}:${post.slug}:${comment.id}`);
+    }
 
     void recordUserActivity({
       request,

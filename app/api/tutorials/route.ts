@@ -10,6 +10,7 @@ export async function GET(request: Request) {
   const difficulty = searchParams.get("difficulty") as TutorialDifficulty | null;
   const tag        = searchParams.get("tag");
   const query      = searchParams.get("q");
+  const path       = searchParams.get("path");
   const pathsOnly  = searchParams.get("paths") === "true";
 
   if (!getSystemToggles().tutorialsEnabled) {
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ paths }, { headers: { "Cache-Control": "public, s-maxage=60" } });
     }
 
-    const result = await getTutorials({ page, limit, difficulty, tag, query });
+    const result = await getTutorials({ page, limit, difficulty, tag, query, learningPathSlug: path });
     return NextResponse.json(result, {
       headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
     });

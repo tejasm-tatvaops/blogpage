@@ -20,10 +20,14 @@ import mongoose, { type InferSchemaType, type Model } from "mongoose";
 export const INGESTION_SOURCE_TYPES = ["url", "pdf", "doc", "paste"] as const;
 export const INGESTION_OUTPUT_TYPES = ["blog", "forum", "short_caption", "tutorial"] as const;
 export const INGESTION_STATUSES     = ["pending", "processing", "ready", "published", "failed"] as const;
+export const INGESTION_DRAFT_TYPES  = ["blog", "forum", "short_caption", "tutorial"] as const;
+export const INGESTION_PUBLISH_TARGETS = ["blog", "forum", "shorts", "tutorials"] as const;
 
 export type IngestionSourceType = (typeof INGESTION_SOURCE_TYPES)[number];
 export type IngestionOutputType = (typeof INGESTION_OUTPUT_TYPES)[number];
 export type IngestionStatus     = (typeof INGESTION_STATUSES)[number];
+export type IngestionDraftType = (typeof INGESTION_DRAFT_TYPES)[number];
+export type IngestionPublishTarget = (typeof INGESTION_PUBLISH_TARGETS)[number];
 
 const contentIngestionJobSchema = new mongoose.Schema(
   {
@@ -43,6 +47,10 @@ const contentIngestionJobSchema = new mongoose.Schema(
 
     // Desired output format
     output_type: { type: String, enum: INGESTION_OUTPUT_TYPES, default: "blog" },
+    // Explicit draft classification to keep tutorial drafts out of blog flows.
+    draft_type: { type: String, enum: INGESTION_DRAFT_TYPES, default: "blog", index: true },
+    // Where this draft will publish once approved.
+    publish_target: { type: String, enum: INGESTION_PUBLISH_TARGETS, default: "blog", index: true },
 
     status: { type: String, enum: INGESTION_STATUSES, default: "pending", index: true },
 
@@ -57,7 +65,11 @@ const contentIngestionJobSchema = new mongoose.Schema(
 
     // User edits to AI draft (stored as overrides before publishing)
     edited_title:   { type: String, default: null, trim: true, maxlength: 200 },
+    edited_excerpt: { type: String, default: null, trim: true, maxlength: 500 },
     edited_content: { type: String, default: null, maxlength: 150_000 },
+    edited_tags: { type: [String], default: [] },
+    edited_difficulty: { type: String, enum: ["beginner", "intermediate", "advanced"], default: null },
+    edited_learning_path_id: { type: mongoose.Schema.Types.ObjectId, ref: "LearningPath", default: null },
 
     // Published content reference (set once published)
     published_slug:        { type: String, default: null, trim: true },
@@ -77,6 +89,7 @@ const contentIngestionJobSchema = new mongoose.Schema(
 
 contentIngestionJobSchema.index({ status: 1, created_at: -1 });
 contentIngestionJobSchema.index({ initiator_identity_key: 1, created_at: -1 });
+contentIngestionJobSchema.index({ draft_type: 1, status: 1, created_at: -1 });
 
 export type ContentIngestionJobSchemaType = InferSchemaType<typeof contentIngestionJobSchema>;
 export type ContentIngestionJobModelType = Model<ContentIngestionJobSchemaType>;

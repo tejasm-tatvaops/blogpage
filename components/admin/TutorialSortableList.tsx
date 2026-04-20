@@ -54,7 +54,15 @@ function DragHandle() {
   );
 }
 
-function SortableRow({ tutorial }: { tutorial: TutorialRow }) {
+function SortableRow({
+  tutorial,
+  deleting,
+  onDelete,
+}: {
+  tutorial: TutorialRow;
+  deleting: boolean;
+  onDelete: (tutorial: TutorialRow) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: tutorial._id });
 
@@ -100,6 +108,16 @@ function SortableRow({ tutorial }: { tutorial: TutorialRow }) {
           View
         </Link>
       </td>
+      <td className="px-4 py-3">
+        <button
+          type="button"
+          onClick={() => onDelete(tutorial)}
+          disabled={deleting}
+          className="text-xs font-medium text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {deleting ? "Deleting..." : "Delete"}
+        </button>
+      </td>
     </tr>
   );
 }
@@ -117,6 +135,7 @@ export function TutorialSortableList({ initialTutorials }: { initialTutorials: T
   const [items, setItems] = useState(initialTutorials);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -145,6 +164,29 @@ export function TutorialSortableList({ initialTutorials }: { initialTutorials: T
     }
   }, [items]);
 
+  const handleDelete = useCallback(async (tutorial: TutorialRow) => {
+    const confirmed = window.confirm(`Delete tutorial "${tutorial.title}"? This removes related progress and references.`);
+    if (!confirmed) return;
+
+    setDeletingId(tutorial._id);
+    setError(null);
+    const previous = items;
+    setItems((current) => current.filter((row) => row._id !== tutorial._id));
+
+    try {
+      const res = await fetch(`/api/admin/tutorials/${tutorial._id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? "Delete failed.");
+      }
+    } catch (err) {
+      setItems(previous);
+      setError(err instanceof Error ? err.message : "Delete failed.");
+    } finally {
+      setDeletingId(null);
+    }
+  }, [items]);
+
   return (
     <div>
       {(saving || error) && (
@@ -166,11 +208,17 @@ export function TutorialSortableList({ initialTutorials }: { initialTutorials: T
                   <th className="px-4 py-3">Time</th>
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3"></th>
+                  <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {items.map((t) => (
-                  <SortableRow key={t._id} tutorial={t} />
+                  <SortableRow
+                    key={t._id}
+                    tutorial={t}
+                    deleting={deletingId === t._id}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </tbody>
             </table>

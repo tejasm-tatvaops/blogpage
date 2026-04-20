@@ -23,7 +23,11 @@ export async function GET(
 
 const editSchema = z.object({
   title:   z.string().trim().max(200).optional(),
+  excerpt: z.string().trim().max(500).optional(),
   content: z.string().trim().max(150_000).optional(),
+  tags: z.array(z.string().trim().max(60)).max(12).optional(),
+  difficulty: z.enum(["beginner", "intermediate", "advanced"]).optional(),
+  learning_path_id: z.string().trim().optional().nullable(),
 });
 
 export async function PATCH(
@@ -40,6 +44,13 @@ export async function PATCH(
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
 
   const { jobId } = await params;
-  await updateIngestionJobDraft(jobId, parsed.data);
+  await updateIngestionJobDraft(jobId, {
+    title: parsed.data.title,
+    excerpt: parsed.data.excerpt,
+    content: parsed.data.content,
+    tags: parsed.data.tags,
+    difficulty: parsed.data.difficulty,
+    learningPathId: parsed.data.learning_path_id ?? undefined,
+  });
   return NextResponse.json({ ok: true });
 }

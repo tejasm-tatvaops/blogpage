@@ -10,6 +10,7 @@ import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
 import { onForumPostCreated } from "@/lib/reputationEngine";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
+import { getSystemToggles } from "@/lib/systemToggles";
 
 export async function GET(request: Request) {
   try {
@@ -60,7 +61,9 @@ export async function POST(request: Request) {
     const actorKey = fp
       ? `fp:${fp}`
       : `ip:${getRateLimitKey(request)}`;
-    void onForumPostCreated(actorKey, post.slug);
+    if (getSystemToggles().reputationEnabled) {
+      void onForumPostCreated(actorKey, post.slug);
+    }
     void recordUserActivity({
       request,
       action: "forum_post",

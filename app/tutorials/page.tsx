@@ -36,15 +36,22 @@ type LearningPath = {
 export default async function TutorialsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ difficulty?: string; tag?: string; q?: string }>;
+  searchParams: Promise<{ difficulty?: string; tag?: string; q?: string; path?: string }>;
 }) {
   const sp = await searchParams;
   const difficulty = sp.difficulty ?? null;
   const tag  = sp.tag  ?? null;
   const query = sp.q  ?? null;
+  const path = sp.path ?? null;
 
   const [{ tutorials, total }, paths] = await Promise.all([
-    getTutorials({ difficulty: difficulty as "beginner" | "intermediate" | "advanced" | null, tag, query, limit: 30 }),
+    getTutorials({
+      difficulty: difficulty as "beginner" | "intermediate" | "advanced" | null,
+      tag,
+      query,
+      learningPathSlug: path,
+      limit: 30,
+    }),
     getLearningPaths(),
   ]);
 

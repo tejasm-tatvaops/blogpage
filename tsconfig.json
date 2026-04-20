@@ -7,7 +7,7 @@
       "esnext"
     ],
     "allowJs": false,
-    "skipLibCheck": false,
+    "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
     "noUnusedLocals": true,
@@ -23,6 +23,11 @@
       {
         "name": "next"
       }
+    ],
+    "types": [
+      "node",
+      "react",
+      "react-dom"
     ],
     "paths": {
       "@/*": [

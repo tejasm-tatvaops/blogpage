@@ -17,6 +17,13 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { ContentIngestionJobModel, type IngestionOutputType, type IngestionSourceType } from "@/models/ContentIngestionJob";
 import { logger } from "@/lib/logger";
 
+const toPublishTarget = (outputType: IngestionOutputType): "blog" | "forum" | "shorts" | "tutorials" => {
+  if (outputType === "forum") return "forum";
+  if (outputType === "short_caption") return "shorts";
+  if (outputType === "tutorial") return "tutorials";
+  return "blog";
+};
+
 // ─── Text extraction helpers ──────────────────────────────────────────────────
 
 /** Fetch a URL and strip all HTML tags to get readable text (≤ 20k chars). */
@@ -163,6 +170,7 @@ export type CreateIngestionJobInput = {
 /** Create and immediately process an ingestion job. Returns the job document. */
 export async function createIngestionJob(input: CreateIngestionJobInput) {
   await connectToDatabase();
+  const outputType = input.outputType ?? "blog";
 
   const job = await ContentIngestionJobModel.create({
     initiator_identity_key: input.initiatorIdentityKey,
@@ -170,7 +178,9 @@ export async function createIngestionJob(input: CreateIngestionJobInput) {
     source_url:   input.sourceUrl  ?? null,
     source_text:  input.sourceText ?? null,
     source_filename: input.sourceFilename ?? null,
-    output_type:  input.outputType ?? "blog",
+    output_type:  outputType,
+    draft_type: outputType,
+    publish_target: toPublishTarget(outputType),
     status:       "pending",
   });
 
@@ -216,6 +226,8 @@ export async function processIngestionJob(jobId: string): Promise<void> {
     await ContentIngestionJobModel.findByIdAndUpdate(jobId, {
       $set: {
         status: "ready",
+        draft_type: outputType,
+        publish_target: toPublishTarget(outputType),
         ai_title:    draft.title,
         ai_excerpt:  draft.excerpt,
         ai_content:  draft.content,
@@ -256,13 +268,24 @@ export async function listIngestionJobs(initiatorKey: string, limit = 20) {
 /** Save user edits to the AI draft before publishing. */
 export async function updateIngestionJobDraft(
   jobId: string,
-  edits: { title?: string; content?: string },
+  edits: {
+    title?: string;
+    excerpt?: string;
+    content?: string;
+    tags?: string[];
+    difficulty?: "beginner" | "intermediate" | "advanced";
+    learningPathId?: string | null;
+  },
 ) {
   await connectToDatabase();
   await ContentIngestionJobModel.findByIdAndUpdate(jobId, {
     $set: {
       ...(edits.title   ? { edited_title:   edits.title }   : {}),
+      ...(edits.excerpt ? { edited_excerpt: edits.excerpt } : {}),
       ...(edits.content ? { edited_content: edits.content } : {}),
+      ...(edits.tags ? { edited_tags: edits.tags.slice(0, 12) } : {}),
+      ...(edits.difficulty ? { edited_difficulty: edits.difficulty } : {}),
+      ...(edits.learningPathId !== undefined ? { edited_learning_path_id: edits.learningPathId || null } : {}),
     },
   });
 }
@@ -279,6 +302,14 @@ export async function markIngestionJobPublished(
       status: "published",
       published_slug: publishedSlug,
       published_content_type: publishedContentType,
+      publish_target:
+        publishedContentType === "tutorial"
+          ? "tutorials"
+          : publishedContentType === "forum"
+            ? "forum"
+            : publishedContentType === "short_caption"
+              ? "shorts"
+              : "blog",
     },
   });
 }

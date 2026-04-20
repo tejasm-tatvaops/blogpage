@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type OutputType = "blog" | "forum" | "short_caption" | "tutorial";
 type Tab = "url" | "paste";
@@ -14,13 +14,27 @@ type JobDetail = {
   _id: string;
   status: string;
   ai_title?: string;
+  ai_excerpt?: string;
   ai_summary?: string;
   ai_insights?: string[];
   ai_content?: string;
   ai_tags?: string[];
   ai_category?: string;
   output_type?: string;
+  draft_type?: string;
+  publish_target?: string;
+  edited_title?: string;
+  edited_excerpt?: string;
+  edited_content?: string;
+  edited_tags?: string[];
+  edited_difficulty?: "beginner" | "intermediate" | "advanced" | null;
+  edited_learning_path_id?: string | null;
   error_message?: string;
+};
+
+type LearningPathOption = {
+  _id: string;
+  title: string;
 };
 
 export default function IngestPage() {
@@ -35,6 +49,46 @@ export default function IngestPage() {
   const [polling, setPolling]   = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<string | null>(null);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
+  const [editedExcerpt, setEditedExcerpt] = useState("");
+  const [editedContent, setEditedContent] = useState("");
+  const [editedTags, setEditedTags] = useState("");
+  const [editedDifficulty, setEditedDifficulty] = useState<"beginner" | "intermediate" | "advanced">("beginner");
+  const [editedLearningPathId, setEditedLearningPathId] = useState("");
+  const [learningPaths, setLearningPaths] = useState<LearningPathOption[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    const loadPaths = async () => {
+      try {
+        const res = await fetch("/api/tutorials?paths=true", { cache: "no-store" });
+        const data = (await res.json()) as { paths?: Array<{ _id: { toString(): string } | string; title: string }> };
+        if (!active) return;
+        const mapped = (data.paths ?? []).map((p) => ({
+          _id: typeof p._id === "string" ? p._id : p._id?.toString?.() ?? "",
+          title: p.title,
+        })).filter((p) => p._id);
+        setLearningPaths(mapped);
+      } catch {
+        setLearningPaths([]);
+      }
+    };
+    void loadPaths();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!jobDetail || jobDetail.status !== "ready") return;
+    setEditedTitle(jobDetail.edited_title ?? jobDetail.ai_title ?? "");
+    setEditedExcerpt(jobDetail.edited_excerpt ?? jobDetail.ai_excerpt ?? "");
+    setEditedContent(jobDetail.edited_content ?? jobDetail.ai_content ?? "");
+    setEditedTags((jobDetail.edited_tags ?? jobDetail.ai_tags ?? []).join(", "));
+    setEditedDifficulty(jobDetail.edited_difficulty ?? "beginner");
+    setEditedLearningPathId(jobDetail.edited_learning_path_id ?? "");
+  }, [jobDetail]);
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -119,13 +173,50 @@ export default function IngestPage() {
       const res = await fetch(`/api/ingest/${job.job_id}/publish`, { method: "POST" });
       const data = (await res.json()) as { ok?: boolean; published_slug?: string; type?: string };
       if (data.ok) {
-        setPublishResult(`Published as ${data.type}: /${data.type === "forum" ? "forums" : "blog"}/${data.published_slug}`);
+        const basePath =
+          data.type === "forum"
+            ? "forums"
+            : data.type === "tutorial"
+              ? "tutorials"
+              : data.type === "short_caption"
+                ? "shorts"
+                : "blog";
+        setPublishResult(`Published as ${data.type}: /${basePath}/${data.published_slug}`);
         void pollJob(job.job_id);
       } else {
         setError("Publish failed.");
       }
     } finally {
       setPublishing(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!job?.job_id) return;
+    setSavingDraft(true);
+    setError(null);
+    try {
+      const payload = {
+        title: editedTitle.trim(),
+        excerpt: editedExcerpt.trim(),
+        content: editedContent.trim(),
+        tags: editedTags.split(",").map((t) => t.trim()).filter(Boolean),
+        difficulty: editedDifficulty,
+        learning_path_id: editedLearningPathId || null,
+      };
+      const res = await fetch(`/api/ingest/${job.job_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? "Failed to save draft edits.");
+        return;
+      }
+      await pollJob(job.job_id);
+    } finally {
+      setSavingDraft(false);
     }
   };
 
@@ -233,6 +324,11 @@ export default function IngestPage() {
                   {jobDetail?.status ?? "pending"}
                 </span>
               </span>
+              {jobDetail?.output_type && (
+                <span className="rounded-full border border-app bg-subtle px-2 py-0.5 text-xs text-slate-600">
+                  {jobDetail.draft_type ?? jobDetail.output_type} → {jobDetail.publish_target ?? jobDetail.output_type}
+                </span>
+              )}
             </div>
           </div>
 
@@ -272,6 +368,68 @@ export default function IngestPage() {
                 ))}
               </div>
 
+              {jobDetail.output_type === "tutorial" && (
+                <div className="space-y-3 rounded-lg border border-app bg-subtle p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Edit tutorial draft before publish</p>
+                  <input
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    className="w-full rounded-md border border-slate-300 bg-surface px-3 py-2 text-sm"
+                    placeholder="Title"
+                  />
+                  <input
+                    value={editedExcerpt}
+                    onChange={(e) => setEditedExcerpt(e.target.value)}
+                    className="w-full rounded-md border border-slate-300 bg-surface px-3 py-2 text-sm"
+                    placeholder="Excerpt"
+                  />
+                  <textarea
+                    value={editedContent}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    rows={10}
+                    className="w-full rounded-md border border-slate-300 bg-surface px-3 py-2 text-sm"
+                    placeholder="Tutorial content"
+                  />
+                  <input
+                    value={editedTags}
+                    onChange={(e) => setEditedTags(e.target.value)}
+                    className="w-full rounded-md border border-slate-300 bg-surface px-3 py-2 text-sm"
+                    placeholder="Tags (comma separated)"
+                  />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <select
+                      value={editedDifficulty}
+                      onChange={(e) => setEditedDifficulty(e.target.value as "beginner" | "intermediate" | "advanced")}
+                      className="rounded-md border border-slate-300 bg-surface px-3 py-2 text-sm"
+                    >
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="advanced">Advanced</option>
+                    </select>
+                    <select
+                      value={editedLearningPathId}
+                      onChange={(e) => setEditedLearningPathId(e.target.value)}
+                      className="rounded-md border border-slate-300 bg-surface px-3 py-2 text-sm"
+                    >
+                      <option value="">No learning path</option>
+                      {learningPaths.map((path) => (
+                        <option key={path._id} value={path._id}>
+                          {path.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveDraft}
+                    disabled={savingDraft}
+                    className="w-full rounded-lg border border-app bg-surface py-2 text-sm font-semibold text-slate-700 hover:bg-subtle disabled:opacity-60"
+                  >
+                    {savingDraft ? "Saving edits…" : "Save draft edits"}
+                  </button>
+                </div>
+              )}
+
               {publishResult ? (
                 <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
                   {publishResult}
@@ -283,7 +441,7 @@ export default function IngestPage() {
                   disabled={publishing}
                   className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
                 >
-                  {publishing ? "Publishing…" : `Publish as ${jobDetail.output_type ?? "blog"} (draft)`}
+                  {publishing ? "Publishing…" : `Publish ${jobDetail.output_type ?? "blog"} draft`}
                 </button>
               )}
             </div>

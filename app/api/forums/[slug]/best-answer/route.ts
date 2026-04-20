@@ -4,6 +4,7 @@ import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { onBestAnswerAwarded } from "@/lib/reputationEngine";
+import { getSystemToggles } from "@/lib/systemToggles";
 
 export async function POST(
   request: Request,
@@ -46,8 +47,8 @@ export async function POST(
     // Award reputation to the comment author. result.comment_author_key should
     // be the identity_key stored on the comment; fall back to a best-effort fp.
     const authorKey = (result as Record<string, unknown>).comment_author_key as string | undefined;
-    if (authorKey) {
-      void onBestAnswerAwarded(authorKey, decodeURIComponent(slug));
+    if (authorKey && getSystemToggles().reputationEnabled) {
+      void onBestAnswerAwarded(authorKey, decodeURIComponent(slug), `best-answer:${slug}:${commentId.trim()}`);
     }
 
     logger.info({ slug, commentId }, "Best answer set");

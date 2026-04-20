@@ -76,6 +76,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Videos",         href: "/admin/videos",   icon: <IconVideos /> },
       { label: "Tatva Inshorts", href: "/admin/inshorts", icon: <IconVideos /> },
       { label: "Tutorials", href: "/admin/tutorials", icon: <IconBlogs /> },
+      { label: "Tutorial Drafts", href: "/admin/tutorials/drafts", icon: <IconJobs /> },
     ],
   },
   {

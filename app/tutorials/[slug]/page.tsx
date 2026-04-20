@@ -4,6 +4,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { getTutorialBySlug } from "@/lib/tutorialService";
+import { TutorialProgressCard } from "@/components/tutorials/TutorialProgressCard";
 
 type Params = { slug: string };
 
@@ -82,6 +83,9 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
       )}
 
       {/* Main content */}
+      <div className="mb-6">
+        <TutorialProgressCard slug={decodeURIComponent(slug)} />
+      </div>
       <article className="prose prose-slate max-w-none">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{t.content}</ReactMarkdown>
       </article>

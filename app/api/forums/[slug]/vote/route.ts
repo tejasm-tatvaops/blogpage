@@ -6,6 +6,7 @@ import { logger } from "@/lib/logger";
 import { createNotification } from "@/lib/notificationService";
 import { recordUserActivity } from "@/lib/userProfileService";
 import { onForumUpvoteReceived } from "@/lib/reputationEngine";
+import { getSystemToggles } from "@/lib/systemToggles";
 
 export async function POST(
   request: Request,
@@ -48,11 +49,12 @@ export async function POST(
         recipient_key: `fp:${result.creator_fingerprint}`,
         message: `Your post received a ${direction === "up" ? "new upvote" : "new downvote"}.`,
       });
-      if (direction === "up") {
+      if (direction === "up" && getSystemToggles().reputationEnabled) {
         void onForumUpvoteReceived(
           `fp:${result.creator_fingerprint}`,
           `fp:${fingerprintId}`,
           slug,
+          `forum-upvote:${slug}:${fingerprintId}:${result.id}`,
         );
       }
     }

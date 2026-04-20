@@ -28,6 +28,10 @@ export const REP_EVENT_REASONS = [
   "cross_content_link",          // you linked content across types (blog→forum etc.)
   "cross_content_engagement",    // cross-content engagement received (10× multiplier)
   "peer_helpful_vote",           // peers marked you as helpful
+  "tutorial_completed",          // completed a tutorial
+  "learning_path_completed",     // completed a full learning path
+  "tutorial_peer_review",        // reviewed tutorial quality/feedback
+  "tutorial_author_contribution",// authored a tutorial contribution
   "content_share",               // you shared content (outbound)
   "badge_unlock_bonus",          // bonus on badge unlock
   "anti_abuse_deduction",        // deducted for abuse pattern
@@ -68,6 +72,9 @@ const reputationEventSchema = new mongoose.Schema(
     // Human-readable note for admin UI
     note: { type: String, default: null, trim: true, maxlength: 300 },
 
+    // Deterministic idempotency key to prevent duplicate awards on retries/replays.
+    event_key: { type: String, default: null, trim: true, maxlength: 220 },
+
     // Flag: was this cross-content interaction?
     is_cross_content: { type: Boolean, default: false, index: true },
   },
@@ -82,6 +89,10 @@ reputationEventSchema.index({ identity_key: 1, reason: 1, created_at: -1 }); // 
 reputationEventSchema.index({ source_content_slug: 1, reason: 1 }); // per-content analytics
 reputationEventSchema.index({ is_cross_content: 1, created_at: -1 }); // cross-content report
 reputationEventSchema.index({ actor_identity_key: 1, reason: 1, created_at: -1 }); // anti-abuse
+reputationEventSchema.index(
+  { event_key: 1 },
+  { unique: true, partialFilterExpression: { event_key: { $type: "string" } } },
+);
 
 export type ReputationEventSchemaType = InferSchemaType<typeof reputationEventSchema>;
 export type ReputationEventModelType = Model<ReputationEventSchemaType>;

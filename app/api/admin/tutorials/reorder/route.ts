@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApiAccess } from "@/lib/adminAuth";
-import { dbConnect } from "@/lib/dbConnect";
+import { connectToDatabase } from "@/lib/mongodb";
 import { TutorialModel } from "@/models/Tutorial";
 import { z } from "zod";
 
@@ -12,8 +12,8 @@ const ReorderSchema = z.array(
 ).min(1).max(500);
 
 export async function PATCH(req: NextRequest) {
-  const authError = await requireAdminApiAccess(req);
-  if (authError) return authError;
+  const authorized = await requireAdminApiAccess();
+  if (!authorized) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let body: unknown;
   try { body = await req.json(); } catch {
@@ -25,16 +25,16 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
 
-  await dbConnect();
+  await connectToDatabase();
 
-  const ops = parsed.data.map(({ id, order }) => ({
-    updateOne: {
-      filter: { _id: id },
-      update: { $set: { sort_order: order } },
-    },
-  }));
-
-  await TutorialModel.bulkWrite(ops, { ordered: false });
+  await Promise.all(
+    parsed.data.map(({ id, order }) =>
+      TutorialModel.updateOne(
+        { _id: id },
+        { $set: { sort_order: order } },
+      ),
+    ),
+  );
 
   return NextResponse.json({ ok: true });
 }

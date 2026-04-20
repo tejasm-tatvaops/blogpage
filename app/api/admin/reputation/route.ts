@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     reason: "manual_admin_adjustment",
     pointsOverride: points,
     note: note ?? `Admin manual adjustment: ${points > 0 ? "+" : ""}${points}`,
+    eventKey: `admin-adjustment:${identity_key}:${points}:${(note ?? "").slice(0, 80)}:${new Date().toISOString().slice(0, 16)}`,
     skipBadgeCheck: false,
   });
 
