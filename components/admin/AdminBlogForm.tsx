@@ -477,7 +477,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
               type="button"
               disabled={isSubmitting}
               onClick={(e) => { void onSubmit(e, true); }}
-              className="rounded-lg bg-sky-600 px-4 py-1.5 text-sm font-semibold !text-white shadow-sm transition hover:bg-sky-700 disabled:opacity-50"
+              className="rounded-lg bg-sky-500 px-4 py-1.5 text-sm font-semibold !text-white shadow-sm transition hover:bg-sky-400 disabled:opacity-50"
             >
               {isSubmitting ? "Saving…" : form.published ? "Update" : "Publish"}
             </button>
@@ -752,7 +752,7 @@ export function AdminBlogForm({ mode, initialPost }: AdminBlogFormProps) {
                   type="button"
                   disabled={isSubmitting}
                   onClick={(e) => { void onSubmit(e, true); }}
-                  className="flex-1 rounded-xl bg-sky-600 py-2 text-xs font-semibold !text-white shadow-sm transition hover:bg-sky-700 disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-sky-500 py-2 text-xs font-semibold !text-white shadow-sm transition hover:bg-sky-400 disabled:opacity-50"
                 >
                   {isSubmitting ? "Saving…" : "Publish"}
                 </button>

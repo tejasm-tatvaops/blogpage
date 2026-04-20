@@ -33,7 +33,7 @@ export function Navbar() {
           <Link href="/inshorts" className={navPillClass}>Tatva Inshorts</Link>
 
           <Link href="/tutorials" className={navPillClass}>Tutorials</Link>
-          <Link href="/ask" className={`${navPillClass} border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:text-sky-800`}>
+          <Link href="/ask" className={`${navPillClass} ui-btn-primary border-transparent hover:text-white`}>
             Ask AI
           </Link>
 

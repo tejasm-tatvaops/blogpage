@@ -22,19 +22,19 @@ export function AdminTopBar() {
     <header className="flex h-12 shrink-0 items-center justify-between border-b border-app bg-surface px-4">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
-        <Link href="/admin/forums" className="text-slate-400 transition hover:text-slate-700">
+        <Link href="/admin/forums" className="text-muted transition hover:text-app">
           Admin
         </Link>
         {parent && (
           <>
-            <span className="text-slate-300">/</span>
-            <Link href={parent.href} className="text-slate-400 transition hover:text-slate-700">
+            <span className="text-faint">/</span>
+            <Link href={parent.href} className="text-muted transition hover:text-app">
               {parent.label}
             </Link>
           </>
         )}
-        <span className="text-slate-300">/</span>
-        <span className="font-medium text-slate-800">{label}</span>
+        <span className="text-faint">/</span>
+        <span className="font-medium text-app">{label}</span>
       </nav>
 
       {/* Right side */}
@@ -43,11 +43,11 @@ export function AdminTopBar() {
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-slate-400 transition hover:text-slate-700"
+          className="text-xs text-muted transition hover:text-app"
         >
           View site ↗
         </Link>
-        <div className="hidden items-center gap-1 rounded border border-app px-1.5 py-0.5 text-[11px] text-slate-400 sm:flex">
+        <div className="hidden items-center gap-1 rounded border border-app px-1.5 py-0.5 text-[11px] text-muted sm:flex">
           <kbd className="font-mono">⌘</kbd>
           <kbd className="font-mono">K</kbd>
         </div>

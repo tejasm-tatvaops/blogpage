@@ -63,7 +63,7 @@ export function ThemeToggle() {
         "inline-flex items-center justify-center rounded-full border p-[7px] transition",
         "hover:-translate-y-0.5 hover:shadow",
         "ui-btn-secondary border-app text-muted shadow-sm hover:text-app",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-1",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1",
       ].join(" ")}
     >
       {icon}

@@ -86,7 +86,7 @@ export function KnowledgeEcosystemPanel({
         {askAiHref && (
           <Link
             href={askAiHref}
-            className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
+            className="inline-flex items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-400"
           >
             Ask AI about this topic
           </Link>

@@ -80,7 +80,7 @@ export function NotificationBell() {
           if (next && unread > 0) void markAllRead();
         }}
         aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ""}`}
-        className="relative rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+        className="relative rounded-xl border border-app bg-surface p-2 text-muted shadow-sm transition hover:bg-subtle hover:text-app"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -95,7 +95,7 @@ export function NotificationBell() {
 
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-app bg-surface shadow-xl">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+          <div className="flex items-center justify-between border-b border-app px-4 py-3">
             <span className="text-sm font-bold text-app">Notifications</span>
           </div>
 
@@ -104,10 +104,10 @@ export function NotificationBell() {
               <li className="px-4 py-6 text-center text-sm text-slate-400">No notifications yet</li>
             ) : (
               notifs.map((n) => (
-                <li key={n.id} className={`px-4 py-3 ${!n.is_read ? "bg-sky-50/50" : ""}`}>
+                <li key={n.id} className={`px-4 py-3 ${!n.is_read ? "bg-sky-50" : ""}`}>
                   <div className="flex items-start gap-2.5">
                     <span className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[11px] ${
-                      n.type === "vote" ? "bg-orange-100 text-orange-600" : "bg-sky-100 text-sky-600"
+                      n.type === "vote" ? "bg-amber-100 text-amber-700" : "bg-sky-100 text-sky-700"
                     }`}>
                       {n.type === "vote" ? "▲" : "💬"}
                     </span>

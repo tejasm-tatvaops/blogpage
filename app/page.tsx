@@ -148,7 +148,7 @@ export default async function HomePage() {
           </div>
           <Link
             href="/ask"
-            className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700"
+            className="inline-flex items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-400"
           >
             Ask AI anything on TatvaOps
           </Link>
@@ -303,7 +303,7 @@ export default async function HomePage() {
             href="/blog"
             className={[
               "inline-flex min-w-[140px] items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold transition",
-              "bg-sky-600 text-white hover:bg-sky-700",
+              "bg-sky-500 text-white hover:bg-sky-400",
               "dark:bg-sky-400 dark:text-app dark:hover:bg-sky-300",
             ].join(" ")}
           >

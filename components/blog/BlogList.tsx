@@ -310,7 +310,7 @@ export function BlogList({
           {canCreatePost ? (
             <Link
               href="/admin/blog/new"
-              className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-sky-800"
+              className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-sky-400"
             >
               New post
             </Link>

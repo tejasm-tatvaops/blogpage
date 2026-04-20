@@ -138,8 +138,8 @@ export function AdminSidebar() {
         </div>
         {!collapsed && (
           <div className="min-w-0">
-            <p className="truncate text-xs font-semibold text-slate-800">TatvaOps</p>
-            <p className="truncate text-[10px] text-slate-400">Admin</p>
+            <p className="truncate text-xs font-semibold text-app">TatvaOps</p>
+            <p className="truncate text-[10px] text-muted">Admin</p>
           </div>
         )}
       </div>
@@ -149,7 +149,7 @@ export function AdminSidebar() {
         {NAV_GROUPS.map((group) => (
           <div key={group.label} className="mb-4">
             {!collapsed && (
-              <p className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+              <p className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted">
                 {group.label}
               </p>
             )}
@@ -168,7 +168,7 @@ export function AdminSidebar() {
           type="button"
           onClick={() => setCollapsed((c) => !c)}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={`flex w-full items-center rounded-lg px-2.5 py-1.5 text-slate-400 transition hover:bg-subtle hover:text-slate-600 ${
+          className={`flex w-full items-center rounded-lg px-2.5 py-1.5 text-muted transition hover:bg-subtle hover:text-app ${
             collapsed ? "justify-center" : "gap-2"
           }`}
         >
