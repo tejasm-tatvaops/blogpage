@@ -52,7 +52,12 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
   const graphEnabled = getSystemToggles().askAiGraphEnabled;
   const toggles = getSystemToggles();
-  const graphContext = graphEnabled ? await buildAskAiGraphContext(post) : null;
+  let graphContext = null;
+  try {
+    graphContext = graphEnabled ? await buildAskAiGraphContext(post) : null;
+  } catch (e) {
+    console.error("buildAskAiGraphContext failed:", e);
+  }
   const articleContext = graphContext
     ? graphContext.contextText
     : truncateContent(post.content);
@@ -113,36 +118,40 @@ export async function POST(req: NextRequest, context: RouteContext) {
     ? "\n\nSources disagree on at least one point. Review cited sources before acting."
     : "";
 
-  recordMetric("ask_ai.request", {
-    slug,
-    mode,
-    graph_enabled: graphEnabled,
-    source_count: graphContext?.sources.length ?? 1,
-    citation_enforcement_enabled: toggles.askAiCitationEnforcementEnabled,
-    confidence_enabled: toggles.askAiConfidenceScoringEnabled,
-    conflict_detection_enabled: toggles.askAiConflictDetectionEnabled,
-    citation_compliant: finalValidation.valid,
-    uncited_answer_corrected: correctedUncited,
-    confidence,
-    conflict_detected: conflictDetected,
-    source_mix_tutorial: graphContext?.sourceMix.tutorial ?? 0,
-    source_mix_blog: graphContext?.sourceMix.blog ?? 0,
-    source_mix_forum: graphContext?.sourceMix.forum ?? 0,
-    source_mix_short: graphContext?.sourceMix.short ?? 0,
-    citation_density: Number((finalValidation.citations.length / Math.max(1, answer.split(/\s+/).length / 120)).toFixed(3)),
-  });
-  recordAskAiQualitySample({
-    citationCompliant: finalValidation.valid,
-    correctedUncited,
-    confidence,
-    conflictDetected,
-    sourceMix: {
-      tutorial: graphContext?.sourceMix.tutorial ?? 0,
-      blog: graphContext?.sourceMix.blog ?? 0,
-      forum: graphContext?.sourceMix.forum ?? 0,
-      short: graphContext?.sourceMix.short ?? 0,
-    },
-  });
+  try {
+    recordMetric("ask_ai.request", {
+      slug,
+      mode,
+      graph_enabled: graphEnabled,
+      source_count: graphContext?.sources.length ?? 1,
+      citation_enforcement_enabled: toggles.askAiCitationEnforcementEnabled,
+      confidence_enabled: toggles.askAiConfidenceScoringEnabled,
+      conflict_detection_enabled: toggles.askAiConflictDetectionEnabled,
+      citation_compliant: finalValidation.valid,
+      uncited_answer_corrected: correctedUncited,
+      confidence,
+      conflict_detected: conflictDetected,
+      source_mix_tutorial: graphContext?.sourceMix.tutorial ?? 0,
+      source_mix_blog: graphContext?.sourceMix.blog ?? 0,
+      source_mix_forum: graphContext?.sourceMix.forum ?? 0,
+      source_mix_short: graphContext?.sourceMix.short ?? 0,
+      citation_density: Number((finalValidation.citations.length / Math.max(1, answer.split(/\s+/).length / 120)).toFixed(3)),
+    });
+    recordAskAiQualitySample({
+      citationCompliant: finalValidation.valid,
+      correctedUncited,
+      confidence,
+      conflictDetected,
+      sourceMix: {
+        tutorial: graphContext?.sourceMix.tutorial ?? 0,
+        blog: graphContext?.sourceMix.blog ?? 0,
+        forum: graphContext?.sourceMix.forum ?? 0,
+        short: graphContext?.sourceMix.short ?? 0,
+      },
+    });
+  } catch (e) {
+    console.error("Metrics failed:", e);
+  }
 
   const sourceAppendix = graphContext ? buildSourceAppendix(graphContext.sources) : "";
   const finalText = `${answer.trim()}${confidenceLine}${conflictLine}${sourceAppendix}`.trim();

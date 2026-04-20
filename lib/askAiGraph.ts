@@ -14,7 +14,8 @@ type GraphSource = {
   relevanceScore: number;
 };
 
-const truncateWords = (value: string, maxWords: number): string => {
+const truncateWords = (value: string | null | undefined, maxWords: number): string => {
+  if (!value) return "";
   const words = value.split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) return value;
   return `${words.slice(0, maxWords).join(" ")} ...`;
@@ -84,8 +85,8 @@ export async function buildAskAiGraphContext(currentPost: BlogPost): Promise<{
       sourceType: "short" as const,
       slug: item.slug,
       title: item.title,
-      excerpt: item.summary ?? item.shortCaption,
-      snippet: truncateWords(item.transcript ?? item.summary ?? item.shortCaption, 180),
+      excerpt: item.summary ?? item.shortCaption ?? "",
+      snippet: truncateWords(item.transcript ?? item.summary ?? item.shortCaption ?? "", 180),
       trustScore: 0.34,
       relevanceScore: 0.46,
     })),
