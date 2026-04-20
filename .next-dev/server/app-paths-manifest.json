@@ -1,5 +1,7 @@
 {
+  "/api/feed/events/route": "app/api/feed/events/route.js",
   "/api/notifications/route": "app/api/notifications/route.js",
-  "/ask/page": "app/ask/page.js",
-  "/tutorials/page": "app/tutorials/page.js"
+  "/page": "app/page.js",
+  "/inshorts/page": "app/inshorts/page.js",
+  "/ask/page": "app/ask/page.js"
 }

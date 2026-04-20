@@ -76,8 +76,28 @@ const imageForPost = (id: string): string => {
 
 const shortText = (post: ForumPost): string => {
   const source = (post.excerpt || post.content || "").replace(/\s+/g, " ").trim();
-  if (!source) return "Practical construction discussion from the community.";
-  return source.split(" ").slice(0, 110).join(" ");
+  const tagLine = post.tags.slice(0, 2).join(" & ");
+  const engagementLine =
+    post.comment_count >= 8
+      ? "Community debate is active, with practical on-ground points from multiple builders."
+      : "Useful practical context shared by the community for real project decisions.";
+  const fallback =
+    tagLine.length > 0
+      ? `Quick update on ${tagLine}. ${engagementLine}`
+      : `Practical construction update. ${engagementLine}`;
+
+  const base = source || fallback;
+  const baseWords = base.split(" ").filter(Boolean);
+  const baseText = baseWords.slice(0, 52).join(" ");
+
+  const extensionParts: string[] = [];
+  if (tagLine.length > 0) extensionParts.push(`Focus: ${tagLine}.`);
+  extensionParts.push(engagementLine);
+  extensionParts.push("Tap Discuss in Forums to see detailed advice, trade-offs, and real site experiences.");
+  const extension = extensionParts.join(" ");
+
+  const combined = `${baseText}${baseText.endsWith(".") ? "" : "."} ${extension}`.replace(/\s+/g, " ").trim();
+  return combined.split(" ").slice(0, 95).join(" ");
 };
 
 const toneForPost = (post: ForumPost): string => {
@@ -480,7 +500,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3, ease: "easeOut", delay: 0.14 }}
-                    className="mt-2 line-clamp-6 max-w-3xl text-sm leading-6 text-white/90 sm:text-base"
+                    className="mt-2 line-clamp-6 max-w-xl text-sm leading-7 text-white/90 sm:text-base"
                   >
                     {shortText(post)}
                   </motion.p>
