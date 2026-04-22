@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { NavbarAuthButton } from "@/components/layout/NavbarAuthButton";
 
 export function Navbar() {
   const navPillClass = [
@@ -47,6 +48,7 @@ export function Navbar() {
 
           <ThemeToggle />
           <NotificationBell />
+          <NavbarAuthButton pillClass={navPillClass} />
 
           <Link href="/admin/login" className={navPillClass}>Admin</Link>
         </nav>

@@ -4,6 +4,7 @@ import Script from "next/script";
 import { Navbar } from "@/components/layout/Navbar";
 import { UnhandledRejectionGuard } from "@/components/system/UnhandledRejectionGuard";
 import { ThemeProvider } from "@/components/system/ThemeProvider";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import { ensureActivityRunnerStarted } from "@/lib/activityRunner";
 import "./globals.css";
 
@@ -47,10 +48,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
         <UnhandledRejectionGuard />
-        <div className="min-h-screen bg-app text-app">
-          <Navbar />
-          <main>{children}</main>
-        </div>
+        <AuthProvider>
+          <div className="min-h-screen bg-app text-app">
+            <Navbar />
+            <main>{children}</main>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

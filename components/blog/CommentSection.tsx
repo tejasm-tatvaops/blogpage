@@ -1,11 +1,13 @@
 "use client";
 
-import { type FormEvent, useCallback, useMemo, useRef, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import type { Comment } from "@/lib/commentService";
 import { useActivityPolling } from "@/lib/activityPolling";
 import { getAvatarForIdentity } from "@/lib/avatar";
 import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
+import { useAuthModal } from "@/components/providers/AuthProvider";
 
 type CommentSectionProps = {
   slug: string;
@@ -21,10 +23,16 @@ const formatDate = (iso: string) =>
 
 export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const { openLoginModal } = useAuthModal();
   const commentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
+
+  useEffect(() => {
+    if (session?.user?.name) setAuthorName(session.user.name);
+  }, [session]);
   const [sortMode, setSortMode] = useState<"top" | "newest">("top");
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [activeReplyFor, setActiveReplyFor] = useState<string | null>(null);
@@ -121,6 +129,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!session) { openLoginModal(); return; }
     if (submitting) return;
     setError(null);
     setSuccess(false);
@@ -152,6 +161,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   };
 
   const onReply = async (parentCommentId: string) => {
+    if (!session) { openLoginModal(); return; }
     const replyText = replyDrafts[parentCommentId]?.trim() ?? "";
     const replyAuthor = authorName.trim() || "Anonymous";
     if (!replyText) return;
@@ -312,7 +322,20 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
       {/* Comment form */}
       <form onSubmit={onSubmit} className="mb-10 rounded-2xl border border-app bg-subtle p-5">
         <p className="mb-4 text-sm font-semibold text-slate-700">Add a comment</p>
-        <p className="-mt-2 mb-4 text-xs text-slate-500">Name is optional. If left blank, we&apos;ll post as Anonymous.</p>
+
+        {!session && (
+          <button
+            type="button"
+            onClick={openLoginModal}
+            className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            Sign in to comment
+          </button>
+        )}
 
         {error && (
           <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
@@ -330,17 +353,19 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
             value={authorName}
             onChange={(e) => setAuthorName(e.target.value)}
             maxLength={80}
-            className={inputClass}
+            disabled={!session}
+            className={`${inputClass} disabled:opacity-50`}
           />
           <textarea
             ref={commentTextareaRef}
-            placeholder="Share your thoughts or questions…"
+            placeholder={session ? "Share your thoughts or questions…" : "Sign in to leave a comment"}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             maxLength={2000}
             rows={4}
             required
-            className={inputClass}
+            disabled={!session}
+            className={`${inputClass} disabled:opacity-50`}
           />
         </div>
 
@@ -348,7 +373,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
           <span className="text-xs text-slate-400">{content.length}/2000</span>
           <button
             type="submit"
-            disabled={submitting || !content.trim()}
+            disabled={submitting || !content.trim() || !session}
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-slate-700 disabled:opacity-50"
           >
             {submitting ? "Posting…" : "Post comment"}
