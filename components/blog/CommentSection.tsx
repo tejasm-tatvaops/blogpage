@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useCallback, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Comment } from "@/lib/commentService";
 import { useActivityPolling } from "@/lib/activityPolling";
@@ -21,6 +21,7 @@ const formatDate = (iso: string) =>
 
 export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   const router = useRouter();
+  const commentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
@@ -151,7 +152,8 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
 
   const onReply = async (parentCommentId: string) => {
     const replyText = replyDrafts[parentCommentId]?.trim() ?? "";
-    if (!replyText || !authorName.trim()) return;
+    const replyAuthor = authorName.trim() || "Anonymous";
+    if (!replyText) return;
     if (submitting) return;
 
     setError(null);
@@ -161,7 +163,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          author_name: authorName.trim(),
+          author_name: replyAuthor,
           content: replyText,
           parent_comment_id: parentCommentId,
         }),
@@ -256,6 +258,10 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
         </div>
         <button
           type="button"
+          onClick={() => {
+            commentTextareaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+            commentTextareaRef.current?.focus();
+          }}
           className="rounded-full border border-sky-200 bg-surface px-3 py-1.5 text-xs font-medium text-sky-700 transition hover:bg-sky-100"
         >
           Comment
@@ -326,6 +332,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
             className={inputClass}
           />
           <textarea
+            ref={commentTextareaRef}
             placeholder="Share your thoughts or questions…"
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -432,7 +439,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                     <div className="mt-2 flex justify-end">
                       <button
                         type="button"
-                        disabled={!authorName.trim() || !(replyDrafts[c.id] ?? "").trim() || submitting}
+                        disabled={!(replyDrafts[c.id] ?? "").trim() || submitting}
                         onClick={() => onReply(c.id)}
                         className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold !text-white hover:bg-slate-700 disabled:opacity-50"
                       >
@@ -509,7 +516,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                             <div className="mt-2 flex justify-end">
                               <button
                                 type="button"
-                                disabled={!authorName.trim() || !(replyDrafts[reply.id] ?? "").trim() || submitting}
+                                disabled={!(replyDrafts[reply.id] ?? "").trim() || submitting}
                                 onClick={() => onReply(reply.id)}
                                 className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold !text-white hover:bg-slate-700 disabled:opacity-50"
                               >

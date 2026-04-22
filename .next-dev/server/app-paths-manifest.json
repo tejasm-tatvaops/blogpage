@@ -2,9 +2,9 @@
   "/api/blog/[slug]/comments/route": "app/api/blog/[slug]/comments/route.js",
   "/api/feed/events/route": "app/api/feed/events/route.js",
   "/api/notifications/route": "app/api/notifications/route.js",
-  "/page": "app/page.js",
   "/blog/page": "app/blog/page.js",
+  "/page": "app/page.js",
   "/blog/[slug]/page": "app/blog/[slug]/page.js",
-  "/admin/login/page": "app/admin/login/page.js",
+  "/inshorts/page": "app/inshorts/page.js",
   "/admin/(dashboard)/blog/page": "app/admin/(dashboard)/blog/page.js"
 }

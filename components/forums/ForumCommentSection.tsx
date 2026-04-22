@@ -143,11 +143,12 @@ export function ForumCommentSection({
     setError(null);
     setSuccess(false);
     setSubmitting(true);
+    const submitAuthor = authorName.trim() || "Anonymous";
     try {
       const res = await fetch(`/api/forums/${encodeURIComponent(slug)}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ author_name: authorName.trim(), content: content.trim() }),
+        body: JSON.stringify({ author_name: submitAuthor, content: content.trim() }),
       });
       const json = (await res.json()) as { error?: string; comment?: Comment };
       if (!res.ok) throw new Error(json.error ?? "Failed to post comment.");
@@ -164,7 +165,8 @@ export function ForumCommentSection({
 
   const onReply = async (parentCommentId: string) => {
     const replyText = replyDrafts[parentCommentId]?.trim() ?? "";
-    if (!replyText || !authorName.trim() || submitting) return;
+    const replyAuthor = authorName.trim() || "Anonymous";
+    if (!replyText || submitting) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -172,7 +174,7 @@ export function ForumCommentSection({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          author_name: authorName.trim(),
+          author_name: replyAuthor,
           content: replyText,
           parent_comment_id: parentCommentId,
         }),
@@ -378,7 +380,7 @@ export function ForumCommentSection({
               <div className="mt-2 flex justify-end">
                 <button
                   type="button"
-                  disabled={!authorName.trim() || !(replyDrafts[c.id] ?? "").trim() || submitting}
+                  disabled={!(replyDrafts[c.id] ?? "").trim() || submitting}
                   onClick={() => onReply(c.id)}
                   className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold !text-white hover:bg-indigo-700 disabled:opacity-50"
                 >
@@ -455,7 +457,6 @@ export function ForumCommentSection({
             value={authorName}
             onChange={(e) => setAuthorName(e.target.value)}
             maxLength={80}
-            required
             className={inputClass}
           />
           <textarea
