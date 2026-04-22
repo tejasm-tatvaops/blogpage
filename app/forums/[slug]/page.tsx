@@ -146,7 +146,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
               <Link
                 key={tag}
                 href={`/forums?tag=${encodeURIComponent(tag)}`}
-                className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 transition hover:bg-indigo-100"
+                className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 transition hover:bg-indigo-100 dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-slate-700 dark:hover:bg-slate-700"
               >
                 #{tag}
               </Link>

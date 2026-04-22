@@ -116,7 +116,7 @@ export function BlogCard({
           {(reasonLabel || showPopular || showActive) && (
             <div className="flex flex-wrap items-center gap-1.5">
               {reasonLabel && (
-                <span className="rounded-full bg-surface/18 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+                <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white border border-white/20">
                   {reasonLabel}
                 </span>
               )}
@@ -154,10 +154,10 @@ export function BlogCard({
             {post.tags.slice(0, 3).map((tag) => (
               <span
                 key={`${post.id}-${tag}`}
-                className={`rounded-full px-2.5 py-1 text-xs font-medium backdrop-blur-sm ${
+                className={`rounded-full px-2.5 py-1 text-xs font-medium border transition ${
                   normalizedHighlights.includes(tag.toLowerCase())
-                    ? "bg-surface text-slate-950"
-                    : "bg-surface/20 text-white"
+                    ? "bg-white text-slate-900 border-white/80"
+                    : "bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700"
                 }`}
               >
                 #{tag}

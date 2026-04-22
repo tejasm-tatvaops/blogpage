@@ -183,7 +183,7 @@ export function BlogSidebar({
               <Link
                 key={tag}
                 href={`/tags/${encodeURIComponent(tag)}`}
-                className="rounded-md bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-100 transition hover:bg-sky-100"
+                className="rounded-md bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-100 transition hover:bg-sky-100 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700"
               >
                 #{tag}
               </Link>

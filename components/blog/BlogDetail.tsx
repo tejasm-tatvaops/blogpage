@@ -241,7 +241,7 @@ export function BlogDetail({
                   <Link
                     key={`${post.id}-detail-${tag}`}
                     href={`/tags/${encodeURIComponent(tag)}`}
-                    className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-200 hover:text-app"
+                    className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-200 hover:text-app dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-slate-700 dark:hover:bg-slate-700"
                   >
                     #{tag}
                   </Link>
