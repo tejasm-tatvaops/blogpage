@@ -373,10 +373,10 @@ export function BlogDetail({
             )}
 
             {/* ── Action bar (bottom) ── */}
-            <div className="mt-8 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
+            <div className="mt-8 flex flex-wrap items-center gap-3 rounded-2xl border border-app bg-surface px-5 py-4">
               <div className="mr-1">
-                <p className="text-sm font-semibold text-slate-800">Was this helpful?</p>
-                <p className="text-xs text-slate-400">Let us know what you think</p>
+                <p className="text-sm font-semibold text-app">Was this helpful?</p>
+                <p className="text-xs text-muted">Let us know what you think</p>
               </div>
               <UpvoteButton slug={post.slug} initialCount={post.upvote_count} />
               <DownvoteButton slug={post.slug} initialCount={post.downvote_count} />

@@ -206,8 +206,8 @@ export default async function ForumThreadPage({ params }: PageProps) {
 
         {/* Related Articles */}
         {relatedBlogs.length > 0 && (
-          <section aria-labelledby="related-articles-heading" className="mt-10 rounded-2xl border border-sky-100 bg-sky-50/40 p-5">
-            <h2 id="related-articles-heading" className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-sky-700">
+          <section aria-labelledby="related-articles-heading" className="mt-10 rounded-2xl border border-app bg-subtle p-5">
+            <h2 id="related-articles-heading" className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-app">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
@@ -219,17 +219,17 @@ export default async function ForumThreadPage({ params }: PageProps) {
                 <li key={blog.id}>
                   <Link
                     href={`/blog/${blog.slug}`}
-                    className="group flex items-start gap-3 rounded-xl border border-sky-100 bg-surface px-4 py-3 transition hover:border-sky-300 hover:shadow-sm"
+                    className="group flex items-start gap-3 rounded-xl border border-app bg-surface px-4 py-3 transition hover:border-sky-300 hover:shadow-sm"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0 text-sky-400" aria-hidden>
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <polyline points="14 2 14 8 20 8" />
                     </svg>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold leading-snug text-slate-800 transition group-hover:text-sky-700 line-clamp-2">
+                      <p className="text-sm font-semibold leading-snug text-app transition group-hover:text-sky-700 line-clamp-2">
                         {blog.title}
                       </p>
-                      <p className="mt-0.5 text-xs text-slate-400 line-clamp-1">{blog.excerpt}</p>
+                      <p className="mt-0.5 text-xs text-muted line-clamp-1">{blog.excerpt}</p>
                     </div>
                   </Link>
                 </li>
