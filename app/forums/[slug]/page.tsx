@@ -194,18 +194,18 @@ export default async function ForumThreadPage({ params }: PageProps) {
         )}
 
         {/* Engagement bar */}
-        <div className="-mx-4 border-t border-app bg-surface px-4 py-3">
+        <div className="-mx-4 flex flex-wrap items-center gap-3 border-t border-app bg-surface px-4 py-3">
           <ForumVoteBar
             slug={post.slug}
             initialUpvotes={post.upvote_count}
             initialDownvotes={post.downvote_count}
             commentCount={post.comment_count}
           />
+          <BookmarkButton slug={post.slug} title={post.title} excerpt={post.excerpt} />
         </div>
 
-        {/* Action bar — bookmark + share */}
+        {/* Action bar — share */}
         <div className="-mx-4 mb-8 flex flex-wrap items-center gap-3 border-y border-app bg-surface px-4 py-3">
-          <BookmarkButton slug={post.slug} title={post.title} excerpt={post.excerpt} />
           <ForumShareButtons
             title={post.title}
             slug={post.slug}

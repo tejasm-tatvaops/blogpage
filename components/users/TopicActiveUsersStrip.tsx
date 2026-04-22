@@ -26,9 +26,6 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
           </svg>
         </span>
         <p className="text-sm font-bold text-app">{title}</p>
-        <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-          {users.length} active
-        </span>
       </div>
 
       {/* User cards grid */}
