@@ -239,18 +239,27 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
     "w-full rounded-lg border border-app bg-surface px-3 py-2 text-sm text-app outline-none ring-sky-400 transition placeholder:text-slate-400 focus:ring-2";
 
   return (
-    <section className="mt-14 border-t border-app pt-10">
+    <section className="mt-14 border-t border-app pt-6">
+      <h2 className="mb-3 text-base font-semibold normal-case tracking-normal text-black dark:text-white">
+        Discuss this article
+      </h2>
       {/* Discuss this article strip */}
-      <div className="mb-6 flex items-center gap-3 rounded-2xl border border-sky-100 bg-sky-50/50 px-5 py-4">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-100 bg-sky-50/60 px-4 py-3 transition hover:bg-sky-50/80">
         <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-600">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </span>
-        <div>
-          <p className="text-sm font-bold text-sky-800">Discuss this article</p>
-          <p className="text-xs text-sky-600">Share your thoughts, ask questions, or start a discussion below.</p>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-sky-800">Join the conversation</p>
+          <p className="text-sm text-sky-600/80">Share your thoughts, ask questions, or start a discussion below.</p>
         </div>
+        <button
+          type="button"
+          className="rounded-full border border-sky-200 bg-surface px-3 py-1.5 text-xs font-medium text-sky-700 transition hover:bg-sky-100"
+        >
+          Comment
+        </button>
       </div>
 
       <h2 className="mb-6 text-xl font-bold text-app">
