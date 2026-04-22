@@ -139,6 +139,62 @@ export default async function HomePage() {
         ))}
       </div>
 
+      {/* ── How TatvaOps Works ───────────────────────────────────────────── */}
+      <section className={[
+        "mt-10 rounded-2xl border p-6 shadow-sm",
+        "border-app bg-surface",
+        "dark:border-slate-700/50 dark:bg-slate-900/60",
+      ].join(" ")}>
+        <div className="mb-5">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-400">Platform Intelligence</p>
+          <h2 className="mt-1 text-xl font-bold tracking-tight text-app dark:text-white">How TatvaOps works for you</h2>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {[
+            {
+              icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                </svg>
+              ),
+              title: "Personalized recommendations",
+              body: "The more you read, the smarter your feed gets. Content is ranked based on your reading history, engagement patterns, and topics you explore most.",
+              accent: "text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400",
+            },
+            {
+              icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              ),
+              title: "Community-reviewed accuracy",
+              body: "Expert contributors (top 5% by reputation) review and approve edits. Every article shows its verification status and revision history — like Wikipedia, but for construction.",
+              accent: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400",
+            },
+            {
+              icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              ),
+              title: "Intelligent content discovery",
+              body: "Blogs, tutorials, forums, and short videos are connected by topic signals. Recommendations surface across content types based on what users with similar interests engage with.",
+              accent: "text-sky-600 bg-sky-50 dark:bg-sky-900/30 dark:text-sky-400",
+            },
+          ].map((item) => (
+            <div key={item.title} className="flex gap-3 rounded-xl border border-app bg-subtle p-4 dark:bg-slate-800/40">
+              <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${item.accent}`}>
+                {item.icon}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-app dark:text-white">{item.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{item.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── Smart discovery hub ───────────────────────────────────────────── */}
       <section className="mt-10 rounded-2xl border border-app bg-surface p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -222,14 +278,14 @@ export default async function HomePage() {
             </ul>
           </article>
 
-          <article className="rounded-xl border border-sky-200 bg-sky-50 p-4">
-            <h3 className="text-sm font-bold uppercase tracking-wide text-sky-700">Topic Explorer</h3>
+          <article className="rounded-xl border border-gray-200 bg-surface p-4 shadow-sm">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-600">Topic Explorer</h3>
             <div className="mt-3 flex flex-wrap gap-2">
               {topicHubs.map((tag) => (
                 <Link
                   key={tag}
                   href={`/tags/${encodeURIComponent(tag)}`}
-                  className="rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+                  className="rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-gray-200"
                 >
                   {tag}
                 </Link>

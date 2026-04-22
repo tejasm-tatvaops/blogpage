@@ -37,7 +37,6 @@ const constructionImages = [
   "/images/construction/site-5.png",
   "/images/construction/site-6.png",
   "/images/construction/site-7.png",
-  "/images/construction/foundation-1.png",
   "/images/construction/tower-1.png",
   "/images/construction/city-crane-1.png",
   "/images/construction/highrise-1.png",
@@ -46,20 +45,6 @@ const constructionImages = [
   "/images/construction/house-shell-1.png",
   "/images/construction/modern-house-1.png",
   "/images/construction/commercial-frame-1.png",
-  "/images/construction/user-added-1.png",
-  "/images/construction/user-added-2.png",
-  "/images/construction/user-added-3.png",
-  "/images/construction/user-added-4.png",
-  "/images/construction/user-added-5.png",
-  "/images/construction/user-added-6.png",
-  "/images/construction/user-added-7.png",
-  "/images/construction/user-added-8.png",
-  "/images/construction/user-added-9.png",
-  "/images/construction/user-added-10.png",
-  "/images/construction/user-added-11.png",
-  "/images/construction/user-added-12.png",
-  "/images/construction/user-added-13.png",
-  "/images/construction/user-added-14.png",
 ];
 
 const gradientForPost = (id: string): string => {

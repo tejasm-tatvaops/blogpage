@@ -55,6 +55,7 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
   const [hasMore, setHasMore] = useState(initialPosts.length >= 20);
   const [showGestureHint, setShowGestureHint] = useState(true);
   const [interactionAck, setInteractionAck] = useState<string | null>(null);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   // Hide gesture hint after 3 s
   useEffect(() => {
@@ -194,6 +195,14 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
     }
   }, []);
 
+  const handleFirstInteraction = useCallback(() => {
+    if (hasInteracted) return;
+    setHasInteracted(true);
+    setMuted(false);
+    setInteractionAck("Sound on");
+    window.setTimeout(() => setInteractionAck(null), 1200);
+  }, [hasInteracted]);
+
   const progressPct = posts.length > 1 ? ((activeIndex + 1) / posts.length) * 100 : 100;
 
   if (posts.length === 0) {
@@ -261,9 +270,11 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
             index={i}
             isActive={i === activeIndex}
             muted={muted}
+            hasInteracted={hasInteracted}
             liked={!!likedById[post.slug]}
             onLike={handleLike}
             onMuteToggle={() => setMuted((v) => !v)}
+            onFirstInteraction={handleFirstInteraction}
             onShare={handleShare}
           />
         ))}

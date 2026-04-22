@@ -10,9 +10,11 @@ type ShortVideoCardProps = {
   index: number;
   isActive: boolean;
   muted: boolean;
+  hasInteracted: boolean;
   liked: boolean;
   onLike: (slug: string) => void;
   onMuteToggle: () => void;
+  onFirstInteraction: () => void;
   onShare: (post: VideoPost) => void;
 };
 
@@ -21,9 +23,11 @@ export function ShortVideoCard({
   index,
   isActive,
   muted,
+  hasInteracted,
   liked,
   onLike,
   onMuteToggle,
+  onFirstInteraction,
   onShare,
 }: ShortVideoCardProps) {
   return (
@@ -42,7 +46,13 @@ export function ShortVideoCard({
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
         >
           {/* Video layer */}
-          <VerticalVideoPlayer post={post} isActive={isActive} muted={muted} />
+          <VerticalVideoPlayer
+            post={post}
+            isActive={isActive}
+            muted={muted}
+            hasInteracted={hasInteracted}
+            onFirstInteraction={onFirstInteraction}
+          />
 
           {/* Overlay actions + caption */}
           <VideoOverlayActions

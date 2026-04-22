@@ -1,11 +1,5 @@
 {
-  "/api/feed/events/route": "app/api/feed/events/route.js",
-  "/api/trending/route": "app/api/trending/route.js",
   "/api/notifications/route": "app/api/notifications/route.js",
-  "/api/blog/[slug]/comments/route": "app/api/blog/[slug]/comments/route.js",
-  "/page": "app/page.js",
-  "/ask/page": "app/ask/page.js",
-  "/blog/[slug]/page": "app/blog/[slug]/page.js",
-  "/inshorts/page": "app/inshorts/page.js",
-  "/admin/(dashboard)/blog/page": "app/admin/(dashboard)/blog/page.js"
+  "/api/feed/events/route": "app/api/feed/events/route.js",
+  "/inshorts/page": "app/inshorts/page.js"
 }

@@ -16,6 +16,7 @@ import { getVideosByTags } from "@/lib/videoService";
 import { getActiveUsersByTopic } from "@/lib/userProfileService";
 import { rankSemanticBlogRecommendations } from "@/lib/semanticRecommendations";
 import { getSystemToggles } from "@/lib/systemToggles";
+import { getRevisionsForBlog } from "@/lib/revisionService";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com";
 
@@ -98,7 +99,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   // Fetch the linked forum post first so its slug can be excluded from related forum posts.
   const forumPost = await getForumPostByBlogSlug(post.slug).catch(() => null);
 
-  const [relatedPosts, categories, comments, topicUsers, relatedForumPosts, semanticCandidatePosts, tutorialResult, relatedShorts] = await Promise.all([
+  const [relatedPosts, categories, comments, topicUsers, relatedForumPosts, semanticCandidatePosts, tutorialResult, relatedShorts, blogRevisions] = await Promise.all([
     getRelatedPosts(post, 4).catch(() => [] as BlogPost[]),
     getCategories().catch(() => [] as string[]),
     getComments(post.id).catch(() => []),
@@ -107,7 +108,12 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     getAllPosts({ limit: 120 }).catch(() => [] as BlogPost[]),
     getTutorials({ tag: post.tags[0] ?? null, limit: 4, includeUnpublished: false }).catch(() => ({ tutorials: [] })),
     getVideosByTags(post.tags, 4).catch(() => []),
+    getRevisionsForBlog(post.slug, 20).catch(() => []),
   ]);
+  const approvedRevisions = (blogRevisions as Array<{ status: string; reviewer_display_name?: string | null; reviewed_at?: Date | null }>).filter((r) => r.status === "approved");
+  const approvedRevisionCount = approvedRevisions.length;
+  const lastReviewer = approvedRevisions[0]?.reviewer_display_name ?? null;
+  const lastReviewedAt = approvedRevisions[0]?.reviewed_at ? new Date(approvedRevisions[0].reviewed_at).toISOString() : null;
   const recommendationToggles = getSystemToggles();
   const semanticRecommendations = recommendationToggles.semanticRecommendationsEnabled
     ? await rankSemanticBlogRecommendations(post, semanticCandidatePosts, 6, {
@@ -148,6 +154,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         forumSlug={forumPost?.slug ?? null}
         topicUsers={topicUsers}
         relatedForumPosts={relatedForumPosts}
+        approvedRevisionCount={approvedRevisionCount}
+        lastReviewer={lastReviewer ?? undefined}
+        lastReviewedAt={lastReviewedAt ?? undefined}
         relatedTutorials={(tutorialResult.tutorials as Array<{ slug: string; title: string; excerpt: string; difficulty?: string }>).map((t) => ({
           slug: t.slug,
           title: t.title,

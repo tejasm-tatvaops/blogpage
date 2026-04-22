@@ -67,16 +67,32 @@ type Props = { currentPost: BlogPost; allPosts: BlogPost[]; usePreRanked?: boole
 export function RecommendationPanel({ currentPost, allPosts, usePreRanked = false }: Props) {
   const [recs, setRecs] = useState<BlogPost[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [whyTags, setWhyTags] = useState<string[]>([]);
 
   useEffect(() => {
     setMounted(true);
     const profile = getProfile();
     if (usePreRanked) {
-      setRecs(allPosts.filter((p) => p.slug !== currentPost.slug).slice(0, 4));
+      const filtered = allPosts.filter((p) => p.slug !== currentPost.slug).slice(0, 4);
+      setRecs(filtered);
+      // Compute matching tags between user's history and the recommended posts
+      const userTopTags = Object.entries(profile.viewedTags ?? {})
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15)
+        .map(([tag]) => tag);
+      const matched = [...new Set(filtered.flatMap((p) => p.tags).filter((t) => userTopTags.includes(t)))].slice(0, 3);
+      setWhyTags(matched);
       return;
     }
     const scored = scorePosts(allPosts, profile, currentPost.slug);
     setRecs(scored);
+    // For locally-scored: show tags the user viewed that overlap with recommendations
+    const userTopTags = Object.entries(profile.viewedTags ?? {})
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(([tag]) => tag);
+    const matched = [...new Set(scored.flatMap((p) => p.tags).filter((t) => userTopTags.includes(t)))].slice(0, 3);
+    setWhyTags(matched);
   }, [currentPost.slug, allPosts, usePreRanked]);
 
   useEffect(() => {
@@ -124,11 +140,35 @@ export function RecommendationPanel({ currentPost, allPosts, usePreRanked = fals
   return (
     <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-surface">
       <div className="flex items-center gap-2 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 px-4 py-3.5">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500" aria-hidden>
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-indigo-700">Recommended for you</span>
+        {usePreRanked ? (
+          <>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500" aria-hidden>
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+            </svg>
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-indigo-700">Personalized for you</span>
+          </>
+        ) : (
+          <>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500" aria-hidden>
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-indigo-700">Based on your activity</span>
+          </>
+        )}
       </div>
+      {whyTags.length > 0 && (
+        <div className="border-b border-indigo-50 bg-indigo-50/40 px-4 py-2">
+          <p className="text-[10px] text-slate-500">
+            Because you read{" "}
+            {whyTags.map((tag, i) => (
+              <span key={tag}>
+                <span className="font-semibold text-indigo-600">#{tag}</span>
+                {i < whyTags.length - 1 && <span className="text-slate-400">, </span>}
+              </span>
+            ))}
+          </p>
+        </div>
+      )}
       <ul className="divide-y divide-slate-100">
         {recs.map((post, idx) => (
           <li key={post.id}>
