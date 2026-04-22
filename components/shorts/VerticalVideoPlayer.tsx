@@ -141,10 +141,10 @@ function YouTubeThumbnail({
   alt: string;
   priority?: boolean;
 }) {
+  const MIN_ACCEPTED_WIDTH = 700;
   const chain = [
     `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
     `https://img.youtube.com/vi/${videoId}/sddefault.jpg`,
-    `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
   ];
 
   const [idx, setIdx] = useState(0);
@@ -160,7 +160,7 @@ function YouTubeThumbnail({
         `[Inshorts] YT ${videoId} (${chain[idx].split("/").pop()}): ${w}×${e.currentTarget.naturalHeight}`,
       );
     }
-    // 120×90 = YouTube "no thumbnail" grey placeholder — advance the chain
+    // 120×90 = YouTube "no thumbnail" grey placeholder — advance the chain.
     if (w <= 120) {
       const next = idx + 1;
       if (next < chain.length) {
@@ -170,7 +170,17 @@ function YouTubeThumbnail({
       }
       return;
     }
-    // Real frame found — hand off to InshortsThumbnail for resolution rendering
+    // Quality gate: only accept maxres/sd thumbnails above minimum width.
+    // If we cannot obtain a sufficiently large frame, reject and fall back.
+    if (w < MIN_ACCEPTED_WIDTH) {
+      if (process.env.NODE_ENV === "development") {
+        console.log("Rejected low-res image:", chain[idx], w);
+      }
+      setGone(true);
+      return;
+    }
+
+    // Real high-quality frame found — hand off to InshortsThumbnail for rendering.
     setResolved(true);
   };
 
@@ -245,7 +255,13 @@ export function VerticalVideoPlayer({
       `&playlist=${post.youtubeVideoId}`;
 
     return (
-      <div className="relative h-full w-full overflow-hidden bg-black">
+      <div
+        className={[
+          "relative overflow-hidden bg-black",
+          "h-[100dvh] w-full",
+          "lg:h-screen lg:max-w-[420px] lg:mx-auto lg:rounded-xl lg:shadow-2xl",
+        ].join(" ")}
+      >
         {!isActive && (
           <YouTubeThumbnail videoId={post.youtubeVideoId} alt={post.title} />
         )}
@@ -296,7 +312,13 @@ export function VerticalVideoPlayer({
 
   if (post.videoUrl) {
     return (
-      <div className="relative h-full w-full overflow-hidden bg-black">
+      <div
+        className={[
+          "relative overflow-hidden bg-black",
+          "h-[100dvh] w-full",
+          "lg:h-screen lg:max-w-[420px] lg:mx-auto lg:rounded-xl lg:shadow-2xl",
+        ].join(" ")}
+      >
         {isActive ? (
           <video
             ref={videoRef}

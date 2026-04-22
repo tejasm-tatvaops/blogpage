@@ -114,6 +114,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
   const [likedById, setLikedById] = useState<Record<string, boolean>>({});
   const [swipeGlow, setSwipeGlow] = useState(false);
   const [interactionAck, setInteractionAck] = useState(false);
+  const [validatedImageByPostId, setValidatedImageByPostId] = useState<Record<string, string | null>>({});
 
   // Load posts if not provided server-side
   useEffect(() => {
@@ -150,9 +151,37 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
   useEffect(() => {
     const next = posts[activeIndex + 1];
     if (!next) return;
+    const candidate = imageForPost(next.id);
     const img = new Image();
-    img.src = imageForPost(next.id);
+    img.src = candidate;
   }, [activeIndex, posts]);
+
+  // Validate image quality before using it in cards.
+  // Inshorts quality gate: reject anything below 700px width.
+  useEffect(() => {
+    const unresolved = posts
+      .map((post) => ({ postId: post.id, src: imageForPost(post.id) }))
+      .filter(({ postId }) => !(postId in validatedImageByPostId));
+    if (unresolved.length === 0) return;
+
+    unresolved.forEach(({ postId, src }) => {
+      const img = new Image();
+      img.onload = () => {
+        const isValid = img.naturalWidth >= 700;
+        if (!isValid && process.env.NODE_ENV === "development") {
+          console.log("Rejected low-res image:", src, img.naturalWidth);
+        }
+        setValidatedImageByPostId((prev) => ({ ...prev, [postId]: isValid ? src : null }));
+      };
+      img.onerror = () => {
+        if (process.env.NODE_ENV === "development") {
+          console.log("Rejected image (load error):", src);
+        }
+        setValidatedImageByPostId((prev) => ({ ...prev, [postId]: null }));
+      };
+      img.src = src;
+    });
+  }, [posts, validatedImageByPostId]);
 
   // IntersectionObserver to track active slide
   useEffect(() => {
@@ -408,10 +437,19 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                 onClick={() => setSelectedPost(post)}
                 layoutId={`inshorts-card-${post.id}`}
                 className={`relative h-full w-full overflow-hidden whitespace-normal rounded-2xl bg-gradient-to-br ${gradientForPost(post.id)} bg-cover bg-center bg-no-repeat`}
-                style={{ backgroundImage: `url(${imageForPost(post.id)})` }}
+                style={{
+                  backgroundImage: validatedImageByPostId[post.id]
+                    ? `url(${validatedImageByPostId[post.id]})`
+                    : undefined,
+                }}
               >
                 <div className={`absolute inset-0 bg-gradient-to-b ${toneForPost(post)} transition duration-500`} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                {!validatedImageByPostId[post.id] && (
+                  <div className="absolute inset-0 z-[1] flex items-center justify-center px-8 text-center">
+                    <span className="line-clamp-3 text-lg font-semibold text-white/95">{post.title}</span>
+                  </div>
+                )}
 
                 {/* Side actions */}
                 <div className="absolute bottom-24 right-4 z-10 flex flex-col gap-3">
