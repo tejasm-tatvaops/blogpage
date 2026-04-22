@@ -369,10 +369,15 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
 
           {/* Topic chips */}
           <div className="flex gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <span className="whitespace-nowrap rounded-full bg-white px-3 py-1 text-xs font-semibold text-black">All</span>
+            <span className="whitespace-nowrap rounded-full border border-sky-300 bg-sky-500 px-3 py-1 text-xs font-semibold text-white">
+              All
+            </span>
             {topTags.map((tag) => (
-              <span key={tag} className="whitespace-nowrap rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white/90">
-                {tag}
+              <span
+                key={tag}
+                className="whitespace-nowrap rounded-full border border-white/20 bg-black/35 px-3 py-1 text-xs font-medium text-white/95 backdrop-blur-sm transition hover:bg-black/50"
+              >
+                #{tag}
               </span>
             ))}
           </div>
