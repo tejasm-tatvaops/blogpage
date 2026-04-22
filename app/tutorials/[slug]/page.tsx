@@ -8,6 +8,7 @@ import { getTutorialBySlug } from "@/lib/tutorialService";
 import { TutorialProgressCard } from "@/components/tutorials/TutorialProgressCard";
 import { InteractiveBlocks } from "@/components/tutorials/InteractiveBlocks";
 import { TutorialRecommendations } from "@/components/tutorials/TutorialRecommendations";
+import { TutorialSidebar } from "@/components/tutorials/TutorialSidebar";
 import { getSystemToggles } from "@/lib/systemToggles";
 import { getTutorials } from "@/lib/tutorialService";
 import { rankSemanticTutorialRecommendations } from "@/lib/semanticRecommendations";
@@ -135,156 +136,157 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
     difficulty: item.difficulty ? String(item.difficulty) : undefined,
   }));
 
+  const sidebarTutorials = plainSemanticRecommendations.map((item) => ({
+    slug: item.slug,
+    title: item.title,
+    excerpt: item.excerpt,
+    difficulty: item.difficulty,
+    tags: t.tags, // approximate — same topic area
+  }));
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      {/* Breadcrumb */}
-      <div className="mb-6">
-        <Link href="/tutorials" className="text-sm text-sky-600 hover:underline">
-          ← All Tutorials
-        </Link>
-      </div>
+    <div className="mx-auto w-full max-w-[1500px] px-4 py-10 sm:px-6 lg:px-8">
+      {/* Two-column grid — mirrors blog layout */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_290px] lg:gap-10">
 
-      {/* Header */}
-      <div className="mb-8">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span
-            className={`rounded-full border px-3 py-0.5 text-xs font-medium capitalize ${
-              DIFFICULTY_COLORS[t.difficulty] ?? "bg-slate-100 text-slate-600"
-            }`}
-          >
-            {t.difficulty}
-          </span>
-          <span className="text-xs text-slate-400">{t.estimated_minutes} min read</span>
-          <span className="text-xs text-slate-400">By {t.author}</span>
-        </div>
-        <h1 className="text-2xl font-bold text-app sm:text-3xl">{t.title}</h1>
-        <p className="mt-3 text-slate-500">{t.excerpt}</p>
-      </div>
+        {/* ── Main column ── */}
+        <div className="min-w-0">
+          {/* Breadcrumb */}
+          <div className="mb-6">
+            <Link href="/tutorials" className="text-sm text-sky-600 hover:underline">
+              ← All Tutorials
+            </Link>
+          </div>
 
-      {/* Companion video link */}
-      {t.linked_video_slug && (
-        <div className="mb-6 flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-sky-500">
-            <path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-            <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <Link href={`/shorts/${t.linked_video_slug}`} className="text-sm font-medium text-sky-700 hover:underline">
-            Watch the companion short video
-          </Link>
-        </div>
-      )}
+          {/* Header */}
+          <div className="mb-8">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span
+                className={`rounded-full border px-3 py-0.5 text-xs font-medium capitalize ${
+                  DIFFICULTY_COLORS[t.difficulty] ?? "bg-slate-100 text-slate-600"
+                }`}
+              >
+                {t.difficulty}
+              </span>
+              <span className="text-xs text-slate-400">{t.estimated_minutes} min read</span>
+              <span className="text-xs text-slate-400">By {t.author}</span>
+            </div>
+            <h1 className="text-2xl font-bold text-app sm:text-3xl">{t.title}</h1>
+            <p className="mt-3 text-slate-500">{t.excerpt}</p>
+          </div>
 
-      {/* Cover image */}
-      {t.cover_image && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={t.cover_image}
-          alt={t.title}
-          loading="lazy"
-          decoding="async"
-          className="mb-8 w-full rounded-xl object-cover"
-          style={{ maxHeight: "420px" }}
-        />
-      )}
+          {/* Companion video link */}
+          {t.linked_video_slug && (
+            <div className="mb-6 flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-sky-500">
+                <path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <Link href={`/shorts/${t.linked_video_slug}`} className="text-sm font-medium text-sky-700 hover:underline">
+                Watch the companion short video
+              </Link>
+            </div>
+          )}
 
-      {/* Main content */}
-      <div className="mb-6">
-        <TutorialProgressCard slug={decodeURIComponent(slug)} />
-      </div>
-      <article className="prose prose-slate max-w-none prose-img:rounded-lg prose-img:w-full">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
-          components={{
-            img({ src, alt, title }) {
-              if (!src) return null;
-              return (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={src}
-                  alt={alt ?? ""}
-                  title={title}
-                  loading="lazy"
-                  decoding="async"
-                  className="my-4 w-full rounded-lg object-cover"
-                  style={{ maxHeight: "560px" }}
-                />
-              );
-            },
-          }}
-        >
-          {t.content}
-        </ReactMarkdown>
-      </article>
-      {interactiveBlocksEnabled && plainInteractiveBlocks.length > 0 && (
-        <InteractiveBlocks slug={decodeURIComponent(slug)} blocks={plainInteractiveBlocks} />
-      )}
-      {semanticRecommendationsEnabled && plainSemanticRecommendations.length > 0 && (
-        <TutorialRecommendations tutorials={plainSemanticRecommendations} />
-      )}
-      <KnowledgeEcosystemPanel
-        topicLabel={t.tags[0] ?? "this tutorial topic"}
-        confidence="medium"
-        freshnessLabel="Grounded in platform knowledge"
-        askAiHref={t.linked_blog_slug ? `/blog/${t.linked_blog_slug}` : "/ask"}
-        nextLearn={plainSemanticRecommendations.slice(0, 4).map((item) => ({
-          title: item.title,
-          href: `/tutorials/${item.slug}`,
-          subtitle: item.excerpt,
-          reason: item.difficulty ? `Next ${item.difficulty}` : "Recommended",
-        }))}
-        relatedDiscussions={relatedForums.slice(0, 4).map((forum) => ({
-          title: forum.title,
-          href: `/forums/${forum.slug}`,
-          subtitle: `${forum.comment_count} replies`,
-          reason: "Active discussion",
-        }))}
-        relatedShorts={relatedShorts.slice(0, 4).map((shortItem) => ({
-          title: shortItem.title,
-          href: `/shorts/${shortItem.slug}`,
-          subtitle: shortItem.summary ?? shortItem.shortCaption,
-          reason: "Quick recap",
-        }))}
-        topicHubs={(t.tags ?? []).slice(0, 3).map((tag) => ({
-          title: `Topic hub: ${tag}`,
-          href: `/tags/${encodeURIComponent(tag)}`,
-          subtitle: "Explore all related content",
-          reason: "Hub",
-        }))}
-      />
+          {/* Cover image */}
+          {t.cover_image && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={t.cover_image}
+              alt={t.title}
+              loading="lazy"
+              decoding="async"
+              className="mb-8 w-full rounded-xl object-cover"
+              style={{ maxHeight: "420px" }}
+            />
+          )}
 
-      {/* Tags */}
-      {t.tags.length > 0 && (
-        <div className="mt-8 flex flex-wrap gap-1.5">
-          {t.tags.map((tag) => (
-            <Link
-              key={tag}
-              href={`/tutorials?tag=${encodeURIComponent(tag)}`}
-              className="rounded-full border border-app bg-subtle px-3 py-0.5 text-xs text-slate-600 hover:bg-slate-100 transition"
+          {/* Progress */}
+          <div className="mb-6">
+            <TutorialProgressCard slug={decodeURIComponent(slug)} />
+          </div>
+
+          {/* Content */}
+          <article className="prose prose-slate max-w-none prose-img:rounded-lg prose-img:w-full">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
+              components={{
+                img({ src, alt, title }) {
+                  if (!src) return null;
+                  return (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={src}
+                      alt={alt ?? ""}
+                      title={title}
+                      loading="lazy"
+                      decoding="async"
+                      className="my-4 w-full rounded-lg object-cover"
+                      style={{ maxHeight: "560px" }}
+                    />
+                  );
+                },
+              }}
             >
-              {tag}
-            </Link>
-          ))}
-        </div>
-      )}
+              {t.content}
+            </ReactMarkdown>
+          </article>
 
-      {/* Linked blog */}
-      {t.linked_blog_slug && (
-        <div className="mt-8 rounded-xl border border-app bg-subtle px-5 py-4">
-          <p className="text-sm text-slate-500">
-            Want to go deeper?{" "}
-            <Link href={`/blog/${t.linked_blog_slug}`} className="font-medium text-sky-600 hover:underline">
-              Read the full article
-            </Link>
-          </p>
-        </div>
-      )}
+          {interactiveBlocksEnabled && plainInteractiveBlocks.length > 0 && (
+            <InteractiveBlocks slug={decodeURIComponent(slug)} blocks={plainInteractiveBlocks} />
+          )}
+          {semanticRecommendationsEnabled && plainSemanticRecommendations.length > 0 && (
+            <TutorialRecommendations tutorials={plainSemanticRecommendations} />
+          )}
 
-      {/* Footer navigation */}
-      <div className="mt-10 border-t border-app pt-6">
-        <Link href="/tutorials" className="text-sm font-medium text-sky-600 hover:underline">
-          ← Browse all tutorials
-        </Link>
+          <KnowledgeEcosystemPanel
+            topicLabel={t.tags[0] ?? "this tutorial topic"}
+            confidence="medium"
+            freshnessLabel="Grounded in platform knowledge"
+            askAiHref={t.linked_blog_slug ? `/blog/${t.linked_blog_slug}` : "/ask"}
+            nextLearn={plainSemanticRecommendations.slice(0, 4).map((item) => ({
+              title: item.title,
+              href: `/tutorials/${item.slug}`,
+              subtitle: item.excerpt,
+              reason: item.difficulty ? `Next ${item.difficulty}` : "Recommended",
+            }))}
+            relatedDiscussions={relatedForums.slice(0, 4).map((forum) => ({
+              title: forum.title,
+              href: `/forums/${forum.slug}`,
+              subtitle: `${forum.comment_count} replies`,
+              reason: "Active discussion",
+            }))}
+            relatedShorts={relatedShorts.slice(0, 4).map((shortItem) => ({
+              title: shortItem.title,
+              href: `/shorts/${shortItem.slug}`,
+              subtitle: shortItem.summary ?? shortItem.shortCaption,
+              reason: "Quick recap",
+            }))}
+            topicHubs={(t.tags ?? []).slice(0, 3).map((tag) => ({
+              title: `Topic hub: ${tag}`,
+              href: `/tags/${encodeURIComponent(tag)}`,
+              subtitle: "Explore all related content",
+              reason: "Hub",
+            }))}
+          />
+
+          {/* Footer navigation */}
+          <div className="mt-10 border-t border-app pt-6">
+            <Link href="/tutorials" className="text-sm font-medium text-sky-600 hover:underline">
+              ← Browse all tutorials
+            </Link>
+          </div>
+        </div>
+
+        {/* ── Sidebar column ── */}
+        <TutorialSidebar
+          currentSlug={decodeURIComponent(slug)}
+          content={t.content}
+          tags={t.tags}
+          relatedTutorials={sidebarTutorials}
+          linkedBlogSlug={t.linked_blog_slug}
+        />
       </div>
     </div>
   );

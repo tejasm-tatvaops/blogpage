@@ -1,11 +1,11 @@
 {
   "/api/notifications/route": "app/api/notifications/route.js",
-  "/api/forums/[slug]/comments/route": "app/api/forums/[slug]/comments/route.js",
   "/api/feed/events/route": "app/api/feed/events/route.js",
+  "/api/trending/route": "app/api/trending/route.js",
+  "/api/tutorials/[slug]/progress/route": "app/api/tutorials/[slug]/progress/route.js",
+  "/blog/page": "app/blog/page.js",
+  "/tutorials/[slug]/page": "app/tutorials/[slug]/page.js",
   "/blog/[slug]/page": "app/blog/[slug]/page.js",
   "/page": "app/page.js",
-  "/blog/page": "app/blog/page.js",
-  "/inshorts/page": "app/inshorts/page.js",
-  "/forums/[slug]/page": "app/forums/[slug]/page.js",
-  "/forums/page": "app/forums/page.js"
+  "/tutorials/page": "app/tutorials/page.js"
 }

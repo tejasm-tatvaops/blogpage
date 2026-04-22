@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import type { BlogPost } from "@/lib/blogService";
+import * as twitterChannel from "@/channels/twitterChannel";
+import * as linkedinChannel from "@/channels/linkedinChannel";
+import * as whatsappChannel from "@/channels/whatsappChannel";
+import * as instagramChannel from "@/channels/instagramChannel";
+import type { ContentPayload } from "@/channels/shared";
 
 const formatCount = (n: number): string => {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -94,6 +99,18 @@ const toneForPost = (post: BlogPost): string => {
 const isNewPost = (post: BlogPost): boolean =>
   Date.now() - new Date(post.created_at).getTime() < 3 * 24 * 60 * 60 * 1000;
 
+const navLinks = [
+  { label: "Home",          href: "/" },
+  { label: "Blogs",         href: "/blog" },
+  { label: "Forums",        href: "/forums" },
+  { label: "Shorts",        href: "/shorts" },
+  { label: "Tatva Inshorts",href: "/inshorts", active: true },
+  { label: "Tutorials",     href: "/tutorials" },
+  { label: "Ask AI",        href: "/ask", highlight: true },
+  { label: "Saved",         href: "/saved" },
+  { label: "Admin",         href: "/admin/login" },
+];
+
 type InshortsViewProps = {
   initialPosts: BlogPost[];
 };
@@ -112,9 +129,8 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showGestureHint, setShowGestureHint] = useState(true);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
-  const [likedById, setLikedById] = useState<Record<string, boolean>>({});
   const [swipeGlow, setSwipeGlow] = useState(false);
-  const [interactionAck, setInteractionAck] = useState(false);
+  const [igCopiedPostId, setIgCopiedPostId] = useState<string | null>(null);
   const [validatedImageByPostId, setValidatedImageByPostId] = useState<Record<string, string | null>>({});
 
   // Load posts client-side if SSR didn't provide any
@@ -324,8 +340,9 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
           </div>
 
           {/* Header row */}
-          <div className="mb-2 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="mb-2 flex items-center gap-2">
+            {/* Left: back + title */}
+            <div className="flex flex-shrink-0 items-center gap-3">
               <Link
                 href="/"
                 className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/20"
@@ -340,11 +357,33 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                 <span className="ml-2 text-xs text-white/50">{activeIndex + 1}/{posts.length}</span>
               </div>
             </div>
-            {/* Cross-content chips */}
-            <div className="flex items-center gap-1.5">
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-black">Inshorts</span>
-              <Link href="/blog"   className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:bg-white/20 hover:text-white">Articles</Link>
-              <Link href="/forums" className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:bg-white/20 hover:text-white">Forums</Link>
+
+            {/* Right: full nav — scrollable, matches navbar links */}
+            <div className="flex min-w-0 flex-1 justify-end overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex items-center gap-1">
+                {navLinks.map((link) =>
+                  link.active ? (
+                    <span
+                      key={link.href}
+                      className="whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-black"
+                    >
+                      {link.label}
+                    </span>
+                  ) : (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition hover:text-white ${
+                        link.highlight
+                          ? "bg-indigo-600/80 text-white hover:bg-indigo-500"
+                          : "bg-white/10 text-white/70 hover:bg-white/20"
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  )
+                )}
+              </div>
             </div>
           </div>
 
@@ -414,153 +453,219 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
           scrollTo(activeIndex, "smooth");
         }}
       >
-        {posts.map((post, i) => (
-          <div
-            key={post.id}
-            data-slide={i}
-            className="mr-3 inline-block h-[calc(100vh-8rem)] w-[calc(100vw-2.75rem)] align-top snap-center"
-          >
-            {Math.abs(i - activeIndex) > 1 ? (
-              <div className="h-full w-full bg-black" />
-            ) : (
-              <motion.article
-                initial={{ opacity: 0.82, scale: 0.985, y: 18 }}
-                animate={{
-                  opacity: i === activeIndex ? 1 : 0.8,
-                  scale: i === activeIndex ? 1 : 0.986,
-                  y: i === activeIndex ? 0 : 5,
-                }}
-                transition={{
-                  duration: i === activeIndex ? 0.32 : 0.42,
-                  ease: transitionEase,
-                }}
-                onClick={() => setSelectedPost(post)}
-                layoutId={`inshorts-card-${post.id}`}
-                className={`relative h-full w-full overflow-hidden whitespace-normal rounded-2xl bg-gradient-to-br ${gradientForPost(post.id)} bg-cover bg-center bg-no-repeat`}
-                style={{
-                  backgroundImage: validatedImageByPostId[post.id]
-                    ? `url(${validatedImageByPostId[post.id]})`
-                    : undefined,
-                }}
-              >
-                <div className={`absolute inset-0 bg-gradient-to-b ${toneForPost(post)} transition duration-500`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+        {posts.map((post, i) => {
+          const articleUrl = typeof window !== "undefined"
+            ? `${window.location.origin}/blog/${post.slug}`
+            : `/blog/${post.slug}`;
 
-                {/* Title shown when no validated image */}
-                {!validatedImageByPostId[post.id] && (
-                  <div className="absolute inset-0 z-[1] flex items-center justify-center px-8 text-center">
-                    <span className="line-clamp-3 text-lg font-semibold text-white/95">{post.title}</span>
+          const payload: ContentPayload = {
+            title: post.title,
+            slug: post.slug,
+            excerpt: post.excerpt,
+            content: post.content,
+            tags: post.tags,
+            category: post.category,
+          };
+
+          const trackShare = (channel: string) => {
+            fetch(`/api/blog/${encodeURIComponent(post.slug)}/share`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ channel }),
+            }).catch(() => undefined);
+          };
+
+          const shareTwitter = () => { twitterChannel.share(payload, articleUrl); trackShare("twitter"); };
+          const shareLinkedIn = () => { linkedinChannel.share(payload, articleUrl); trackShare("linkedin"); };
+          const shareWhatsApp = () => { whatsappChannel.share(payload, articleUrl); trackShare("whatsapp"); };
+          const shareInstagram = async () => {
+            const usedNative = await instagramChannel.share(
+              { ...payload, imageUrl: post.cover_image ?? null },
+              articleUrl,
+            );
+            trackShare("instagram");
+            if (!usedNative) {
+              setIgCopiedPostId(post.id);
+              window.setTimeout(() => setIgCopiedPostId(null), 2500);
+            }
+          };
+
+          return (
+            <div
+              key={post.id}
+              data-slide={i}
+              className="mr-3 inline-block h-[calc(100vh-8rem)] w-[calc(100vw-2.75rem)] align-top snap-center"
+            >
+              {Math.abs(i - activeIndex) > 1 ? (
+                <div className="h-full w-full bg-black" />
+              ) : (
+                <motion.article
+                  initial={{ opacity: 0.82, scale: 0.985, y: 18 }}
+                  animate={{
+                    opacity: i === activeIndex ? 1 : 0.8,
+                    scale: i === activeIndex ? 1 : 0.986,
+                    y: i === activeIndex ? 0 : 5,
+                  }}
+                  transition={{
+                    duration: i === activeIndex ? 0.32 : 0.42,
+                    ease: transitionEase,
+                  }}
+                  onClick={() => setSelectedPost(post)}
+                  layoutId={`inshorts-card-${post.id}`}
+                  className={`relative h-full w-full overflow-hidden whitespace-normal rounded-2xl bg-gradient-to-br ${gradientForPost(post.id)} bg-cover bg-center bg-no-repeat`}
+                  style={{
+                    backgroundImage: validatedImageByPostId[post.id]
+                      ? `url(${validatedImageByPostId[post.id]})`
+                      : undefined,
+                  }}
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-b ${toneForPost(post)} transition duration-500`} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+
+                  {/* Title shown when no validated image */}
+                  {!validatedImageByPostId[post.id] && (
+                    <div className="absolute inset-0 z-[1] flex items-center justify-center px-8 text-center">
+                      <span className="line-clamp-3 text-lg font-semibold text-white/95">{post.title}</span>
+                    </div>
+                  )}
+
+                  {/* Side actions */}
+                  <div className="absolute bottom-24 right-4 z-10 flex flex-col gap-3">
+                    {/* Social share icons row */}
+                    <div
+                      className="flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-2 backdrop-blur-md"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* WhatsApp */}
+                      <button
+                        type="button"
+                        aria-label="Share on WhatsApp"
+                        onClick={shareWhatsApp}
+                        className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#25D366]/70"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                        </svg>
+                      </button>
+
+                      {/* Twitter / X */}
+                      <button
+                        type="button"
+                        aria-label="Share on X (Twitter)"
+                        onClick={shareTwitter}
+                        className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-black/60"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                        </svg>
+                      </button>
+
+                      {/* LinkedIn */}
+                      <button
+                        type="button"
+                        aria-label="Share on LinkedIn"
+                        onClick={shareLinkedIn}
+                        className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#0A66C2]/70"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                        </svg>
+                      </button>
+
+                      {/* Instagram — native share on mobile, caption copy + open instagram.com on desktop */}
+                      <button
+                        type="button"
+                        aria-label={igCopiedPostId === post.id ? "Caption copied — paste into Instagram!" : "Share on Instagram"}
+                        title={igCopiedPostId === post.id ? "Caption copied — paste into Instagram!" : "Share on Instagram"}
+                        onClick={(e) => { e.stopPropagation(); void shareInstagram(); }}
+                        className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-gradient-to-br hover:from-[#f09433]/70 hover:via-[#e6683c]/70 hover:to-[#bc1888]/70"
+                      >
+                        {igCopiedPostId === post.id ? (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <rect x="2" y="2" width="20" height="20" rx="5" />
+                            <circle cx="12" cy="12" r="4" />
+                            <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Read button */}
+                    <motion.button
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.94 }}
+                      className="rounded-full bg-black/35 px-3 py-2 text-xs font-semibold backdrop-blur-md"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPost(post);
+                      }}
+                    >
+                      📖 Read
+                    </motion.button>
                   </div>
-                )}
 
-                {/* Side actions */}
-                <div className="absolute bottom-24 right-4 z-10 flex flex-col gap-3">
-                  <motion.button
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.92 }}
-                    animate={likedById[post.id] ? { scale: [1, 1.24, 0.96, 1] } : { scale: 1 }}
-                    transition={{ duration: 0.32, ease: "easeOut" }}
-                    className={`rounded-full px-3 py-2 text-xs font-semibold backdrop-blur-md ${
-                      likedById[post.id] ? "bg-pink-500/80" : "bg-black/35"
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      interactionDepthRef.current = "high";
-                      setInteractionAck(true);
-                      window.setTimeout(() => setInteractionAck(false), 500);
-                      setLikedById((prev) => ({ ...prev, [post.id]: !prev[post.id] }));
-                    }}
-                  >
-                    👍 {formatCount(post.upvote_count)}
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.94 }}
-                    className="rounded-full bg-black/35 px-3 py-2 text-xs font-semibold backdrop-blur-md"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (typeof navigator !== "undefined" && navigator.share) {
-                        void navigator.share({
-                          title: post.title,
-                          text: shortText(post).split(" ").slice(0, 45).join(" "),
-                          url: `${window.location.origin}/blog/${post.slug}`,
-                        }).catch(() => undefined);
-                      }
-                    }}
-                  >
-                    🔗 Share
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.94 }}
-                    className="rounded-full bg-black/35 px-3 py-2 text-xs font-semibold backdrop-blur-md"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedPost(post);
-                    }}
-                  >
-                    📖 Read
-                  </motion.button>
-                </div>
+                  {/* Bottom content */}
+                  <div className="absolute inset-x-0 bottom-0 z-10 p-4 pb-10 sm:p-6">
+                    {/* Badges */}
+                    <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                      {(post.view_count >= 80 || post.upvote_count >= 12) && (
+                        <span className="rounded-full bg-orange-500/90 px-2 py-0.5 text-[10px] font-bold">🔥 Popular</span>
+                      )}
+                      {isNewPost(post) && (
+                        <span className="rounded-full bg-sky-500/90 px-2 py-0.5 text-[10px] font-bold">✨ New</span>
+                      )}
+                    </div>
 
-                {/* Bottom content */}
-                <div className="absolute inset-x-0 bottom-0 z-10 p-4 pb-10 sm:p-6">
-                  {/* Badges */}
-                  <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                    {(post.view_count >= 80 || post.upvote_count >= 12) && (
-                      <span className="rounded-full bg-orange-500/90 px-2 py-0.5 text-[10px] font-bold">🔥 Popular</span>
-                    )}
-                    {isNewPost(post) && (
-                      <span className="rounded-full bg-sky-500/90 px-2 py-0.5 text-[10px] font-bold">✨ New</span>
-                    )}
+                    {/* Category pill */}
+                    <div className="mb-2 inline-flex rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
+                      {post.category}
+                    </div>
+
+                    {/* Title */}
+                    <motion.h2
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, ease: "easeOut", delay: 0.02 }}
+                      className="text-2xl font-extrabold leading-tight sm:text-3xl"
+                    >
+                      {post.title}
+                    </motion.h2>
+
+                    {/* Excerpt */}
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3, ease: "easeOut", delay: 0.14 }}
+                      className="mt-2 line-clamp-4 max-w-xl text-sm leading-7 text-white/90 sm:text-base"
+                    >
+                      {shortText(post)}
+                    </motion.p>
+
+                    {/* Stats */}
+                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-white/80 sm:text-sm">
+                      <span>{formatCount(post.view_count)} views</span>
+                      <span>{readingMinutes(post)} min read</span>
+                      <span>{formatRelativeTime(post.created_at)} ago</span>
+                    </div>
+
+                    {/* CTA — links to blog article */}
+                    <a
+                      href={`/blog/${post.slug}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/25"
+                    >
+                      Read full article →
+                    </a>
                   </div>
-
-                  {/* Category pill */}
-                  <div className="mb-2 inline-flex rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
-                    {post.category}
-                  </div>
-
-                  {/* Title */}
-                  <motion.h2
-                    initial={{ opacity: 0, y: 14 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, ease: "easeOut", delay: 0.02 }}
-                    className="text-2xl font-extrabold leading-tight sm:text-3xl"
-                  >
-                    {post.title}
-                  </motion.h2>
-
-                  {/* Excerpt */}
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3, ease: "easeOut", delay: 0.14 }}
-                    className="mt-2 line-clamp-4 max-w-xl text-sm leading-7 text-white/90 sm:text-base"
-                  >
-                    {shortText(post)}
-                  </motion.p>
-
-                  {/* Stats */}
-                  <div className="mt-3 flex flex-wrap gap-3 text-xs text-white/80 sm:text-sm">
-                    <span>{formatCount(post.view_count)} views</span>
-                    <span>{formatCount(post.upvote_count)} upvotes</span>
-                    <span>{readingMinutes(post)} min read</span>
-                    <span>{formatRelativeTime(post.created_at)} ago</span>
-                  </div>
-
-                  {/* CTA — links to blog article */}
-                  <a
-                    href={`/blog/${post.slug}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/25"
-                  >
-                    Read full article →
-                  </a>
-                </div>
-              </motion.article>
-            )}
-          </div>
-        ))}
+                </motion.article>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Dot progress */}
@@ -579,19 +684,6 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
             );
           })}
         </div>
-        <AnimatePresence>
-          {interactionAck && (
-            <motion.p
-              initial={{ opacity: 0, y: 8, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -6, scale: 0.98 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="mb-2 rounded-full bg-emerald-500/80 px-3 py-1 text-[11px] font-semibold text-white"
-            >
-              Interaction saved
-            </motion.p>
-          )}
-        </AnimatePresence>
         {showGestureHint && (
           <p className="rounded-full bg-black/35 px-3 py-1 text-[11px] text-white/85 backdrop-blur-md">
             Swipe left or right to continue
@@ -643,8 +735,6 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                 <span>{readingMinutes(selectedPost)} min read</span>
                 <span>·</span>
                 <span>{formatCount(selectedPost.view_count)} views</span>
-                <span>·</span>
-                <span>{formatCount(selectedPost.upvote_count)} upvotes</span>
               </div>
 
               <h3 className="text-2xl font-bold leading-tight">{selectedPost.title}</h3>
