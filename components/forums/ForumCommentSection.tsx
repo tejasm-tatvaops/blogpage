@@ -442,6 +442,7 @@ export function ForumCommentSection({
       {/* Comment form */}
       <form onSubmit={onSubmit} className="mb-10 rounded-2xl border border-app bg-subtle p-5">
         <p className="mb-4 text-sm font-semibold text-slate-700">Join the discussion</p>
+        <p className="-mt-2 mb-4 text-xs text-slate-500">Name is optional. If left blank, we&apos;ll post as Anonymous.</p>
         {error && (
           <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
         )}
@@ -453,7 +454,7 @@ export function ForumCommentSection({
         <div className="space-y-3">
           <input
             type="text"
-            placeholder="Your name (or leave as Anonymous)"
+            placeholder="Your name (optional)"
             value={authorName}
             onChange={(e) => setAuthorName(e.target.value)}
             maxLength={80}
@@ -473,7 +474,7 @@ export function ForumCommentSection({
           <span className="text-xs text-slate-400">{content.length}/2000</span>
           <button
             type="submit"
-            disabled={submitting || !authorName.trim() || !content.trim()}
+            disabled={submitting || !content.trim()}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-indigo-700 disabled:opacity-50"
           >
             {submitting ? "Posting…" : "Post reply"}
