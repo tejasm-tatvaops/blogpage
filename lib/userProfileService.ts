@@ -957,7 +957,7 @@ export const getActiveUsersByTopic = async (signals: string[], limit = 8): Promi
 
   const or = cleaned.map((tag) => ({ [`interest_tags.${tag}`]: { $exists: true } }));
   const docs = await UserProfileModel.find({ $or: or })
-    .sort({ last_seen_at: -1, forum_comments: -1, blog_comments: -1, blog_views: -1 })
+    .sort({ reputation_score: -1, last_seen_at: -1, forum_comments: -1, blog_comments: -1 })
     .limit(limit)
     .lean();
 
@@ -965,7 +965,7 @@ export const getActiveUsersByTopic = async (signals: string[], limit = 8): Promi
 
   const seenIds = new Set(docs.map((d) => d._id.toString()));
   const extras = await UserProfileModel.find({ _id: { $nin: [...seenIds] } })
-    .sort({ last_seen_at: -1 })
+    .sort({ reputation_score: -1, last_seen_at: -1 })
     .limit(Math.max(0, limit - docs.length))
     .lean();
   return [...docs, ...extras].map((doc) => toUserProfile(doc as never));

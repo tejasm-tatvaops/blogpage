@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { BlogPost } from "@/lib/blogService";
 import type { Comment } from "@/lib/commentService";
 import type { ForumPost } from "@/lib/forumService";
-import { DiscussButton } from "@/components/forums/DiscussButton";
 import { calculateReadingTime } from "@/lib/blogService";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { UpvoteButton } from "./UpvoteButton";
@@ -125,7 +124,6 @@ export function BlogDetail({
   semanticRecommendations = [],
   categories,
   comments,
-  forumSlug,
   topicUsers = [],
   relatedForumPosts = [],
   relatedTutorials = [],
@@ -380,11 +378,6 @@ export function BlogDetail({
               </div>
               <UpvoteButton slug={post.slug} initialCount={post.upvote_count} />
               <DownvoteButton slug={post.slug} initialCount={post.downvote_count} />
-              <DiscussButton
-                blogSlug={post.slug}
-                blogTitle={post.title}
-                initialForumSlug={forumSlug}
-              />
               <div className="ml-auto flex items-center">
                 <ShareButtons
                   title={post.title}

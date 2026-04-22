@@ -6,5 +6,5 @@ export default async function InshortsSlugPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  redirect(`/forums/${slug}`);
+  redirect(`/blog/${slug}`);
 }

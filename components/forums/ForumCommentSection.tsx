@@ -44,9 +44,15 @@ export function ForumCommentSection({
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
 
   const totalCommentCount = useCallback(
-    (list: Comment[]) => list.reduce((count, c) => count + 1 + c.replies.length, 0),
+    (list: Comment[]) =>
+      list.reduce(
+        (count, c) =>
+          count + 1 + c.replies.reduce((rc, r) => rc + 1 + r.replies.length, 0),
+        0,
+      ),
     [],
   );
+
   const pollComments = useCallback(async () => {
     const response = await fetch(`/api/forums/${encodeURIComponent(slug)}/comments`, {
       method: "GET",
@@ -55,6 +61,7 @@ export function ForumCommentSection({
     if (!response.ok) return { comments: [] as Comment[] };
     return (await response.json()) as { comments: Comment[] };
   }, [slug]);
+
   const onPollData = useCallback((payload: { comments: Comment[] }) => {
     setComments((prev) => {
       const previousCount = totalCommentCount(prev);
@@ -72,6 +79,7 @@ export function ForumCommentSection({
       return payload.comments;
     });
   }, [totalCommentCount]);
+
   const { hasNewActivity, clearNewActivity } = useActivityPolling<{ comments: Comment[] }>({
     intervalMs: 30_000,
     fetcher: pollComments,
@@ -79,7 +87,6 @@ export function ForumCommentSection({
     onData: onPollData,
   });
 
-  // Is the current visitor the post creator?
   const isCreator =
     typeof document !== "undefined" &&
     !!creatorFingerprint &&
@@ -88,18 +95,19 @@ export function ForumCommentSection({
       return match?.[1] === creatorFingerprint;
     })();
 
+  const sortByDate = (a: Comment, b: Comment) =>
+    new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+
   const sortedComments = useMemo(() => {
-    // Best answer always pinned first when sorting by "top"
     const clone = comments.map((c) => ({
       ...c,
-      replies: [...c.replies].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      ),
+      replies: [...c.replies]
+        .sort(sortByDate)
+        .map((r) => ({ ...r, replies: [...r.replies].sort(sortByDate) })),
     }));
 
     return clone.sort((a, b) => {
       if (sortMode === "newest") {
-        // Best answer still pinned even in newest sort
         if (a.id === bestCommentId) return -1;
         if (b.id === bestCommentId) return 1;
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -109,6 +117,7 @@ export function ForumCommentSection({
       if (b.score !== a.score) return b.score - a.score;
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comments, sortMode, bestCommentId]);
 
   const patchCommentTree = (
@@ -118,7 +127,13 @@ export function ForumCommentSection({
   ): Comment[] =>
     list.map((c) => {
       if (c.id === commentId) return updater(c);
-      const nextReplies = c.replies.map((r) => (r.id === commentId ? updater(r) : r));
+      const nextReplies = c.replies.map((r) => {
+        if (r.id === commentId) return updater(r);
+        const nextNested = r.replies.map((nested) =>
+          nested.id === commentId ? updater(nested) : nested,
+        );
+        return nextNested !== r.replies ? { ...r, replies: nextNested } : r;
+      });
       return nextReplies !== c.replies ? { ...c, replies: nextReplies } : c;
     });
 
@@ -166,11 +181,21 @@ export function ForumCommentSection({
       if (!res.ok) throw new Error(json.error ?? "Failed to post reply.");
       if (json.comment) {
         setComments((prev) =>
-          prev.map((c) =>
-            c.id === parentCommentId
-              ? { ...c, replies: [...c.replies, json.comment as Comment] }
-              : c,
-          ),
+          prev.map((c) => {
+            if (c.id === parentCommentId) {
+              return { ...c, replies: [...c.replies, json.comment as Comment] };
+            }
+            const replyIdx = c.replies.findIndex((r) => r.id === parentCommentId);
+            if (replyIdx !== -1) {
+              const updatedReplies = c.replies.map((r, i) =>
+                i === replyIdx
+                  ? { ...r, replies: [...r.replies, json.comment as Comment] }
+                  : r,
+              );
+              return { ...c, replies: updatedReplies };
+            }
+            return c;
+          }),
         );
       }
       setReplyDrafts((prev) => ({ ...prev, [parentCommentId]: "" }));
@@ -236,7 +261,7 @@ export function ForumCommentSection({
       if (res.ok) {
         setBestCommentId(newId === "clear" ? null : commentId);
       }
-      void fp; // fingerprint is sent via cookie header automatically
+      void fp;
     } finally {
       setMarkingBest(false);
     }
@@ -245,10 +270,13 @@ export function ForumCommentSection({
   const inputClass =
     "w-full rounded-lg border border-app bg-surface px-3 py-2 text-sm text-app outline-none ring-indigo-400 transition placeholder:text-slate-400 focus:ring-2";
 
-  const renderComment = (c: Comment, isReply = false) => {
-    const isBest = c.id === bestCommentId;
+  const renderComment = (c: Comment, depth: 0 | 1 | 2 = 0) => {
+    const isBest = c.id === bestCommentId && depth === 0;
     return (
-      <div key={c.id} className={`flex gap-3 ${isBest && !isReply ? "rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 -mx-3" : ""}`}>
+      <div
+        key={c.id}
+        className={`flex gap-3 ${isBest ? "rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 -mx-3" : ""}`}
+      >
         <UserProfileQuickView
           displayName={c.author_name}
           trigger={
@@ -264,7 +292,11 @@ export function ForumCommentSection({
           <div className="flex flex-wrap items-center gap-2">
             <UserProfileQuickView
               displayName={c.author_name}
-              trigger={<span className="text-sm font-semibold text-app hover:underline">{c.author_name}</span>}
+              trigger={
+                <span className="text-sm font-semibold text-app hover:underline">
+                  {c.is_deleted ? "[deleted]" : c.author_name}
+                </span>
+              }
             />
             <time className="text-xs text-slate-400" dateTime={c.created_at}>
               {formatDate(c.created_at)}
@@ -278,49 +310,58 @@ export function ForumCommentSection({
               </span>
             )}
           </div>
-          <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">{c.content}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-            <button
-              type="button"
-              disabled={votingCommentId === c.id}
-              onClick={() => onVote(c.id, "up")}
-              className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
-            >
-              ▲ {c.upvote_count}
-            </button>
-            <button
-              type="button"
-              disabled={votingCommentId === c.id}
-              onClick={() => onVote(c.id, "down")}
-              className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
-            >
-              ▼ {c.downvote_count}
-            </button>
-            {!isReply && (
+
+          {c.is_deleted ? (
+            <p className="mt-1 text-sm italic text-slate-400">[deleted]</p>
+          ) : (
+            <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">{c.content}</p>
+          )}
+
+          {!c.is_deleted && (
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500">
               <button
                 type="button"
-                onClick={() => setActiveReplyFor((prev) => (prev === c.id ? null : c.id))}
-                className="rounded-md border border-app px-2 py-1 hover:bg-subtle"
+                disabled={votingCommentId === c.id}
+                onClick={() => onVote(c.id, "up")}
+                className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
               >
-                Reply
+                ▲ {c.upvote_count}
               </button>
-            )}
-            {/* Mark best answer — only visible to post creator */}
-            {isCreator && !isReply && (
               <button
                 type="button"
-                disabled={markingBest}
-                onClick={() => onMarkBest(c.id)}
-                className={`rounded-md border px-2 py-1 text-xs transition disabled:opacity-50 ${
-                  isBest
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-surface"
-                    : "border-app text-slate-500 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
-                }`}
+                disabled={votingCommentId === c.id}
+                onClick={() => onVote(c.id, "down")}
+                className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
               >
-                {isBest ? "Unmark best" : "Mark as best"}
+                ▼ {c.downvote_count}
               </button>
-            )}
-          </div>
+              {/* Reply button — only at depth 0 and 1 (max depth 2) */}
+              {depth < 2 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveReplyFor((prev) => (prev === c.id ? null : c.id))}
+                  className="rounded-md border border-app px-2 py-1 hover:bg-subtle"
+                >
+                  Reply
+                </button>
+              )}
+              {/* Mark best — only root comments, only for post creator */}
+              {isCreator && depth === 0 && (
+                <button
+                  type="button"
+                  disabled={markingBest}
+                  onClick={() => onMarkBest(c.id)}
+                  className={`rounded-md border px-2 py-1 text-xs transition disabled:opacity-50 ${
+                    isBest
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-surface"
+                      : "border-app text-slate-500 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                  }`}
+                >
+                  {isBest ? "Unmark best" : "Mark as best"}
+                </button>
+              )}
+            </div>
+          )}
 
           {activeReplyFor === c.id && (
             <div className="mt-3 rounded-lg border border-app bg-subtle p-3">
@@ -337,9 +378,7 @@ export function ForumCommentSection({
               <div className="mt-2 flex justify-end">
                 <button
                   type="button"
-                  disabled={
-                    !authorName.trim() || !(replyDrafts[c.id] ?? "").trim() || submitting
-                  }
+                  disabled={!authorName.trim() || !(replyDrafts[c.id] ?? "").trim() || submitting}
                   onClick={() => onReply(c.id)}
                   className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold !text-white hover:bg-indigo-700 disabled:opacity-50"
                 >
@@ -350,8 +389,8 @@ export function ForumCommentSection({
           )}
 
           {c.replies.length > 0 && (
-            <div className="mt-4 space-y-3 border-l-2 border-indigo-100 pl-4">
-              {c.replies.map((reply) => renderComment(reply, true))}
+            <div className="mt-4 space-y-4 border-l-2 border-indigo-100 pl-4">
+              {c.replies.map((reply) => renderComment(reply, (depth + 1) as 0 | 1 | 2))}
             </div>
           )}
         </div>

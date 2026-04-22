@@ -26,25 +26,40 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/notifications/route.js"
     ],
-    "/inshorts/page": [
+    "/blog/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/inshorts/page.js"
+      "static/chunks/app/blog/page.js"
+    ],
+    "/api/users/preferences/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/users/preferences/route.js"
+    ],
+    "/blog/[slug]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/blog/[slug]/page.js"
+    ],
+    "/api/trending/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/trending/route.js"
+    ],
+    "/api/blog/[slug]/view/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/blog/[slug]/view/route.js"
+    ],
+    "/api/blog/[slug]/comments/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/blog/[slug]/comments/route.js"
     ],
     "/api/feed/events/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/feed/events/route.js"
-    ],
-    "/shorts/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/shorts/page.js"
-    ],
-    "/api/shorts/[slug]/view/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/shorts/[slug]/view/route.js"
     ],
     "/forums/layout": [
       "static/chunks/webpack.js",
@@ -76,35 +91,40 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/forums/[slug]/comments/route.js"
     ],
-    "/blog/page": [
+    "/shorts/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/blog/page.js"
+      "static/chunks/app/shorts/page.js"
     ],
-    "/api/users/preferences/route": [
+    "/api/shorts/[slug]/view/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/users/preferences/route.js"
+      "static/chunks/app/api/shorts/[slug]/view/route.js"
     ],
-    "/blog/[slug]/page": [
+    "/inshorts/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/blog/[slug]/page.js"
+      "static/chunks/app/inshorts/page.js"
     ],
-    "/api/trending/route": [
+    "/api/cover-image/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/trending/route.js"
+      "static/chunks/app/api/cover-image/route.js"
     ],
-    "/api/blog/[slug]/view/route": [
+    "/tutorials/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/blog/[slug]/view/route.js"
+      "static/chunks/app/tutorials/page.js"
     ],
-    "/api/blog/[slug]/comments/route": [
+    "/tutorials/[slug]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/blog/[slug]/comments/route.js"
+      "static/chunks/app/tutorials/[slug]/page.js"
+    ],
+    "/api/tutorials/[slug]/progress/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/tutorials/[slug]/progress/route.js"
     ]
   }
 }

@@ -34,7 +34,12 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
 
   const totalCommentCount = useCallback(
-    (list: Comment[]) => list.reduce((count, c) => count + 1 + c.replies.length, 0),
+    (list: Comment[]) =>
+      list.reduce(
+        (count, c) =>
+          count + 1 + c.replies.reduce((rc, r) => rc + 1 + r.replies.length, 0),
+        0,
+      ),
     [],
   );
 
@@ -72,12 +77,18 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
     onData: onPollData,
   });
 
+  const sortByDate = (a: Comment, b: Comment) =>
+    new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+
   const sortedComments = useMemo(() => {
     const clone = comments.map((c) => ({
       ...c,
-      replies: [...c.replies].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      ),
+      replies: [...c.replies]
+        .sort(sortByDate)
+        .map((r) => ({
+          ...r,
+          replies: [...r.replies].sort(sortByDate),
+        })),
     }));
 
     return clone.sort((a, b) => {
@@ -87,6 +98,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
       if (b.score !== a.score) return b.score - a.score;
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comments, sortMode]);
 
   const patchCommentTree = (
@@ -96,7 +108,13 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   ): Comment[] =>
     commentList.map((comment) => {
       if (comment.id === commentId) return updater(comment);
-      const nextReplies = comment.replies.map((reply) => (reply.id === commentId ? updater(reply) : reply));
+      const nextReplies = comment.replies.map((reply) => {
+        if (reply.id === commentId) return updater(reply);
+        const nextNested = reply.replies.map((nested) =>
+          nested.id === commentId ? updater(nested) : nested,
+        );
+        return nextNested !== reply.replies ? { ...reply, replies: nextNested } : reply;
+      });
       return nextReplies !== comment.replies ? { ...comment, replies: nextReplies } : comment;
     });
 
@@ -153,11 +171,21 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
 
       if (json.comment) {
         setComments((prev) =>
-          prev.map((comment) =>
-            comment.id === parentCommentId
-              ? { ...comment, replies: [...comment.replies, json.comment as Comment] }
-              : comment,
-          ),
+          prev.map((comment) => {
+            if (comment.id === parentCommentId) {
+              return { ...comment, replies: [...comment.replies, json.comment as Comment] };
+            }
+            const replyIdx = comment.replies.findIndex((r) => r.id === parentCommentId);
+            if (replyIdx !== -1) {
+              const updatedReplies = comment.replies.map((r, i) =>
+                i === replyIdx
+                  ? { ...r, replies: [...r.replies, json.comment as Comment] }
+                  : r,
+              );
+              return { ...comment, replies: updatedReplies };
+            }
+            return comment;
+          }),
         );
       }
 
@@ -212,6 +240,19 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
 
   return (
     <section className="mt-14 border-t border-app pt-10">
+      {/* Discuss this article strip */}
+      <div className="mb-6 flex items-center gap-3 rounded-2xl border border-sky-100 bg-sky-50/50 px-5 py-4">
+        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-600">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        </span>
+        <div>
+          <p className="text-sm font-bold text-sky-800">Discuss this article</p>
+          <p className="text-xs text-sky-600">Share your thoughts, ask questions, or start a discussion below.</p>
+        </div>
+      </div>
+
       <h2 className="mb-6 text-xl font-bold text-app">
         {comments.length > 0 ? `${comments.length} Comment${comments.length > 1 ? "s" : ""}` : "Comments"}
       </h2>
@@ -329,34 +370,40 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                     {formatDate(c.created_at)}
                   </time>
                 </div>
-                <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                  {c.content}
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                  <button
-                    type="button"
-                    disabled={votingCommentId === c.id}
-                    onClick={() => onVote(c.id, "up")}
-                    className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
-                  >
-                    ▲ {c.upvote_count}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={votingCommentId === c.id}
-                    onClick={() => onVote(c.id, "down")}
-                    className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
-                  >
-                    ▼ {c.downvote_count}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveReplyFor((prev) => (prev === c.id ? null : c.id))}
-                    className="rounded-md border border-app px-2 py-1 hover:bg-subtle"
-                  >
-                    Reply
-                  </button>
-                </div>
+                {c.is_deleted ? (
+                  <p className="mt-1 text-sm italic text-slate-400">[deleted]</p>
+                ) : (
+                  <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                    {c.content}
+                  </p>
+                )}
+                {!c.is_deleted && (
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                    <button
+                      type="button"
+                      disabled={votingCommentId === c.id}
+                      onClick={() => onVote(c.id, "up")}
+                      className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
+                    >
+                      ▲ {c.upvote_count}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={votingCommentId === c.id}
+                      onClick={() => onVote(c.id, "down")}
+                      className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
+                    >
+                      ▼ {c.downvote_count}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveReplyFor((prev) => (prev === c.id ? null : c.id))}
+                      className="rounded-md border border-app px-2 py-1 hover:bg-subtle"
+                    >
+                      Reply
+                    </button>
+                  </div>
+                )}
 
                 {activeReplyFor === c.id && (
                   <div className="mt-3 rounded-lg border border-app bg-subtle p-3">
@@ -387,7 +434,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                 )}
 
                 {c.replies.length > 0 && (
-                  <div className="mt-4 space-y-3 border-l border-app pl-4">
+                  <div className="mt-4 space-y-4 border-l border-app pl-4">
                     {c.replies.map((reply) => (
                       <div key={reply.id}>
                         <div className="flex items-baseline gap-2">
@@ -399,27 +446,115 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                             {formatDate(reply.created_at)}
                           </time>
                         </div>
-                        <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                          {reply.content}
-                        </p>
-                        <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
-                          <button
-                            type="button"
-                            disabled={votingCommentId === reply.id}
-                            onClick={() => onVote(reply.id, "up")}
-                            className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
-                          >
-                            ▲ {reply.upvote_count}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={votingCommentId === reply.id}
-                            onClick={() => onVote(reply.id, "down")}
-                            className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
-                          >
-                            ▼ {reply.downvote_count}
-                          </button>
-                        </div>
+                        {reply.is_deleted ? (
+                          <p className="mt-1 text-sm italic text-slate-400">[deleted]</p>
+                        ) : (
+                          <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                            {reply.content}
+                          </p>
+                        )}
+                        {!reply.is_deleted && (
+                          <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
+                            <button
+                              type="button"
+                              disabled={votingCommentId === reply.id}
+                              onClick={() => onVote(reply.id, "up")}
+                              className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
+                            >
+                              ▲ {reply.upvote_count}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={votingCommentId === reply.id}
+                              onClick={() => onVote(reply.id, "down")}
+                              className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
+                            >
+                              ▼ {reply.downvote_count}
+                            </button>
+                            {/* Reply button only at depth 1 (max depth is 2) */}
+                            <button
+                              type="button"
+                              onClick={() => setActiveReplyFor((prev) => (prev === reply.id ? null : reply.id))}
+                              className="rounded-md border border-app px-2 py-1 hover:bg-subtle"
+                            >
+                              Reply
+                            </button>
+                          </div>
+                        )}
+
+                        {activeReplyFor === reply.id && (
+                          <div className="mt-3 rounded-lg border border-app bg-subtle p-3">
+                            <textarea
+                              value={replyDrafts[reply.id] ?? ""}
+                              onChange={(e) =>
+                                setReplyDrafts((prev) => ({
+                                  ...prev,
+                                  [reply.id]: e.target.value,
+                                }))
+                              }
+                              rows={3}
+                              maxLength={2000}
+                              placeholder="Write a reply..."
+                              className={inputClass}
+                            />
+                            <div className="mt-2 flex justify-end">
+                              <button
+                                type="button"
+                                disabled={!authorName.trim() || !(replyDrafts[reply.id] ?? "").trim() || submitting}
+                                onClick={() => onReply(reply.id)}
+                                className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold !text-white hover:bg-slate-700 disabled:opacity-50"
+                              >
+                                {submitting ? "Posting..." : "Post reply"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Depth-2 replies */}
+                        {reply.replies.length > 0 && (
+                          <div className="mt-3 space-y-3 border-l border-app pl-4">
+                            {reply.replies.map((nested) => (
+                              <div key={nested.id}>
+                                <div className="flex items-baseline gap-2">
+                                  <UserProfileQuickView
+                                    displayName={nested.author_name}
+                                    trigger={<span className="text-sm font-semibold text-app hover:underline">{nested.author_name}</span>}
+                                  />
+                                  <time className="text-xs text-slate-400" dateTime={nested.created_at}>
+                                    {formatDate(nested.created_at)}
+                                  </time>
+                                </div>
+                                {nested.is_deleted ? (
+                                  <p className="mt-1 text-sm italic text-slate-400">[deleted]</p>
+                                ) : (
+                                  <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                                    {nested.content}
+                                  </p>
+                                )}
+                                {!nested.is_deleted && (
+                                  <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
+                                    <button
+                                      type="button"
+                                      disabled={votingCommentId === nested.id}
+                                      onClick={() => onVote(nested.id, "up")}
+                                      className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
+                                    >
+                                      ▲ {nested.upvote_count}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={votingCommentId === nested.id}
+                                      onClick={() => onVote(nested.id, "down")}
+                                      className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
+                                    >
+                                      ▼ {nested.downvote_count}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

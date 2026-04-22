@@ -6,27 +6,89 @@ type TopicActiveUsersStripProps = {
   users: UserProfile[];
 };
 
+const TIER_CONFIG: Record<string, { label: string; className: string }> = {
+  elite:       { label: "Elite",       className: "bg-purple-100 text-purple-700" },
+  expert:      { label: "Expert",      className: "bg-amber-100 text-amber-700" },
+  contributor: { label: "Contributor", className: "bg-sky-100 text-sky-700" },
+  member:      { label: "Member",      className: "bg-slate-100 text-slate-500" },
+};
+
 export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripProps) {
   if (users.length === 0) return null;
+
   return (
-    <section className="mt-8 rounded-2xl border border-app bg-surface p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-semibold text-app">{title}</p>
-        <Link href="/admin/blog" className="text-xs font-semibold text-sky-700 hover:underline">
-          View all users
-        </Link>
+    <section className="mt-8 rounded-2xl border border-app bg-surface p-5 shadow-sm">
+      {/* Header */}
+      <div className="mb-4 flex items-center gap-2">
+        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600" aria-hidden>
+            <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </span>
+        <p className="text-sm font-bold text-app">{title}</p>
+        <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+          {users.length} active
+        </span>
       </div>
-      <div className="flex flex-wrap gap-3">
-        {users.slice(0, 8).map((user) => (
-          <Link
-            key={user.id}
-            href={user.last_forum_slug ? `/forums/${user.last_forum_slug}` : user.last_blog_slug ? `/blog/${user.last_blog_slug}` : "/forums"}
-            className="flex items-center gap-2 rounded-full border border-app bg-subtle px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100"
-          >
-            <img src={user.avatar_url} alt={`${user.display_name} avatar`} className="h-6 w-6 rounded-full object-cover" />
-            <span className="max-w-[130px] truncate font-medium">{user.display_name}</span>
-          </Link>
-        ))}
+
+      {/* User cards grid */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {users.slice(0, 8).map((user) => {
+          const tier = TIER_CONFIG[user.reputation_tier] ?? TIER_CONFIG.member!;
+          const href = user.last_forum_slug
+            ? `/forums/${user.last_forum_slug}`
+            : user.last_blog_slug
+              ? `/blog/${user.last_blog_slug}`
+              : "/forums";
+
+          return (
+            <Link
+              key={user.id}
+              href={href}
+              className="group flex flex-col gap-2 rounded-xl border border-app bg-subtle p-3 transition hover:border-sky-200 hover:bg-sky-50/40 hover:shadow-sm"
+            >
+              {/* Avatar row */}
+              <div className="flex items-center gap-2.5">
+                <div className="relative flex-shrink-0">
+                  <img
+                    src={user.avatar_url}
+                    alt={`${user.display_name} avatar`}
+                    className="h-9 w-9 rounded-full border border-app object-cover"
+                  />
+                  {user.is_active_now && (
+                    <span
+                      className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white"
+                      title="Active now"
+                    />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold text-slate-800 group-hover:text-sky-700">
+                    {user.display_name}
+                  </p>
+                  <span className={`mt-0.5 inline-block rounded-full px-1.5 py-px text-[9px] font-bold uppercase tracking-wide ${tier.className}`}>
+                    {tier.label}
+                  </span>
+                </div>
+              </div>
+
+              {/* About snippet */}
+              <p className="line-clamp-2 text-[10px] leading-[1.5] text-slate-500">
+                {user.about}
+              </p>
+
+              {/* Reputation score */}
+              {user.reputation_score > 0 && (
+                <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-600">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  {user.reputation_score.toLocaleString()} pts
+                </div>
+              )}
+            </Link>
+          );
+        })}
       </div>
     </section>
   );

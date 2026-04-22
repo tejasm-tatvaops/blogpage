@@ -12,6 +12,7 @@ export type Comment = {
   persona_name: string | null;
   content: string;
   is_ai_generated: boolean;
+  is_deleted: boolean;
   created_at: string;
   upvote_count: number;
   downvote_count: number;
@@ -35,19 +36,23 @@ export type AdminComment = {
 
 const notDeleted = { deleted_at: null };
 
-const toComment = (doc: CommentDocument): Comment => ({
-  id: doc._id.toString(),
-  parent_comment_id: doc.parent_comment_id ?? null,
-  author_name: doc.author_name,
-  persona_name: doc.persona_name ?? null,
-  content: doc.content,
-  is_ai_generated: doc.is_ai_generated ?? false,
-  created_at: doc.created_at.toISOString(),
-  upvote_count: doc.upvote_count ?? 0,
-  downvote_count: doc.downvote_count ?? 0,
-  score: (doc.upvote_count ?? 0) - (doc.downvote_count ?? 0),
-  replies: [],
-});
+const toComment = (doc: CommentDocument): Comment => {
+  const deleted = Boolean(doc.deleted_at);
+  return {
+    id: doc._id.toString(),
+    parent_comment_id: doc.parent_comment_id ?? null,
+    author_name: deleted ? "[deleted]" : doc.author_name,
+    persona_name: deleted ? null : (doc.persona_name ?? null),
+    content: deleted ? "[deleted]" : doc.content,
+    is_ai_generated: doc.is_ai_generated ?? false,
+    is_deleted: deleted,
+    created_at: doc.created_at.toISOString(),
+    upvote_count: deleted ? 0 : (doc.upvote_count ?? 0),
+    downvote_count: deleted ? 0 : (doc.downvote_count ?? 0),
+    score: deleted ? 0 : ((doc.upvote_count ?? 0) - (doc.downvote_count ?? 0)),
+    replies: [],
+  };
+};
 
 export const commentInputSchema = z.object({
   author_name: z
@@ -69,12 +74,14 @@ export type CommentInput = z.infer<typeof commentInputSchema>;
 
 export const getComments = async (postId: string): Promise<Comment[]> => {
   await connectToDatabase();
-  const docs = (await CommentModel.find({ post_id: postId, ...notDeleted })
+  // Fetch all comments including soft-deleted so replies to deleted parents still appear.
+  const docs = (await CommentModel.find({ post_id: postId })
     .sort({ created_at: 1 })
-    .limit(300)
+    .limit(500)
     .lean()) as unknown as CommentDocument[];
   const mapped = docs.map(toComment);
 
+  const byId = new Map(mapped.map((c) => [c.id, c]));
   const rootComments = mapped.filter((comment) => !comment.parent_comment_id);
   const repliesByParent = new Map<string, Comment[]>();
   for (const comment of mapped) {
@@ -84,10 +91,38 @@ export const getComments = async (postId: string): Promise<Comment[]> => {
     repliesByParent.set(comment.parent_comment_id, bucket);
   }
 
+  const sortByDate = (a: Comment, b: Comment) =>
+    new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+
   for (const root of rootComments) {
-    root.replies = (repliesByParent.get(root.id) ?? []).sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    );
+    const depth1 = (repliesByParent.get(root.id) ?? []).sort(sortByDate);
+    for (const reply of depth1) {
+      reply.replies = (repliesByParent.get(reply.id) ?? []).sort(sortByDate);
+    }
+    root.replies = depth1;
+  }
+
+  // Promote orphaned replies (parent was deleted and has no children itself) as a
+  // fallback: attach them under a synthetic deleted-parent stub only if not already
+  // reachable via rootComments.
+  const reachableIds = new Set<string>();
+  for (const root of rootComments) {
+    reachableIds.add(root.id);
+    for (const r of root.replies) {
+      reachableIds.add(r.id);
+      for (const n of r.replies) reachableIds.add(n.id);
+    }
+  }
+  for (const comment of mapped) {
+    if (reachableIds.has(comment.id)) continue;
+    // Orphaned: parent missing from rootComments (deleted & itself had a parent)
+    if (comment.parent_comment_id) {
+      const parent = byId.get(comment.parent_comment_id);
+      if (parent && reachableIds.has(parent.id)) {
+        parent.replies.push(comment);
+        reachableIds.add(comment.id);
+      }
+    }
   }
 
   return rootComments.sort((a, b) => {
@@ -117,7 +152,14 @@ export const addComment = async (postId: string, input: CommentInput): Promise<C
       throw new Error("Parent comment not found.");
     }
     if (parent.parent_comment_id) {
-      throw new Error("Only one reply level is supported.");
+      // parent is depth 1; new comment would be depth 2 — allowed.
+      // Ensure grandparent has no parent (block depth 3+).
+      const grandparent = (await CommentModel.findById(parent.parent_comment_id)
+        .select("parent_comment_id")
+        .lean()) as { parent_comment_id?: string | null } | null;
+      if (grandparent?.parent_comment_id) {
+        throw new Error("Maximum reply depth reached.");
+      }
     }
   }
 

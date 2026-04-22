@@ -3,8 +3,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ForumVoteBar } from "@/components/forums/ForumVoteBar";
 import { ForumCommentSection } from "@/components/forums/ForumCommentSection";
+import { ForumShareButtons } from "@/components/forums/ForumShareButtons";
 import { ForumViewCount } from "@/components/forums/ForumViewCount";
 import { MarkdownRenderer } from "@/components/blog/MarkdownRenderer";
+import { ReadingProgressBar } from "@/components/blog/ReadingProgressBar";
+import { BookmarkButton } from "@/components/blog/BookmarkButton";
 import { getForumPostBySlug, getForumPosts } from "@/lib/forumService";
 import { getPostsByTag } from "@/lib/blogService";
 import { getComments } from "@/lib/commentService";
@@ -94,6 +97,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
+      <ReadingProgressBar />
       <main className="mx-auto min-h-screen w-full max-w-3xl px-4 py-10">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-2 text-sm text-slate-500" aria-label="Breadcrumb">
@@ -190,12 +194,24 @@ export default async function ForumThreadPage({ params }: PageProps) {
         )}
 
         {/* Engagement bar */}
-        <div className="-mx-4 mb-8 border-y border-app bg-surface px-4 py-3">
+        <div className="-mx-4 border-t border-app bg-surface px-4 py-3">
           <ForumVoteBar
             slug={post.slug}
             initialUpvotes={post.upvote_count}
             initialDownvotes={post.downvote_count}
             commentCount={post.comment_count}
+          />
+        </div>
+
+        {/* Action bar — bookmark + share */}
+        <div className="-mx-4 mb-8 flex flex-wrap items-center gap-3 border-y border-app bg-surface px-4 py-3">
+          <BookmarkButton slug={post.slug} title={post.title} excerpt={post.excerpt} />
+          <ForumShareButtons
+            title={post.title}
+            slug={post.slug}
+            excerpt={post.excerpt}
+            content={post.content}
+            tags={post.tags}
           />
         </div>
 

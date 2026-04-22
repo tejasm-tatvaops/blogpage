@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import type { ForumPost } from "@/lib/forumService";
+import type { BlogPost } from "@/lib/blogService";
 
 const formatCount = (n: number): string => {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -20,6 +20,9 @@ const formatRelativeTime = (value: string): string => {
   if (hrs < 24) return `${hrs}h`;
   return `${Math.floor(hrs / 24)}d`;
 };
+
+const readingMinutes = (post: BlogPost): number =>
+  Math.max(1, Math.ceil((post.word_count ?? 0) / 200));
 
 const gradients = [
   "from-slate-950 via-indigo-950 to-slate-900",
@@ -50,51 +53,49 @@ const constructionImages = [
 const gradientForPost = (id: string): string => {
   let hash = 0;
   for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
-  return gradients[hash % gradients.length];
+  return gradients[hash % gradients.length]!;
 };
 
-const imageForPost = (id: string): string => {
+const fallbackImageForPost = (id: string): string => {
   let hash = 0;
   for (let i = 0; i < id.length; i += 1) hash = (hash * 37 + id.charCodeAt(i)) >>> 0;
-  return constructionImages[hash % constructionImages.length];
+  return constructionImages[hash % constructionImages.length]!;
 };
 
-const shortText = (post: ForumPost): string => {
+const candidateImageForPost = (post: BlogPost): string =>
+  post.cover_image || fallbackImageForPost(post.id);
+
+const shortText = (post: BlogPost): string => {
   const source = (post.excerpt || post.content || "").replace(/\s+/g, " ").trim();
-  const tagLine = post.tags.slice(0, 2).join(" & ");
-  const engagementLine =
-    post.comment_count >= 8
-      ? "Community debate is active, with practical on-ground points from multiple builders."
-      : "Useful practical context shared by the community for real project decisions.";
-  const fallback =
-    tagLine.length > 0
-      ? `Quick update on ${tagLine}. ${engagementLine}`
-      : `Practical construction update. ${engagementLine}`;
-
+  const tagLine = [post.category, ...post.tags].slice(0, 2).join(" & ");
+  const fallback = `Quick read on ${tagLine || "construction"}.`;
   const base = source || fallback;
-  const baseWords = base.split(" ").filter(Boolean);
-  const baseText = baseWords.slice(0, 52).join(" ");
-
-  const extensionParts: string[] = [];
-  if (tagLine.length > 0) extensionParts.push(`Focus: ${tagLine}.`);
-  extensionParts.push(engagementLine);
-  extensionParts.push("Tap Discuss in Forums to see detailed advice, trade-offs, and real site experiences.");
-  const extension = extensionParts.join(" ");
-
-  const combined = `${baseText}${baseText.endsWith(".") ? "" : "."} ${extension}`.replace(/\s+/g, " ").trim();
-  return combined.split(" ").slice(0, 95).join(" ");
+  const baseText = base.split(" ").filter(Boolean).slice(0, 52).join(" ");
+  const cta = "Tap 'Read full article' to explore the complete guide on TatvaOps.";
+  return `${baseText}${baseText.endsWith(".") ? "" : "."} ${cta}`
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .slice(0, 95)
+    .join(" ");
 };
 
-const toneForPost = (post: ForumPost): string => {
-  const signal = `${post.title} ${post.tags.join(" ")}`.toLowerCase();
-  if (signal.includes("design") || signal.includes("interior")) return "from-indigo-500/20 via-transparent to-transparent";
-  if (signal.includes("cost") || signal.includes("budget")) return "from-amber-500/20 via-transparent to-transparent";
-  if (signal.includes("material") || signal.includes("concrete")) return "from-emerald-500/20 via-transparent to-transparent";
+const toneForPost = (post: BlogPost): string => {
+  const signal = `${post.title} ${post.category} ${post.tags.join(" ")}`.toLowerCase();
+  if (signal.includes("design") || signal.includes("interior"))
+    return "from-indigo-500/20 via-transparent to-transparent";
+  if (signal.includes("cost") || signal.includes("budget") || signal.includes("estimation"))
+    return "from-amber-500/20 via-transparent to-transparent";
+  if (signal.includes("material") || signal.includes("concrete") || signal.includes("boq"))
+    return "from-emerald-500/20 via-transparent to-transparent";
   return "from-sky-500/20 via-transparent to-transparent";
 };
 
+const isNewPost = (post: BlogPost): boolean =>
+  Date.now() - new Date(post.created_at).getTime() < 3 * 24 * 60 * 60 * 1000;
+
 type InshortsViewProps = {
-  initialPosts: ForumPost[];
+  initialPosts: BlogPost[];
 };
 
 export function InshortsView({ initialPosts }: InshortsViewProps) {
@@ -106,22 +107,22 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
   const dwellStartedAtRef = useRef(Date.now());
   const lastTrackedIndexRef = useRef(0);
 
-  const [posts, setPosts] = useState<ForumPost[]>(initialPosts);
+  const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
   const [loading, setLoading] = useState(initialPosts.length === 0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showGestureHint, setShowGestureHint] = useState(true);
-  const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
+  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [likedById, setLikedById] = useState<Record<string, boolean>>({});
   const [swipeGlow, setSwipeGlow] = useState(false);
   const [interactionAck, setInteractionAck] = useState(false);
   const [validatedImageByPostId, setValidatedImageByPostId] = useState<Record<string, string | null>>({});
 
-  // Load posts if not provided server-side
+  // Load posts client-side if SSR didn't provide any
   useEffect(() => {
     if (initialPosts.length > 0) return;
     setLoading(true);
-    fetch("/api/forums?sort=hot&limit=50")
-      .then((r) => r.json() as Promise<{ posts: ForumPost[] }>)
+    fetch("/api/blog/feed?limit=50")
+      .then((r) => r.json() as Promise<{ posts: BlogPost[] }>)
       .then(({ posts: fetched }) => setPosts(fetched ?? []))
       .catch(() => undefined)
       .finally(() => setLoading(false));
@@ -135,55 +136,50 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, posts.length]);
 
-  // Lock body scroll
+  // Lock body scroll while inshorts is open
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
 
+  // Dismiss gesture hint after 2.8s
   useEffect(() => {
     const timer = window.setTimeout(() => setShowGestureHint(false), 2800);
     return () => window.clearTimeout(timer);
   }, []);
 
+  // Prefetch next card image
   useEffect(() => {
     const next = posts[activeIndex + 1];
     if (!next) return;
-    const candidate = imageForPost(next.id);
     const img = new Image();
-    img.src = candidate;
+    img.src = candidateImageForPost(next);
   }, [activeIndex, posts]);
 
-  // Validate image quality before using it in cards.
-  // Inshorts quality gate: reject anything below 700px width.
+  // Validate image quality — reject anything below 700px wide
   useEffect(() => {
     const unresolved = posts
-      .map((post) => ({ postId: post.id, src: imageForPost(post.id) }))
+      .map((post) => ({ postId: post.id, src: candidateImageForPost(post) }))
       .filter(({ postId }) => !(postId in validatedImageByPostId));
     if (unresolved.length === 0) return;
 
-    unresolved.forEach(({ postId, src }) => {
+    for (const { postId, src } of unresolved) {
       const img = new Image();
       img.onload = () => {
-        const isValid = img.naturalWidth >= 700;
-        if (!isValid && process.env.NODE_ENV === "development") {
-          console.log("Rejected low-res image:", src, img.naturalWidth);
-        }
-        setValidatedImageByPostId((prev) => ({ ...prev, [postId]: isValid ? src : null }));
+        const valid = img.naturalWidth >= 700;
+        setValidatedImageByPostId((prev) => ({ ...prev, [postId]: valid ? src : null }));
       };
       img.onerror = () => {
-        if (process.env.NODE_ENV === "development") {
-          console.log("Rejected image (load error):", src);
-        }
         setValidatedImageByPostId((prev) => ({ ...prev, [postId]: null }));
       };
       img.src = src;
-    });
+    }
   }, [posts, validatedImageByPostId]);
 
-  // IntersectionObserver to track active slide
+  // IntersectionObserver — track which slide is active
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -210,11 +206,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
     container.querySelector(`[data-slide="${clamped}"]`)?.scrollIntoView({ behavior, block: "nearest", inline: "start" });
   };
 
-  const emitFeedEvent = (
-    eventType: "dwell_time" | "skip",
-    post: ForumPost,
-    dwellMs?: number,
-  ) => {
+  const emitFeedEvent = (eventType: "dwell_time" | "skip", post: BlogPost, dwellMs?: number) => {
     void fetch("/api/feed/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -222,6 +214,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
         eventType,
         postSlug: post.slug,
         tags: post.tags,
+        category: post.category,
         dwellMs,
         interactionDepth: interactionDepthRef.current,
       }),
@@ -241,6 +234,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
     if (lastTrackedIndexRef.current === activeIndex) return;
     commitDwell(lastTrackedIndexRef.current, activeIndex);
     lastTrackedIndexRef.current = activeIndex;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, posts]);
 
   useEffect(() => {
@@ -249,13 +243,14 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
       if (!current) return;
       emitFeedEvent("dwell_time", current, Math.max(0, Date.now() - dwellStartedAtRef.current));
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posts]);
 
   const progressPct = posts.length > 1 ? ((activeIndex + 1) / posts.length) * 100 : 100;
   const progressComplete = progressPct >= 100;
-  const topTags = [...new Set(posts.flatMap((p) => p.tags).filter(Boolean))].slice(0, 12);
+  const topTags = [...new Set(posts.flatMap((p) => [p.category, ...p.tags]).filter(Boolean))].slice(0, 12);
   const activePost = posts[activeIndex];
-  const interestSignal = activePost?.tags[0] ?? "construction";
+  const interestSignal = activePost?.category ?? activePost?.tags[0] ?? "construction";
   const visibleDotStart = Math.max(0, activeIndex - 4);
   const visibleDots = posts.slice(visibleDotStart, visibleDotStart + 9);
 
@@ -264,7 +259,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
     [0.22, 1, 0.36, 1],
     [0.2, 0.95, 0.25, 1],
   ];
-  const transitionEase = easingPool[activeIndex % easingPool.length];
+  const transitionEase = easingPool[activeIndex % easingPool.length]!;
 
   if (loading) {
     return (
@@ -281,11 +276,11 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
         <p className="text-lg font-semibold text-white/60">No insights available yet.</p>
         <p className="mt-2 text-sm text-white/40">Check back soon — content is added regularly.</p>
         <div className="mt-6 flex gap-3">
-          <Link href="/forums" className="rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/20">
-            Browse Forums
-          </Link>
           <Link href="/blog" className="rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/20">
             Read Articles
+          </Link>
+          <Link href="/forums" className="rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/20">
+            Browse Forums
           </Link>
         </div>
       </div>
@@ -347,9 +342,9 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
             </div>
             {/* Cross-content chips */}
             <div className="flex items-center gap-1.5">
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-black">Inshorts</span>
               <Link href="/blog"   className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:bg-white/20 hover:text-white">Articles</Link>
               <Link href="/forums" className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/70 hover:bg-white/20 hover:text-white">Forums</Link>
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-black">Inshorts</span>
             </div>
           </div>
 
@@ -449,7 +444,9 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                 }}
               >
                 <div className={`absolute inset-0 bg-gradient-to-b ${toneForPost(post)} transition duration-500`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+
+                {/* Title shown when no validated image */}
                 {!validatedImageByPostId[post.id] && (
                   <div className="absolute inset-0 z-[1] flex items-center justify-center px-8 text-center">
                     <span className="line-clamp-3 text-lg font-semibold text-white/95">{post.title}</span>
@@ -480,9 +477,18 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.94 }}
                     className="rounded-full bg-black/35 px-3 py-2 text-xs font-semibold backdrop-blur-md"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (typeof navigator !== "undefined" && navigator.share) {
+                        void navigator.share({
+                          title: post.title,
+                          text: shortText(post).split(" ").slice(0, 45).join(" "),
+                          url: `${window.location.origin}/blog/${post.slug}`,
+                        }).catch(() => undefined);
+                      }
+                    }}
                   >
-                    💬 {formatCount(post.comment_count)}
+                    🔗 Share
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.08 }}
@@ -490,32 +496,31 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                     className="rounded-full bg-black/35 px-3 py-2 text-xs font-semibold backdrop-blur-md"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (typeof navigator !== "undefined" && navigator.share) {
-                        void navigator.share({
-                          title: post.title,
-                          text: shortText(post).split(" ").slice(0, 45).join(" "),
-                          url: `${window.location.origin}/forums/${post.slug}`,
-                        }).catch(() => undefined);
-                      }
+                      setSelectedPost(post);
                     }}
                   >
-                    🔗 Share
+                    📖 Read
                   </motion.button>
                 </div>
 
                 {/* Bottom content */}
                 <div className="absolute inset-x-0 bottom-0 z-10 p-4 pb-10 sm:p-6">
+                  {/* Badges */}
                   <div className="mb-2 flex flex-wrap items-center gap-1.5">
                     {(post.view_count >= 80 || post.upvote_count >= 12) && (
                       <span className="rounded-full bg-orange-500/90 px-2 py-0.5 text-[10px] font-bold">🔥 Popular</span>
                     )}
-                    {post.comment_count >= 6 && (
-                      <span className="rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-bold">💬 Active</span>
+                    {isNewPost(post) && (
+                      <span className="rounded-full bg-sky-500/90 px-2 py-0.5 text-[10px] font-bold">✨ New</span>
                     )}
                   </div>
+
+                  {/* Category pill */}
                   <div className="mb-2 inline-flex rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
-                    {post.tags[0] ?? "discussion"}
+                    {post.category}
                   </div>
+
+                  {/* Title */}
                   <motion.h2
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -524,26 +529,32 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                   >
                     {post.title}
                   </motion.h2>
+
+                  {/* Excerpt */}
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3, ease: "easeOut", delay: 0.14 }}
-                    className="mt-2 line-clamp-6 max-w-xl text-sm leading-7 text-white/90 sm:text-base"
+                    className="mt-2 line-clamp-4 max-w-xl text-sm leading-7 text-white/90 sm:text-base"
                   >
                     {shortText(post)}
                   </motion.p>
+
+                  {/* Stats */}
                   <div className="mt-3 flex flex-wrap gap-3 text-xs text-white/80 sm:text-sm">
                     <span>{formatCount(post.view_count)} views</span>
-                    <span>{formatCount(post.comment_count)} replies</span>
+                    <span>{formatCount(post.upvote_count)} upvotes</span>
+                    <span>{readingMinutes(post)} min read</span>
                     <span>{formatRelativeTime(post.created_at)} ago</span>
                   </div>
-                  {/* Discuss in forum deep-link */}
+
+                  {/* CTA — links to blog article */}
                   <a
-                    href={`/forums/${post.slug}`}
+                    href={`/blog/${post.slug}`}
                     onClick={(e) => e.stopPropagation()}
                     className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/25"
                   >
-                    Discuss in Forums →
+                    Read full article →
                   </a>
                 </div>
               </motion.article>
@@ -556,14 +567,14 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
       <div className="pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
         <div className="mb-2 flex items-center justify-center gap-1.5">
           {visibleDots.map((_, offset) => {
-            const i = visibleDotStart + offset;
+            const idx = visibleDotStart + offset;
             return (
               <button
-                key={i}
+                key={idx}
                 type="button"
-                onClick={() => scrollTo(i)}
-                aria-label={`Go to post ${i + 1}`}
-                className={`pointer-events-auto h-1.5 rounded-full transition-all ${i === activeIndex ? "w-5 bg-white" : "w-1.5 bg-white/35"}`}
+                onClick={() => scrollTo(idx)}
+                aria-label={`Go to post ${idx + 1}`}
+                className={`pointer-events-auto h-1.5 rounded-full transition-all ${idx === activeIndex ? "w-5 bg-white" : "w-1.5 bg-white/35"}`}
               />
             );
           })}
@@ -588,7 +599,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
         )}
       </div>
 
-      {/* Post detail overlay */}
+      {/* Article detail overlay */}
       <AnimatePresence>
         {selectedPost && (
           <motion.div
@@ -604,16 +615,16 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
               className="absolute inset-x-4 bottom-6 top-24 overflow-auto rounded-2xl border border-white/15 bg-zinc-950/90 p-5 text-white"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-3 flex items-center justify-between gap-3">
                 <span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-wide text-white/80">
-                  {selectedPost.tags[0] ?? "discussion"}
+                  {selectedPost.category}
                 </span>
                 <div className="flex items-center gap-2">
                   <a
-                    href={`/forums/${selectedPost.slug}`}
-                    className="rounded-full bg-indigo-600/80 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-500"
+                    href={`/blog/${selectedPost.slug}`}
+                    className="rounded-full bg-sky-600/80 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-500"
                   >
-                    Open in Forums →
+                    Open full article →
                   </a>
                   <button
                     type="button"
@@ -624,8 +635,41 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                   </button>
                 </div>
               </div>
+
+              {/* Author + meta */}
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-white/50">
+                <span className="font-medium text-white/70">{selectedPost.author}</span>
+                <span>·</span>
+                <span>{readingMinutes(selectedPost)} min read</span>
+                <span>·</span>
+                <span>{formatCount(selectedPost.view_count)} views</span>
+                <span>·</span>
+                <span>{formatCount(selectedPost.upvote_count)} upvotes</span>
+              </div>
+
               <h3 className="text-2xl font-bold leading-tight">{selectedPost.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-white/85">{selectedPost.content || selectedPost.excerpt}</p>
+
+              {/* Tags */}
+              {selectedPost.tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {selectedPost.tags.map((tag) => (
+                    <span key={tag} className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/70">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <p className="mt-4 text-sm leading-7 text-white/85">
+                {selectedPost.excerpt || selectedPost.content?.slice(0, 600)}
+              </p>
+
+              <a
+                href={`/blog/${selectedPost.slug}`}
+                className="mt-5 inline-flex items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-500"
+              >
+                Read the full article →
+              </a>
             </motion.div>
           </motion.div>
         )}
