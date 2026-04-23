@@ -53,11 +53,11 @@ import {
 
 // ─── Point table ──────────────────────────────────────────────────────────────
 
-const BASE_POINTS: Record<RepEventReason, number> = {
+export const BASE_POINTS: Record<RepEventReason, number> = {
   article_view_received:      1,
-  article_like_received:      5,
-  article_comment_received:   3,
-  article_share_received:     4,
+  article_like_received:      1,
+  article_comment_received:   2,
+  article_share_received:     2,
   forum_post_created:         5,
   forum_answer_given:         3,
   forum_upvote_received:      4,
@@ -76,6 +76,7 @@ const BASE_POINTS: Record<RepEventReason, number> = {
   badge_unlock_bonus:         0,  // set per-badge below
   anti_abuse_deduction:       -10,
   manual_admin_adjustment:    0,  // passed in as override
+  positive_feedback:          10, // positive mention / praise of TatvaOps
 };
 
 // ─── Cross-content multiplier ─────────────────────────────────────────────────
@@ -608,6 +609,132 @@ export type ReputationHistoryEntry = {
   note: string | null;
   created_at: Date;
 };
+
+// ─── Breakdown ────────────────────────────────────────────────────────────────
+
+export type ReputationBreakdown = {
+  total: number;
+  breakdown: {
+    views: number;
+    comments: number;
+    likes: number;
+    shares: number;
+    positive_feedback: number;
+  };
+};
+
+// Maps each tracked reason → breakdown bucket name.
+const BREAKDOWN_MAP: Partial<Record<RepEventReason, keyof ReputationBreakdown["breakdown"]>> = {
+  article_view_received:     "views",
+  article_comment_received:  "comments",
+  article_like_received:     "likes",
+  content_share:             "shares",
+  positive_feedback:         "positive_feedback",
+};
+
+/**
+ * Aggregate reputation breakdown for a single user from the event ledger.
+ * Uses a single MongoDB aggregation (no N+1). Applies current BASE_POINTS so
+ * the result is consistent with recomputeReputationScore().
+ *
+ * Note: these five event types never carry cross-content multipliers, so
+ * count × BASE_POINTS is exact for the breakdown categories. The overall
+ * total covers all event reasons (same formula as recomputeReputationScore).
+ */
+export async function getReputationBreakdown(identityKey: string): Promise<ReputationBreakdown> {
+  await connectToDatabase();
+
+  const rows = await ReputationEventModel.aggregate<{ _id: string; count: number }>([
+    { $match: { identity_key: identityKey } },
+    { $group: { _id: "$reason", count: { $sum: 1 } } },
+  ]);
+
+  const breakdown: ReputationBreakdown["breakdown"] = {
+    views: 0, comments: 0, likes: 0, shares: 0, positive_feedback: 0,
+  };
+  let total = 0;
+
+  for (const row of rows) {
+    const reason = row._id as RepEventReason;
+    const pts = (BASE_POINTS[reason] ?? 0) * row.count;
+    total += pts;
+    const bucket = BREAKDOWN_MAP[reason];
+    if (bucket) breakdown[bucket] += pts;
+  }
+
+  return { total: Math.max(0, total), breakdown };
+}
+
+/**
+ * Fast read — returns the denormalized cache on UserProfile.
+ * Updated atomically by awardPoints() on every write.
+ * Use this for UI, leaderboard, and badges.
+ */
+export async function getReputationScore(identityKey: string): Promise<number> {
+  await connectToDatabase();
+  const profile = await UserProfileModel.findOne({ identity_key: identityKey })
+    .select("reputation_score")
+    .lean();
+  return Math.max(0, (profile?.reputation_score as number | undefined) ?? 0);
+}
+
+/**
+ * Authoritative recompute — walks every ledger entry and re-applies the
+ * current BASE_POINTS table (×stored multiplier) so a scoring rule change
+ * can be back-filled without touching the ledger.
+ *
+ * Falls back to the stored awarded_points for any unknown/legacy reason so
+ * the result is never less correct than the cached value.
+ *
+ * Optionally syncs the result back to UserProfile.reputation_score.
+ */
+export async function recomputeReputationScore(
+  identityKey: string,
+  opts: { syncToProfile?: boolean } = {},
+): Promise<number> {
+  await connectToDatabase();
+
+  const events = await ReputationEventModel.find({ identity_key: identityKey })
+    .select("reason base_points multiplier awarded_points")
+    .lean();
+
+  let total = 0;
+  for (const evt of events) {
+    const reason = evt.reason as RepEventReason;
+    const multiplier = (evt.multiplier as number | undefined) ?? 1;
+    if (Object.prototype.hasOwnProperty.call(BASE_POINTS, reason)) {
+      total += Math.round(BASE_POINTS[reason] * multiplier);
+    } else {
+      // Legacy event type — keep its stored value so nothing is lost
+      total += (evt.awarded_points as number | undefined) ?? 0;
+    }
+  }
+
+  const clamped = Math.max(0, total);
+
+  if (opts.syncToProfile) {
+    await UserProfileModel.updateOne(
+      { identity_key: identityKey },
+      { $set: { reputation_score: clamped, reputation_tier: getReputationTier(clamped) } },
+    );
+  }
+
+  return clamped;
+}
+
+/** Award +10 points for a positive mention / praise of TatvaOps. */
+export async function onPositiveFeedback(
+  identityKey: string,
+  opts: { note?: string; sourceSlug?: string; eventKey?: string } = {},
+) {
+  return awardPoints({
+    identityKey,
+    reason: "positive_feedback",
+    sourceContentSlug: opts.sourceSlug ?? null,
+    note: opts.note ?? "Positive mention of TatvaOps",
+    eventKey: opts.eventKey ?? null,
+  });
+}
 
 export async function getReputationHistory(
   identityKey: string,

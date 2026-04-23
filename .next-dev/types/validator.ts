@@ -533,6 +533,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../app/api/admin/reputation/recompute/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/reputation/recompute">> = Specific
+  const handler = {} as typeof import("../../app/api/admin/reputation/recompute/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../app/api/admin/reputation/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/reputation">> = Specific
@@ -942,6 +951,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/notifications">> = Specific
   const handler = {} as typeof import("../../app/api/notifications/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/reputation/[identityKey]/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/reputation/[identityKey]">> = Specific
+  const handler = {} as typeof import("../../app/api/reputation/[identityKey]/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

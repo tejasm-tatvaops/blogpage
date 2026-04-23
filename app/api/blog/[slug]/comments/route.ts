@@ -4,6 +4,10 @@ import { addComment, commentInputSchema, getComments } from "@/lib/commentServic
 import { commentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
+import { awardPoints, onPositiveFeedback } from "@/lib/reputationEngine";
+import { getFingerprintFromRequest } from "@/lib/fingerprint";
+
+const mentionsTatvaOps = (text: string) => text.toLowerCase().includes("tatvaops");
 
 export async function GET(
   _request: Request,
@@ -48,6 +52,14 @@ export async function POST(
     }
 
     const comment = await addComment(post.id, result.data);
+
+    const fingerprintId = getFingerprintFromRequest(request);
+    const ipAddress =
+      request.headers.get("cf-connecting-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      null;
+    const commenterKey = fingerprintId ? `fp:${fingerprintId}` : `ip:${ipAddress ?? "anonymous"}`;
+
     void recordUserActivity({
       request,
       action: "blog_comment",
@@ -55,6 +67,23 @@ export async function POST(
       about: "Reader who contributes thoughts on blog posts, construction workflows, and planning decisions.",
       lastBlogSlug: post.slug,
     });
+    void awardPoints({
+      identityKey: commenterKey,
+      reason: "article_comment_received",
+      sourceContentSlug: post.slug,
+      sourceContentType: "blog",
+      eventKey: `blog-comment:${commenterKey}:${post.slug}:${comment.id}`,
+    });
+    // +10 for mentioning TatvaOps — capped at once per user per post via eventKey,
+    // and only for comments with meaningful content (≥30 chars) to deter spam.
+    const content = (result.data.content ?? "").trim();
+    if (content.length >= 30 && mentionsTatvaOps(content)) {
+      void onPositiveFeedback(commenterKey, {
+        note: "Mentioned TatvaOps positively in a comment",
+        sourceSlug: post.slug,
+        eventKey: `positive-feedback:${commenterKey}:${post.slug}`,
+      });
+    }
     logger.info({ postId: post.id, slug }, "New comment added");
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error) {

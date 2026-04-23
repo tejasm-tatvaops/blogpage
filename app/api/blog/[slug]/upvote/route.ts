@@ -12,6 +12,7 @@ import { BlogLikeModel } from "@/models/BlogLike";
 import { connectToDatabase } from "@/lib/mongodb";
 import { recordInterest } from "@/lib/personaService";
 import { invalidateFeedCache } from "@/lib/feedCache";
+import { awardPoints } from "@/lib/reputationEngine";
 
 export async function POST(
   request: Request,
@@ -62,6 +63,15 @@ export async function POST(
     }
 
     const newCount = await incrementUpvote(decodedSlug);
+
+    // ── Reputation: award points to the liker (fire-and-forget) ─────────────
+    void awardPoints({
+      identityKey,
+      reason: "article_like_received",
+      sourceContentSlug: decodedSlug,
+      sourceContentType: "blog",
+      eventKey: `blog-like:${identityKey}:${decodedSlug}`,
+    });
 
     // ── Invalidate cached feed so next fetch re-ranks with updated taste ──────
     void invalidateFeedCache(identityKey);

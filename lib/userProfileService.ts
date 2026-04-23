@@ -18,9 +18,11 @@ import { buildBehaviorProfile, isLikelyActiveNow, type UserBehaviorType, type Us
 
 export type UserProfile = {
   id: string;
+  identity_key: string;
   display_name: string;
   about: string;
   avatar_url: string;
+  user_type: "AI" | "REAL";
   blog_views: number;
   forum_views: number;
   blog_comments: number;
@@ -82,11 +84,22 @@ type UserActivityInput = {
   category?: string | null;
 };
 
+// fp:, ip:, google: prefixes → verified real human sessions.
+// seed:, author:, ua: → synthetic / bot users.
+const deriveUserType = (identityKey: string): "AI" | "REAL" =>
+  identityKey.startsWith("fp:") ||
+  identityKey.startsWith("ip:") ||
+  identityKey.startsWith("google:")
+    ? "REAL"
+    : "AI";
+
 const toUserProfile = (doc: {
   _id: { toString(): string };
+  identity_key?: string;
   display_name: string;
   about: string;
   avatar_url: string;
+  user_type?: "AI" | "REAL";
   blog_views?: number;
   forum_views?: number;
   blog_comments?: number;
@@ -119,9 +132,11 @@ const toUserProfile = (doc: {
   last_seen_at: Date;
 }): UserProfile => ({
   id: doc._id.toString(),
+  identity_key: doc.identity_key ?? "",
   display_name: doc.display_name,
   about: doc.about,
   avatar_url: doc.avatar_url,
+  user_type: doc.user_type ?? deriveUserType(doc.identity_key ?? ""),
   blog_views: doc.blog_views ?? 0,
   forum_views: doc.forum_views ?? 0,
   blog_comments: doc.blog_comments ?? 0,
@@ -396,6 +411,7 @@ export const recordUserActivity = async (input: UserActivityInput): Promise<void
         avatar_url: buildAvatarUrl(identityKey, displayName),
         display_name: displayName,
         about,
+        user_type: deriveUserType(identityKey),
         reputation_score: 0,
         reputation_tier: "member",
         interest_tags: {},

@@ -1,9 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { isRealPhotoAvatar } from "@/lib/avatar";
 import type { UserProfile } from "@/lib/userProfileService";
+
+type BreakdownData = {
+  total: number;
+  breakdown: {
+    views: number;
+    comments: number;
+    likes: number;
+    shares: number;
+    positive_feedback: number;
+  };
+};
 
 type UserDirectoryProps = {
   users: UserProfile[];
@@ -152,6 +163,21 @@ const TIER_STYLES: Record<string, { label: string; className: string }> = {
   member:      { label: "Member",      className: "bg-slate-100 text-slate-600 border border-app" },
 };
 
+function UserTypeBadge({ userType }: { userType: "AI" | "REAL" }) {
+  if (userType === "REAL") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+        Real User
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">
+      AI User
+    </span>
+  );
+}
+
 function ReputationBadge({ tier, score }: { tier: string; score: number }) {
   const style = TIER_STYLES[tier] ?? TIER_STYLES.member!;
   return (
@@ -250,8 +276,37 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
   const [loading, setLoading] = useState((initialUsers?.length ?? 0) === 0);
   const [retryCompleted, setRetryCompleted] = useState((initialUsers?.length ?? 0) > 0);
   const [query, setQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"recent" | "blog_views" | "forum_activity">("recent");
+  const [sortBy, setSortBy] = useState<"recent" | "blog_views" | "forum_activity" | "reputation">("recent");
   const [photosOnly, setPhotosOnly] = useState(false);
+  const [userTypeFilter, setUserTypeFilter] = useState<"all" | "AI" | "REAL">("all");
+
+  // Breakdown panel: which card is open + locally cached results (no re-fetch)
+  const [openBreakdownId, setOpenBreakdownId] = useState<string | null>(null);
+  const [breakdownLoading, setBreakdownLoading] = useState(false);
+  const breakdownCache = useRef<Map<string, BreakdownData>>(new Map());
+  const [breakdownData, setBreakdownData] = useState<BreakdownData | null>(null);
+
+  const fetchBreakdown = async (user: UserProfile) => {
+    if (openBreakdownId === user.id) {
+      setOpenBreakdownId(null);
+      return;
+    }
+    setOpenBreakdownId(user.id);
+    const cached = breakdownCache.current.get(user.identity_key);
+    if (cached) { setBreakdownData(cached); return; }
+    setBreakdownLoading(true);
+    setBreakdownData(null);
+    try {
+      const res = await fetch(`/api/reputation/${encodeURIComponent(user.identity_key)}`, { cache: "no-store" });
+      if (res.ok) {
+        const data = (await res.json()) as BreakdownData;
+        breakdownCache.current.set(user.identity_key, data);
+        setBreakdownData(data);
+      }
+    } finally {
+      setBreakdownLoading(false);
+    }
+  };
   const [tierFilter, setTierFilter] = useState<"all" | "elite" | "expert" | "contributor" | "member">("all");
   const [segmentFilter, setSegmentFilter] = useState<"all" | "expert" | "contributor" | "reader" | "explorer">("all");
   const [activeOnly, setActiveOnly] = useState(false);
@@ -384,6 +439,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
     const q = query.trim().toLowerCase();
     const filtered = resolvedUsers.filter((user) => {
       if (photosOnly && !isRealPhotoAvatar(user.avatar_url)) return false;
+      if (userTypeFilter !== "all" && user.user_type !== userTypeFilter) return false;
       if (tierFilter !== "all" && user.reputation_tier !== tierFilter) return false;
       const segment = getBehaviorSegment(user).label.toLowerCase() as "expert" | "contributor" | "reader" | "explorer";
       if (segmentFilter !== "all" && segment !== segmentFilter) return false;
@@ -409,10 +465,11 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
         const bForum = b.forum_posts + b.forum_comments + b.forum_votes;
         return bForum - aForum;
       }
+      if (sortBy === "reputation") return b.reputation_score - a.reputation_score;
       return new Date(b.last_seen_at).getTime() - new Date(a.last_seen_at).getTime();
     });
     return sorted;
-  }, [resolvedUsers, query, sortBy, photosOnly, tierFilter, segmentFilter, activeOnly, gamifiedOnly]);
+  }, [resolvedUsers, query, sortBy, photosOnly, userTypeFilter, tierFilter, segmentFilter, activeOnly, gamifiedOnly]);
 
   const safeTotals = resolvedTotals ?? { blogViews: 0, forumViews: 0 };
   const safeUserTotals = resolvedUserTotals ?? { blogViews: 0, forumViews: 0 };
@@ -490,12 +547,27 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
         />
         <select
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as "recent" | "blog_views" | "forum_activity")}
+          onChange={(e) => setSortBy(e.target.value as "recent" | "blog_views" | "forum_activity" | "reputation")}
           className="rounded-lg border border-app bg-surface px-3 py-2 text-sm"
         >
           <option value="recent">Most recent</option>
+          <option value="reputation">Highest reputation</option>
           <option value="blog_views">Most blog views</option>
           <option value="forum_activity">Most forum active</option>
+        </select>
+        {sortBy === "reputation" && (
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
+            Sorted by reputation
+          </span>
+        )}
+        <select
+          value={userTypeFilter}
+          onChange={(e) => setUserTypeFilter(e.target.value as "all" | "AI" | "REAL")}
+          className="rounded-lg border border-app bg-surface px-3 py-2 text-sm"
+        >
+          <option value="all">All user types</option>
+          <option value="REAL">Real Users</option>
+          <option value="AI">AI Users</option>
         </select>
         <select
           value={tierFilter}
@@ -576,10 +648,16 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {visibleUsers.map((user) => (
+          {visibleUsers.map((user, idx) => {
+            const isTop3 = sortBy === "reputation" && idx < 3;
+            return (
             <article
               key={user.id}
-              className="rounded-3xl border border-app bg-surface p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className={`rounded-3xl border bg-surface p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                isTop3
+                  ? "border-amber-300 ring-1 ring-amber-200 shadow-amber-100"
+                  : "border-app"
+              }`}
             >
               {(() => {
                 const context = deriveProfileContext(user);
@@ -599,6 +677,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="truncate text-lg font-semibold text-app">{user.display_name}</h2>
                     <ReputationBadge tier={user.reputation_tier} score={user.reputation_score} />
+                    <UserTypeBadge userType={user.user_type} />
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${segment.className}`}>
                       {segment.label}
                     </span>
@@ -612,12 +691,48 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
                   <p className="mt-1 text-xs text-slate-400">
                     {context.role} • {context.city} • {context.years} yrs exp
                   </p>
-                  <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">
-                    <span>Reputation</span>
-                    <span className="rounded-full bg-surface/20 px-2 py-0.5">{formatNumber(user.reputation_score)}</span>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">
+                      <span>Reputation</span>
+                      <span className="rounded-full bg-surface/20 px-2 py-0.5">{formatNumber(user.reputation_score)}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void fetchBreakdown(user)}
+                      className="text-[11px] text-slate-400 underline-offset-2 hover:text-sky-600 hover:underline"
+                    >
+                      {openBreakdownId === user.id ? "Hide" : "Breakdown"}
+                    </button>
                   </div>
                 </div>
               </div>
+
+              {openBreakdownId === user.id && (
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-700 dark:bg-slate-800/60">
+                  {breakdownLoading && !breakdownCache.current.has(user.identity_key) ? (
+                    <p className="text-slate-400">Loading…</p>
+                  ) : (() => {
+                    const d = breakdownCache.current.get(user.identity_key) ?? breakdownData;
+                    if (!d) return <p className="text-slate-400">No data yet.</p>;
+                    return (
+                      <>
+                        <p className="mb-2 font-semibold text-slate-600 dark:text-slate-300">How it&apos;s calculated</p>
+                        <ul className="space-y-1 text-slate-500 dark:text-slate-400">
+                          <li>👁 Views: {formatNumber(d.breakdown.views)} × 1</li>
+                          <li>💬 Comments: {formatNumber(d.breakdown.comments)} × 2</li>
+                          <li>❤️ Likes: {formatNumber(d.breakdown.likes)} × 1</li>
+                          <li>🔁 Shares: {formatNumber(d.breakdown.shares)} × 2</li>
+                          <li>⭐ Feedback: {formatNumber(d.breakdown.positive_feedback)} × 10</li>
+                        </ul>
+                        <p className="mt-2 border-t border-slate-200 pt-2 font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">
+                          Total = {formatNumber(d.total)}
+                        </p>
+                        <p className="mt-1 text-[10px] text-slate-400">Earn points by engaging — read, comment, share, or mention TatvaOps.</p>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
 
               <InterestTags tags={user.interest_tags} />
               <ForumGamification user={user} />
@@ -692,7 +807,8 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
                 );
               })()}
             </article>
-          ))}
+          );
+          })}
         </div>
       )}
     </section>

@@ -87,6 +87,10 @@ const userProfileSchema = new mongoose.Schema(
     forum_quality_streak_days: { type: Number, default: 0, min: 0 },
     forum_last_posted_at: { type: Date, default: null },
 
+    // ── User classification ───────────────────────────────────────────────────
+    // "AI" = seeded / synthetic bot user; "REAL" = real human (fingerprint/IP/OAuth)
+    user_type: { type: String, enum: ["AI", "REAL"], default: "AI", index: true },
+
     // ── Navigation breadcrumbs ────────────────────────────────────────────────
     last_blog_slug: { type: String, default: null, trim: true },
     last_forum_slug: { type: String, default: null, trim: true },

@@ -36,6 +36,7 @@ export const REP_EVENT_REASONS = [
   "badge_unlock_bonus",          // bonus on badge unlock
   "anti_abuse_deduction",        // deducted for abuse pattern
   "manual_admin_adjustment",     // admin override
+  "positive_feedback",           // positive mention / praise of TatvaOps
 ] as const;
 
 export type RepEventReason = (typeof REP_EVENT_REASONS)[number];

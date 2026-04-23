@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { incrementViewCount, trackViewEvent } from "@/lib/blogService";
 import { recordUserActivity } from "@/lib/userProfileService";
+import { awardPoints } from "@/lib/reputationEngine";
+import { getFingerprintFromRequest } from "@/lib/fingerprint";
 
 type ViewRouteProps = {
   params: Promise<{ slug: string }>;
@@ -29,10 +31,21 @@ export async function POST(request: Request, { params }: ViewRouteProps) {
       referrerHost: getReferrerHost(request.headers.get("referer")),
       userAgent: request.headers.get("user-agent"),
     });
-    void recordUserActivity({
-      request,
-      action: "blog_view",
-      lastBlogSlug: slug,
+
+    const fingerprintId = getFingerprintFromRequest(request);
+    const ipAddress =
+      request.headers.get("cf-connecting-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      null;
+    const viewerIdentityKey = fingerprintId ? `fp:${fingerprintId}` : `ip:${ipAddress ?? "anonymous"}`;
+
+    void recordUserActivity({ request, action: "blog_view", lastBlogSlug: slug });
+    void awardPoints({
+      identityKey: viewerIdentityKey,
+      reason: "article_view_received",
+      sourceContentSlug: slug,
+      sourceContentType: "blog",
+      eventKey: `blog-view:${viewerIdentityKey}:${slug}:${Math.floor(Date.now() / 3_600_000)}`,
     });
 
     return NextResponse.json(
