@@ -115,14 +115,22 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const lastReviewer = approvedRevisions[0]?.reviewer_display_name ?? null;
   const lastReviewedAt = approvedRevisions[0]?.reviewed_at ? new Date(approvedRevisions[0].reviewed_at).toISOString() : null;
   const recommendationToggles = getSystemToggles();
-  const semanticRecommendations = recommendationToggles.semanticRecommendationsEnabled
-    ? await rankSemanticBlogRecommendations(post, semanticCandidatePosts, 6, {
+  let semanticRecommendations: BlogPost[] = [];
+  if (recommendationToggles.semanticRecommendationsEnabled) {
+    try {
+      semanticRecommendations = await rankSemanticBlogRecommendations(post, semanticCandidatePosts, 6, {
         behavioralBoostEnabled: recommendationToggles.behavioralBoostEnabled,
         recommendationDiversityEnabled: recommendationToggles.recommendationDiversityEnabled,
         recommendationFreshnessEnabled: recommendationToggles.recommendationFreshnessEnabled,
         requestId: `blog:${post.slug}`,
-      })
-    : [];
+      });
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("semantic recommendations failed", error);
+      }
+      semanticRecommendations = [];
+    }
+  }
 
   const faqItems = extractFaqItems(post.content);
   const articleJsonLd = buildArticleJsonLd(post, SITE_URL);

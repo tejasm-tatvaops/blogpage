@@ -5,7 +5,7 @@ import { commentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLi
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
 import { awardPoints, onPositiveFeedback } from "@/lib/reputationEngine";
-import { getIdentityKeyFromRequest } from "@/lib/fingerprint";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
 
 const mentionsTatvaOps = (text: string) => text.toLowerCase().includes("tatvaops");
 
@@ -51,11 +51,12 @@ export async function POST(
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    const commenterKey = getIdentityKeyFromRequest(request);
+    const commenterKey = await getIdentityKeyFromSessionOrRequest(request);
     const comment = await addCommentWithIdentity(post.id, result.data, commenterKey);
 
     void recordUserActivity({
       request,
+      identityKeyOverride: commenterKey,
       action: "blog_comment",
       displayName: result.data.author_name,
       about: "Reader who contributes thoughts on blog posts, construction workflows, and planning decisions.",

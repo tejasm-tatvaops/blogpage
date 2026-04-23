@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { incrementDownvote } from "@/lib/blogService";
 import { downvoteLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
-import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { BlogLikeModel } from "@/models/BlogLike";
 import { connectToDatabase } from "@/lib/mongodb";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
 
 export async function POST(
   request: Request,
@@ -18,12 +18,7 @@ export async function POST(
     const { slug } = await params;
     const decodedSlug = decodeURIComponent(slug);
 
-    const fingerprintId = getFingerprintFromRequest(request);
-    const ipAddress =
-      request.headers.get("cf-connecting-ip") ??
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      null;
-    const identityKey = fingerprintId ? `fp:${fingerprintId}` : `ip:${ipAddress ?? "anonymous"}`;
+    const identityKey = await getIdentityKeyFromSessionOrRequest(request);
 
     await connectToDatabase();
 

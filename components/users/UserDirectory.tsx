@@ -283,7 +283,6 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
   const [resolvedTotals, setResolvedTotals] = useState(initialTotals);
   const [resolvedUserTotals, setResolvedUserTotals] = useState(initialUserTotals);
   const [loading, setLoading] = useState((initialUsers?.length ?? 0) === 0);
-  const [retryCompleted, setRetryCompleted] = useState((initialUsers?.length ?? 0) > 0);
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "blog_views" | "forum_activity" | "reputation">("recent");
   const [photosOnly, setPhotosOnly] = useState(false);
@@ -340,7 +339,6 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
     setResolvedUserTotals(userTotals ?? (hasLastGood ? usersClientState.__tatvaopsUsersLastGood!.userTotals : { blogViews: 0, forumViews: 0 }));
     if ((users?.length ?? 0) > 0) {
       setLoading(false);
-      setRetryCompleted(true);
       usersClientState.__tatvaopsUsersLastGood = {
         users,
         totals: totals ?? { blogViews: 0, forumViews: 0 },
@@ -356,11 +354,10 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
 
     const load = async (): Promise<void> => {
       setLoading(true);
-      setRetryCompleted(false);
-      let keepSoftLoading = false;
       try {
         const fetchOnce = async () => {
           const res = await fetch("/api/users", { cache: "no-store" });
+          if (!res.ok) throw new Error(`/api/users returned ${res.status}`);
           const data = (await res.json()) as {
             users?: UserProfile[];
             totals?: { blogViews: number; forumViews: number };
@@ -373,67 +370,27 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           };
         };
 
-        let result = await fetchOnce();
-        if (result.users.length === 0) {
-          console.warn("users fetch returned empty; triggering retry");
-          await new Promise<void>((resolve) => setTimeout(resolve, 500));
-          result = await fetchOnce();
-        }
+        const result = await fetchOnce();
 
         if (cancelled) return;
 
+        setResolvedUsers(result.users);
+        setResolvedTotals(result.totals);
+        setResolvedUserTotals(result.userTotals);
         if (result.users.length > 0) {
-          setResolvedUsers(result.users);
-          setResolvedTotals(result.totals);
-          setResolvedUserTotals(result.userTotals);
           usersClientState.__tatvaopsUsersLastGood = {
             users: result.users,
             totals: result.totals,
             userTotals: result.userTotals,
             savedAt: Date.now(),
           };
-        } else {
-          const hasSecondarySignal =
-            (result.totals.blogViews + result.totals.forumViews) > 0 ||
-            (result.userTotals.blogViews + result.userTotals.forumViews) > 0;
-          const lastGood = usersClientState.__tatvaopsUsersLastGood;
-          console.warn("users fetch still empty after retry", {
-            totals: result.totals,
-            userTotals: result.userTotals,
-            hasLastGood: Boolean(lastGood?.users.length),
-            hasSecondarySignal,
-          });
-
-          if (lastGood && lastGood.users.length > 0) {
-            console.warn("using last-known-good users snapshot fallback");
-            setResolvedUsers(lastGood.users);
-            setResolvedTotals(lastGood.totals);
-            setResolvedUserTotals(lastGood.userTotals);
-          } else {
-            // If backend signals say data exists, keep soft-loading state instead of false empty.
-            if (hasSecondarySignal) {
-              console.warn("users empty but totals indicate existing data; keeping soft loading");
-              setLoading(true);
-              keepSoftLoading = true;
-              window.setTimeout(() => {
-                if (!cancelled) {
-                  void load();
-                }
-              }, 1200);
-              return;
-            }
-            setResolvedUsers([]);
-            setResolvedTotals(result.totals);
-            setResolvedUserTotals(result.userTotals);
-          }
         }
         setSyncedAt(new Date().toISOString());
       } catch (error) {
         console.error(error);
       } finally {
         if (!cancelled) {
-          setRetryCompleted(true);
-          setLoading(keepSoftLoading);
+          setLoading(false);
         }
       }
     };
@@ -446,31 +403,47 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
 
   const visibleUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const resolveIsReal = (user: UserProfile): boolean =>
+      ((typeof user.is_real === "boolean" ? user.is_real : undefined) ??
+        (user.user_type === "REAL")) ||
+      user.identity_key?.startsWith("google:") === true;
+
     const filtered = resolvedUsers.filter((user) => {
+      const isReal = resolveIsReal(user);
+      const isAnonymous = user.user_type === "ANONYMOUS" || (!isReal && user.user_type !== "AI");
+      const matchesSearch =
+        (user.display_name ?? "").toLowerCase().includes(q) ||
+        (user.about ?? "").toLowerCase().includes(q) ||
+        Object.keys(user.interest_tags).some((t) => t.includes(q)) ||
+        user.reputation_tier.toLowerCase().includes(q) ||
+        (user.forum_badges ?? []).some((badge) => badge.toLowerCase().includes(q));
+
+      // Search should behave like a directory lookup and bypass activity-style filters.
+      if (q) return matchesSearch;
+
       if (photosOnly && !isRealPhotoAvatar(user.avatar_url)) return false;
-      if (userTypeFilter === "REAL" && !user.identity_key.startsWith("google:")) return false;
-      if (userTypeFilter === "ANONYMOUS" && user.user_type !== "ANONYMOUS") return false;
+      if (userTypeFilter === "REAL" && !isReal) return false;
+      if (userTypeFilter === "ANONYMOUS" && !isAnonymous) return false;
       if (userTypeFilter === "AI" && user.user_type !== "AI") return false;
       if (tierFilter !== "all" && user.reputation_tier !== tierFilter) return false;
       const segment = getBehaviorSegment(user).label.toLowerCase() as "expert" | "contributor" | "reader" | "explorer";
       if (segmentFilter !== "all" && segment !== segmentFilter) return false;
-      if (activeOnly && !user.is_active_now) return false;
-      if (gamifiedOnly && (user.forum_badges?.length ?? 0) === 0 && (user.forum_quality_streak_days ?? 0) <= 0) {
+      // Always include REAL users in the directory; apply activity-only gates to non-REAL users.
+      if (!isReal && activeOnly && !user.is_active_now) return false;
+      if (
+        !isReal &&
+        gamifiedOnly &&
+        (user.forum_badges?.length ?? 0) === 0 &&
+        (user.forum_quality_streak_days ?? 0) <= 0
+      ) {
         return false;
       }
-      if (!q) return true;
-      return (
-        user.display_name.toLowerCase().includes(q) ||
-        user.about.toLowerCase().includes(q) ||
-        Object.keys(user.interest_tags).some((t) => t.includes(q)) ||
-        user.reputation_tier.toLowerCase().includes(q) ||
-        (user.forum_badges ?? []).some((badge) => badge.toLowerCase().includes(q))
-      );
+      return true;
     });
 
     const sorted = [...filtered];
     const realFirst = (a: UserProfile, b: UserProfile) =>
-      (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0);
+      (resolveIsReal(b) ? 1 : 0) - (resolveIsReal(a) ? 1 : 0);
     sorted.sort((a, b) => {
       if (sortBy === "blog_views") return b.blog_views - a.blog_views || realFirst(a, b);
       if (sortBy === "forum_activity") {
@@ -486,14 +459,6 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
 
   const safeTotals = resolvedTotals ?? { blogViews: 0, forumViews: 0 };
   const safeUserTotals = resolvedUserTotals ?? { blogViews: 0, forumViews: 0 };
-  const confirmedEmpty =
-    !loading &&
-    retryCompleted &&
-    visibleUsers.length === 0 &&
-    safeTotals.blogViews === 0 &&
-    safeTotals.forumViews === 0 &&
-    safeUserTotals.blogViews === 0 &&
-    safeUserTotals.forumViews === 0;
   const blogViewsMatch = safeUserTotals.blogViews === safeTotals.blogViews;
   const forumViewsMatch = safeUserTotals.forumViews === safeTotals.forumViews;
   const helpfulUsers = useMemo(
@@ -654,11 +619,11 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
             <div key={index} className="h-52 animate-pulse rounded-3xl bg-slate-100" />
           ))}
         </div>
-      ) : confirmedEmpty ? (
+      ) : visibleUsers.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-surface px-8 py-14 text-center text-slate-600">
-          {photosOnly
-            ? "No real-photo profiles match your current filters yet."
-            : "No user profiles yet. Once visitors start reading blogs or joining discussions, they will show up here."}
+          {resolvedUsers.length === 0
+            ? "No user profiles yet. Once visitors start reading blogs or joining discussions, they will show up here."
+            : "No users match your current filters. Try clearing filters or search."}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">

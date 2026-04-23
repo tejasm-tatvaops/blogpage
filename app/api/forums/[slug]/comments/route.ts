@@ -5,7 +5,7 @@ import { forumCommentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/r
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
 import { onForumAnswerGiven } from "@/lib/reputationEngine";
-import { getIdentityKeyFromRequest } from "@/lib/fingerprint";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
 import { getSystemToggles } from "@/lib/systemToggles";
 
 export async function GET(
@@ -51,7 +51,7 @@ export async function POST(
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    const actorKey = getIdentityKeyFromRequest(request);
+    const actorKey = await getIdentityKeyFromSessionOrRequest(request);
     const comment = await addCommentWithIdentity(post.id, result.data, actorKey);
     // Keep comment_count denormalized for fast feed queries
     await incrementForumCommentCount(post.id);
@@ -62,6 +62,7 @@ export async function POST(
 
     void recordUserActivity({
       request,
+      identityKeyOverride: actorKey,
       action: "forum_comment",
       displayName: result.data.author_name,
       about: "Community member actively commenting on construction questions, tradeoffs, and project planning topics.",

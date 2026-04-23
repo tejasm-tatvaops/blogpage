@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { emitFeedEvent } from "@/lib/feedObservability";
-import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { awardPoints } from "@/lib/reputationEngine";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
 
 const VALID_CHANNELS = new Set([
   "twitter",
@@ -37,12 +37,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     // ignore parse errors — we still record the event
   }
 
-  const fingerprintId = getFingerprintFromRequest(req);
-  const ipAddress =
-    req.headers.get("cf-connecting-ip") ??
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    null;
-  const identityKey = fingerprintId ? `fp:${fingerprintId}` : `ip:${ipAddress ?? "anonymous"}`;
+  const identityKey = await getIdentityKeyFromSessionOrRequest(req);
 
   // Reputation: award content_share points to the sharer (fire-and-forget)
   void awardPoints({

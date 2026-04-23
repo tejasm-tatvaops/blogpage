@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type UpvoteButtonProps = {
   slug: string;
@@ -10,11 +10,12 @@ type UpvoteButtonProps = {
 export function UpvoteButton({ slug, initialCount }: UpvoteButtonProps) {
   const storageKey = `upvoted_${slug}`;
   const [count, setCount] = useState(initialCount);
-  const [upvoted, setUpvoted] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(storageKey) === "1";
-  });
+  const [upvoted, setUpvoted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setUpvoted(localStorage.getItem(storageKey) === "1");
+  }, [storageKey]);
 
   const handleUpvote = async () => {
     if (upvoted || loading) return;

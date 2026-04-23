@@ -97,10 +97,12 @@ const backfillState = globalThis as typeof globalThis & {
   __tatvaopsUserBackfillDone?: boolean;
   __tatvaopsUserMaintenancePromise?: Promise<void> | null;
   __tatvaopsUserMaintenanceLastRunAt?: number;
+  __tatvaopsGoogleProfileSyncLastRunAt?: number;
 };
 
 type UserActivityInput = {
   request: Request;
+  identityKeyOverride?: string | null;
   action: "blog_view" | "forum_view" | "blog_comment" | "forum_post" | "forum_comment" | "forum_vote";
   displayName?: string | null;
   about?: string | null;
@@ -382,9 +384,7 @@ export const ensureUserProfileForIdentity = async ({
       $setOnInsert: {
         identity_key: safeIdentityKey,
         avatar_url: buildAvatarUrl(avatarSeed ?? safeIdentityKey, safeName),
-        display_name: safeName,
         about: safeAbout,
-        user_type: derivedType,
         reputation_score: 0,
         reputation_tier: "member",
         interest_tags: {},
@@ -479,7 +479,6 @@ const setHistoricalProfile = async ({
         display_name: displayName,
         about,
         user_type: deriveUserType(identityKey),
-        last_seen_at: lastSeenAt ?? new Date(),
         reputation_score: 0,
         reputation_tier: "member",
         interest_tags: {},
@@ -563,7 +562,22 @@ const buildSyntheticInterestTags = (index: number): Record<string, number> => {
 export const recordUserActivity = async (input: UserActivityInput): Promise<void> => {
   await connectToDatabase();
 
-  const { identityKey, fingerprintId, ipAddress } = getIdentity(input.request);
+  const fallbackIdentity = getIdentity(input.request);
+  const identityKey = input.identityKeyOverride?.trim() || fallbackIdentity.identityKey;
+
+  if (
+    input.identityKeyOverride?.startsWith("google:") &&
+    !identityKey.startsWith("google:")
+  ) {
+    console.error("Write-path identity drift: google override resolved to anonymous", {
+      override: input.identityKeyOverride,
+      resolved: identityKey,
+    });
+    return;
+  }
+
+  const fingerprintId = identityKey.startsWith("fp:") ? fallbackIdentity.fingerprintId : null;
+  const ipAddress = identityKey.startsWith("ip:") ? fallbackIdentity.ipAddress : null;
   const about = input.about?.trim() || defaultAboutByAction(input.action);
   const displayName = input.displayName?.trim() || buildDisplayName(identityKey);
   const behavior = buildBehaviorSeed(identityKey, displayName);
@@ -584,8 +598,6 @@ export const recordUserActivity = async (input: UserActivityInput): Promise<void
         fingerprint_id: fingerprintId,
         ip_address: ipAddress,
         avatar_url: buildAvatarUrl(identityKey, displayName),
-        display_name: displayName,
-        about,
         user_type: deriveUserType(identityKey),
         reputation_score: 0,
         reputation_tier: "member",
@@ -605,11 +617,11 @@ export const recordUserActivity = async (input: UserActivityInput): Promise<void
         topic_shift_count: 0,
       },
       $set: {
+        display_name: displayName,
+        about,
         last_seen_at: new Date(),
         ...(input.lastBlogSlug ? { last_blog_slug: input.lastBlogSlug } : {}),
         ...(input.lastForumSlug ? { last_forum_slug: input.lastForumSlug } : {}),
-        ...(input.displayName?.trim() ? { display_name: displayName } : {}),
-        ...(input.about?.trim() ? { about } : {}),
         ...(input.action === "forum_comment" && input.lastForumSlug
           ? { frequent_peer_keys: [`thread:${input.lastForumSlug}`] }
           : {}),
@@ -1038,10 +1050,50 @@ const ensureUniqueAvatarAssignments = async (minimumCount: number): Promise<void
   }
 };
 
+const ensureGoogleProfilesSynced = async (): Promise<void> => {
+  backfillState.__tatvaopsGoogleProfileSyncLastRunAt = Date.now();
+
+  const authUsers = await AuthUserModel.find({})
+    .select("_id username name")
+    .lean();
+  if (authUsers.length === 0) return;
+
+  const identityKeys = authUsers.map((user) => `google:${String(user._id)}`);
+  const existingProfiles = await UserProfileModel.find({ identity_key: { $in: identityKeys } })
+    .select("identity_key")
+    .lean();
+  const existingKeys = new Set(
+    existingProfiles.map((profile) => String((profile as { identity_key?: string }).identity_key ?? "")),
+  );
+
+  const missingUsers = authUsers.filter((user) => !existingKeys.has(`google:${String(user._id)}`));
+  if (missingUsers.length > 0) {
+    await Promise.all(
+      missingUsers.map((user) =>
+        ensureUserProfileForIdentity({
+          identityKey: `google:${String(user._id)}`,
+          displayName:
+            String((user as { username?: string | null }).username ?? "").trim() ||
+            String((user as { name?: string | null }).name ?? "").trim() ||
+            "Member",
+          avatarSeed: String(user._id),
+        }),
+      ),
+    );
+  }
+
+  // Safety correction: any google identity profile must always be classified REAL.
+  await UserProfileModel.updateMany(
+    { identity_key: { $regex: /^google:/ }, user_type: { $ne: "REAL" } },
+    { $set: { user_type: "REAL" } },
+  );
+};
+
 // ─── Public queries ───────────────────────────────────────────────────────────
 
 export const getUserProfiles = async (limit = 120): Promise<UserProfile[]> => {
   await connectToDatabase();
+  await ensureGoogleProfilesSynced();
   const minimum = Math.max(limit, 1000);
 
   const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> =>
@@ -1078,12 +1130,27 @@ export const getUserProfiles = async (limit = 120): Promise<UserProfile[]> => {
     await withTimeout(backfillState.__tatvaopsUserMaintenancePromise, 1200, undefined);
   }
 
-  const docs = await UserProfileModel.find({})
-    .sort({ last_seen_at: -1, blog_views: -1, forum_posts: -1 })
-    .limit(Math.min(Math.max(limit, 1), 1200))
-    .lean();
+  const cappedLimit = Math.min(Math.max(limit, 1), 1200);
+  const [topDocs, realDocs] = await Promise.all([
+    UserProfileModel.find({})
+      .sort({ last_seen_at: -1, blog_views: -1, forum_posts: -1 })
+      .limit(cappedLimit)
+      .lean(),
+    UserProfileModel.find({ identity_key: { $regex: /^google:/ } })
+      .sort({ last_seen_at: -1, created_at: -1 })
+      .lean(),
+  ]);
 
-  const profiles = docs.map((doc) => toUserProfile(doc as never));
+  // Keep full REAL-user coverage even if they are not in the top activity slice.
+  const seen = new Set<string>();
+  const mergedDocs = [...realDocs, ...topDocs].filter((doc) => {
+    const id = String((doc as { _id: { toString(): string } })._id.toString());
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+
+  const profiles = mergedDocs.map((doc) => toUserProfile(doc as never));
   return resolveUserIdentities(profiles);
 };
 

@@ -7,12 +7,12 @@ import {
   rateLimitResponse,
 } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
-import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { BlogLikeModel } from "@/models/BlogLike";
 import { connectToDatabase } from "@/lib/mongodb";
 import { recordInterest } from "@/lib/personaService";
 import { invalidateFeedCache } from "@/lib/feedCache";
 import { awardPoints } from "@/lib/reputationEngine";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
 
 export async function POST(
   request: Request,
@@ -27,15 +27,8 @@ export async function POST(
     const { slug } = await params;
     const decodedSlug = decodeURIComponent(slug);
 
-    // ── Build identity key ───────────────────────────────────────────────────
-    const fingerprintId = getFingerprintFromRequest(request);
-    const ipAddress =
-      request.headers.get("cf-connecting-ip") ??
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      null;
-    const identityKey = fingerprintId
-      ? `fp:${fingerprintId}`
-      : `ip:${ipAddress ?? "anonymous"}`;
+    // ── Build identity key (session-first) ───────────────────────────────────
+    const identityKey = await getIdentityKeyFromSessionOrRequest(request);
 
     // ── Anti-gaming: max 20 likes/min per identity ───────────────────────────
     const antiGaming = likeAntiGamingLimiter(identityKey);

@@ -24,6 +24,9 @@ export const authOptions: NextAuthOptions = {
       try {
         await connectToDatabase();
         const email = user.email.toLowerCase();
+        if (process.env.NODE_ENV === "development") {
+          console.log("SIGNIN USER:", email);
+        }
         const dbUser = await AuthUserModel.findOneAndUpdate(
           { email },
           {
@@ -41,6 +44,14 @@ export const authOptions: NextAuthOptions = {
           },
           { upsert: true, new: true },
         );
+        if (!dbUser?._id) {
+          console.error("signIn enrichment: AuthUser upsert returned no _id", { email });
+          return true;
+        }
+        if (process.env.NODE_ENV === "development") {
+          console.log("DB USER:", dbUser._id.toString());
+          console.log("IDENTITY KEY:", `google:${dbUser._id.toString()}`);
+        }
         if (dbUser?._id) {
           await ensureUserProfileForIdentity({
             identityKey: `google:${dbUser._id.toString()}`,
@@ -71,7 +82,8 @@ export const authOptions: NextAuthOptions = {
           .select("_id points level")
           .lean();
         if (dbUser?._id) {
-          token.id = String(dbUser._id);
+          token.id = token.id || String(dbUser._id);
+          token.sub = String(token.id);
           token.points = Number((dbUser as { points?: number }).points ?? 0);
           token.level = String((dbUser as { level?: string }).level ?? "Bronze");
         }

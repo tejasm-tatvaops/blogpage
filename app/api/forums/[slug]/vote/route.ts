@@ -7,6 +7,7 @@ import { createNotification } from "@/lib/notificationService";
 import { recordUserActivity } from "@/lib/userProfileService";
 import { onForumUpvoteReceived } from "@/lib/reputationEngine";
 import { getSystemToggles } from "@/lib/systemToggles";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
 
 export async function POST(
   request: Request,
@@ -18,6 +19,7 @@ export async function POST(
 
   // Read fingerprint — fall back to IP-derived key so un-fingerprinted clients can still vote
   const fingerprintId = getFingerprintFromRequest(request) ?? `ip:${ip}`;
+  const actorIdentityKey = await getIdentityKeyFromSessionOrRequest(request);
 
   let body: { direction?: unknown } = {};
   try {
@@ -61,6 +63,7 @@ export async function POST(
 
     void recordUserActivity({
       request,
+      identityKeyOverride: actorIdentityKey,
       action: "forum_vote",
       about: "Active community reader who uses voting to surface helpful construction discussions.",
       lastForumSlug: slug,

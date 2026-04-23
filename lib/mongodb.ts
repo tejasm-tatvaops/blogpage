@@ -4,9 +4,9 @@ import { validateEnv } from "./env";
 // The MongoDB driver and Mongoose register process 'exit' / 'SIGTERM' listeners
 // for connection cleanup. In Next.js dev mode each HMR cycle re-executes this
 // module, accumulating listeners beyond Node's default limit of 10.
-// Raising the ceiling silences the spurious warning without masking real leaks.
-if (process.getMaxListeners() <= 10) {
-  process.setMaxListeners(25);
+// Raising the ceiling in dev avoids HMR-triggered false positives.
+if (process.getMaxListeners() <= 50) {
+  process.setMaxListeners(100);
 }
 
 type MongooseCache = {

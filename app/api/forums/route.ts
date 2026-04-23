@@ -9,8 +9,8 @@ import { forumPostLimiter, getRateLimitKey, rateLimitResponse, rateLimitHeaders 
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
 import { onForumPostCreated } from "@/lib/reputationEngine";
-import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { getSystemToggles } from "@/lib/systemToggles";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
 
 export async function GET(request: Request) {
   try {
@@ -57,15 +57,13 @@ export async function POST(request: Request) {
     }
 
     const post = await createForumPost(result.data);
-    const fp = getFingerprintFromRequest(request);
-    const actorKey = fp
-      ? `fp:${fp}`
-      : `ip:${getRateLimitKey(request)}`;
+    const actorKey = await getIdentityKeyFromSessionOrRequest(request);
     if (getSystemToggles().reputationEnabled) {
       void onForumPostCreated(actorKey, post.slug);
     }
     void recordUserActivity({
       request,
+      identityKeyOverride: actorKey,
       action: "forum_post",
       displayName: result.data.author_name,
       about: "Forum contributor sharing construction ideas, questions, and on-ground project experience.",

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getForumPostBySlug, incrementForumViewCount, trackForumViewEvent } from "@/lib/forumService";
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
 
 const getReferrerHost = (value: string | null): string => {
   if (!value) return "direct";
@@ -46,8 +47,10 @@ export async function POST(
         userAgent: request.headers.get("user-agent"),
       });
     }
+    const viewerIdentityKey = await getIdentityKeyFromSessionOrRequest(request);
     void recordUserActivity({
       request,
+      identityKeyOverride: viewerIdentityKey,
       action: "forum_view",
       lastForumSlug: decodedSlug,
     });
