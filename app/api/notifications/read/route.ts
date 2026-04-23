@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getNotificationRecipientKey } from "@/lib/fingerprint";
 import { markAsRead } from "@/lib/notificationService";
 import { commentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
 
 const payloadSchema = z.object({
   ids: z.array(z.string()).optional(),
@@ -21,6 +21,7 @@ export async function POST(request: Request) {
   const parsed = payloadSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
 
-  await markAsRead(getNotificationRecipientKey(request), parsed.data.ids);
+  const recipientKey = await getIdentityKeyFromSessionOrRequest(request);
+  await markAsRead(recipientKey, parsed.data.ids);
   return NextResponse.json({ success: true }, { status: 200 });
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { mutate } from "swr";
 
 type DownvoteButtonProps = {
   slug: string;
@@ -28,6 +29,7 @@ export function DownvoteButton({ slug, initialCount }: DownvoteButtonProps) {
         setCount(json.downvote_count);
         setDownvoted(true);
         localStorage.setItem(storageKey, "1");
+        void mutate("/api/me/reputation");
       }
     } finally {
       setLoading(false);

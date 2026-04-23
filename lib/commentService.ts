@@ -193,16 +193,17 @@ export const addComment = async (postId: string, input: CommentInput): Promise<C
   const created = toComment(doc.toObject() as unknown as CommentDocument);
 
   if (parentId) {
-    const parent = (await CommentModel.findById(parentId).select("author_name").lean()) as
-      | { author_name?: string }
+    const parent = (await CommentModel.findById(parentId).select("author_name identity_key").lean()) as
+      | { author_name?: string; identity_key?: string | null }
       | null;
     const parentAuthor = parent?.author_name?.trim();
-    if (parentAuthor && parentAuthor !== input.author_name) {
+    const parentRecipientKey = String(parent?.identity_key ?? "").trim();
+    if (parentAuthor && parentAuthor !== input.author_name && parentRecipientKey) {
       await createNotification({
         type: "reply",
         post_id: postId,
         comment_id: created.id,
-        recipient_key: `author:${parentAuthor.toLowerCase()}`,
+        recipient_key: parentRecipientKey,
         message: `${input.author_name} replied to your comment.`,
       });
     }
@@ -272,16 +273,17 @@ export const addCommentWithIdentity = async (
   const created = toComment(doc.toObject() as unknown as CommentDocument);
 
   if (parentId) {
-    const parent = (await CommentModel.findById(parentId).select("author_name").lean()) as
-      | { author_name?: string }
+    const parent = (await CommentModel.findById(parentId).select("author_name identity_key").lean()) as
+      | { author_name?: string; identity_key?: string | null }
       | null;
     const parentAuthor = parent?.author_name?.trim();
-    if (parentAuthor && parentAuthor !== input.author_name) {
+    const parentRecipientKey = String(parent?.identity_key ?? "").trim();
+    if (parentAuthor && parentAuthor !== input.author_name && parentRecipientKey) {
       await createNotification({
         type: "reply",
         post_id: postId,
         comment_id: created.id,
-        recipient_key: `author:${parentAuthor.toLowerCase()}`,
+        recipient_key: parentRecipientKey,
         message: `${input.author_name} replied to your comment.`,
       });
     }
@@ -394,6 +396,31 @@ export const deleteCommentById = async (commentId: string): Promise<boolean> => 
     .lean();
 
   return Boolean(result);
+};
+
+export const deleteOwnCommentById = async (
+  commentId: string,
+  identityKey: string,
+): Promise<"deleted" | "forbidden" | "not_found"> => {
+  await connectToDatabase();
+  if (!isValidObjectId(commentId) || !identityKey.trim()) return "not_found";
+
+  const existing = await CommentModel.findOne({ _id: commentId, ...notDeleted })
+    .select("identity_key")
+    .lean();
+
+  if (!existing) return "not_found";
+  if (String(existing.identity_key ?? "") !== identityKey.trim()) return "forbidden";
+
+  const result = await CommentModel.findOneAndUpdate(
+    { _id: commentId, ...notDeleted },
+    { deleted_at: new Date() },
+    { new: false },
+  )
+    .select("_id")
+    .lean();
+
+  return result ? "deleted" : "not_found";
 };
 
 export const getCommentMetaById = async (

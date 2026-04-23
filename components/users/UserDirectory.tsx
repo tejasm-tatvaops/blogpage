@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isRealPhotoAvatar } from "@/lib/avatar";
 import { getUserAvatar } from "@/lib/identityUI";
+import { getLevelFromReputationScore, getLevelMeta } from "@/lib/level";
 import type { UserProfile } from "@/lib/userProfileService";
 import { deriveProfileContext, getBehaviorSegment, getRecentActions } from "@/lib/userProfileHelpers";
 
@@ -463,6 +464,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
             const context = deriveProfileContext(user);
             const segment = getBehaviorSegment(user);
             const actions = getRecentActions(user);
+            const levelMeta = getLevelMeta(getLevelFromReputationScore(user.reputation_score));
             return (
               <article
                 key={user.id}
@@ -508,6 +510,9 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
                       )}
                     </h2>
                     <ReputationBadge tier={user.reputation_tier} score={user.reputation_score} />
+                    <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${levelMeta.color}`}>
+                      {levelMeta.icon} {levelMeta.label}
+                    </span>
                     <UserTypeBadge userType={user.user_type} />
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${segment.className}`}>
                       {segment.label}

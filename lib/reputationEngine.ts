@@ -7,9 +7,9 @@
  * POINT TABLE
  * ───────────
  *   article_view_received        : +1
- *   article_like_received        : +5
- *   article_comment_received     : +3
- *   article_share_received       : +4
+ *   article_like_received        : +1
+ *   article_comment_received     : +2
+ *   article_share_received       : +2
  *   forum_post_created           : +5
  *   forum_answer_given           : +3
  *   forum_upvote_received        : +4
@@ -18,7 +18,7 @@
  *   short_viewed                 : +1
  *   short_liked_received         : +5
  *   cross_content_link           : +8   (always base; multiplier applied by caller)
- *   cross_content_engagement     : base × 10
+ *   cross_content_engagement     : +5 base × 10
  *   peer_helpful_vote            : +6
  *   content_share                : +2
  *   badge_unlock_bonus           : varies
@@ -346,15 +346,6 @@ export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
 
   await connectToDatabase();
 
-  if (eventKey) {
-    const existing = await ReputationEventModel.findOne({ event_key: eventKey })
-      .select("awarded_points")
-      .lean();
-    if (existing) {
-      return Number(existing.awarded_points ?? 0);
-    }
-  }
-
   const base = pointsOverride ?? BASE_POINTS[reason] ?? 0;
 
   // Cross-content multiplier
@@ -377,20 +368,87 @@ export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
     }
   }
 
-  let event: { _id: unknown } | null = null;
+  let awardedResult = awarded;
+  let shouldCheckBadges = false;
+  const session = await UserProfileModel.db.startSession();
   try {
-    event = await ReputationEventModel.create({
-      identity_key: identityKey,
-      reason,
-      base_points: base,
-      multiplier,
-      awarded_points: awarded,
-      source_content_type: sourceContentType,
-      source_content_slug: sourceContentSlug,
-      actor_identity_key: actorIdentityKey,
-      note: effectiveNote,
-      event_key: eventKey,
-      is_cross_content: isCrossContent,
+    await session.withTransaction(async () => {
+      if (eventKey) {
+        const existing = await ReputationEventModel.findOne({ event_key: eventKey })
+          .select("awarded_points")
+          .session(session)
+          .lean();
+        if (existing) {
+          awardedResult = Number(existing.awarded_points ?? 0);
+          return;
+        }
+      }
+
+      const createdEvents = await ReputationEventModel.create(
+        [{
+          identity_key: identityKey,
+          reason,
+          base_points: base,
+          multiplier,
+          awarded_points: awarded,
+          source_content_type: sourceContentType,
+          source_content_slug: sourceContentSlug,
+          actor_identity_key: actorIdentityKey,
+          note: effectiveNote,
+          event_key: eventKey,
+          is_cross_content: isCrossContent,
+        }],
+        { session },
+      );
+      const event = createdEvents[0];
+
+      // Update score+tier in a single pipeline write to avoid intermediate state.
+      const updated = await UserProfileModel.findOneAndUpdate(
+        { identity_key: identityKey },
+        [
+          {
+            $set: {
+              reputation_score: {
+                $max: [{ $add: [{ $ifNull: ["$reputation_score", 0] }, awarded] }, 0],
+              },
+            },
+          },
+          {
+            $set: {
+              reputation_tier: {
+                $switch: {
+                  branches: [
+                    { case: { $gte: ["$reputation_score", 2000] }, then: "elite" },
+                    { case: { $gte: ["$reputation_score", 500] }, then: "expert" },
+                    { case: { $gte: ["$reputation_score", 100] }, then: "contributor" },
+                  ],
+                  default: "member",
+                },
+              },
+            },
+          },
+        ],
+        { new: true, upsert: false, session },
+      )
+        .select("reputation_score")
+        .lean();
+
+      if (updated && event?._id) {
+        const rawScore = (updated as unknown as { reputation_score: number }).reputation_score;
+        const clamped = Math.max(0, rawScore);
+        // Patch running_total snapshot on the event.
+        await ReputationEventModel.updateOne(
+          { _id: event._id },
+          { $set: { running_total: clamped } },
+          { session },
+        );
+      }
+
+      awardedResult = awarded;
+      shouldCheckBadges = !skipBadgeCheck;
+    }, {
+      readConcern: { level: "snapshot" },
+      writeConcern: { w: "majority" },
     });
   } catch (error) {
     const maybeMongo = error as { code?: number };
@@ -401,40 +459,16 @@ export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
       return Number(existing?.awarded_points ?? 0);
     }
     throw error;
-  }
-
-  // Update UserProfile reputation_score
-  const updated = await UserProfileModel.findOneAndUpdate(
-    { identity_key: identityKey },
-    { $inc: { reputation_score: awarded } },
-    { new: true, upsert: false },
-  )
-    .select("reputation_score")
-    .lean();
-
-  if (updated && event?._id) {
-    const rawScore = (updated as unknown as { reputation_score: number }).reputation_score;
-    const clamped = Math.max(0, rawScore);
-    const tier = getReputationTier(clamped);
-
-    await UserProfileModel.updateOne(
-      { identity_key: identityKey },
-      { $set: { reputation_score: clamped, reputation_tier: tier } },
-    );
-
-    // Patch running_total snapshot on the event
-    await ReputationEventModel.updateOne(
-      { _id: event._id },
-      { $set: { running_total: clamped } },
-    );
+  } finally {
+    await session.endSession();
   }
 
   // Badge check
-  if (!skipBadgeCheck) {
+  if (shouldCheckBadges) {
     void checkAndAwardBadges(identityKey).catch(() => null);
   }
 
-  return awarded;
+  return awardedResult;
 }
 
 // ─── Convenience shortcuts ────────────────────────────────────────────────────

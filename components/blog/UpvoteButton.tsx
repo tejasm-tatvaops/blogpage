@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { mutate } from "swr";
 
 type UpvoteButtonProps = {
   slug: string;
@@ -29,6 +30,7 @@ export function UpvoteButton({ slug, initialCount }: UpvoteButtonProps) {
         setCount(json.upvote_count);
         setUpvoted(true);
         localStorage.setItem(storageKey, "1");
+        void mutate("/api/me/reputation");
       }
     } finally {
       setLoading(false);

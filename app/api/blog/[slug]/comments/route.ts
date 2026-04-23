@@ -6,6 +6,7 @@ import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
 import { awardPoints, onPositiveFeedback } from "@/lib/reputationEngine";
 import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
+import { notifyMentionedUsers } from "@/lib/mentions";
 
 const mentionsTatvaOps = (text: string) => text.toLowerCase().includes("tatvaops");
 
@@ -53,6 +54,13 @@ export async function POST(
 
     const commenterKey = await getIdentityKeyFromSessionOrRequest(request);
     const comment = await addCommentWithIdentity(post.id, result.data, commenterKey);
+    void notifyMentionedUsers({
+      content: result.data.content,
+      actorIdentityKey: commenterKey,
+      postId: post.id,
+      commentId: comment.id,
+      actorDisplayName: result.data.author_name,
+    });
 
     void recordUserActivity({
       request,

@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { mutate } from "swr";
 import type { Comment } from "@/lib/commentService";
 import { getOrCreateFingerprint } from "@/lib/personalization";
 import { useActivityPolling } from "@/lib/activityPolling";
@@ -22,6 +25,28 @@ const formatDate = (iso: string) =>
     year: "numeric",
   }).format(new Date(iso));
 
+const renderContentWithMentions = (text: string) =>
+  text.split(/(@[a-zA-Z0-9._-]{2,32})/g).map((part, idx) => {
+    if (/^@[a-zA-Z0-9._-]{2,32}$/.test(part)) {
+      return (
+        <Link
+          key={`${part}-${idx}`}
+          href={`/users?search=${encodeURIComponent(part.slice(1))}`}
+          className="font-semibold text-sky-700 hover:underline"
+        >
+          {part}
+        </Link>
+      );
+    }
+    return <span key={`${part}-${idx}`}>{part}</span>;
+  });
+
+type MentionSuggestion = { username: string; displayName: string };
+const mentionQueryFrom = (value: string): string | null => {
+  const match = value.match(/(?:^|\s)@([a-zA-Z0-9._-]{0,32})$/);
+  return match?.[1]?.toLowerCase() ?? null;
+};
+
 export function ForumCommentSection({
   slug,
   initialComments,
@@ -29,6 +54,7 @@ export function ForumCommentSection({
   creatorFingerprint,
 }: ForumCommentSectionProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
@@ -39,9 +65,45 @@ export function ForumCommentSection({
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [votingCommentId, setVotingCommentId] = useState<string | null>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
   const [bestCommentId, setBestCommentId] = useState<string | null>(initialBestId);
   const [markingBest, setMarkingBest] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [mentionSuggestions, setMentionSuggestions] = useState<MentionSuggestion[]>([]);
+  const [mentionTarget, setMentionTarget] = useState<{ type: "main" } | { type: "reply"; id: string } | null>(null);
+  const currentIdentityKey = session?.user?.id
+    ? `google:${session.user.id}`
+    : `fp:${getOrCreateFingerprint()}`;
+
+  const updateMentionSuggestions = useCallback(async (value: string, target: { type: "main" } | { type: "reply"; id: string }) => {
+    const query = mentionQueryFrom(value);
+    if (query === null) {
+      setMentionSuggestions([]);
+      setMentionTarget(null);
+      return;
+    }
+    setMentionTarget(target);
+    try {
+      const response = await fetch(`/api/users/mentions?q=${encodeURIComponent(query)}`, { cache: "no-store" });
+      const payload = (await response.json()) as { suggestions?: MentionSuggestion[] };
+      setMentionSuggestions(Array.isArray(payload.suggestions) ? payload.suggestions : []);
+    } catch {
+      setMentionSuggestions([]);
+    }
+  }, []);
+
+  const applyMentionSuggestion = (username: string) => {
+    const apply = (input: string): string => input.replace(/(?:^|\s)@[a-zA-Z0-9._-]{1,32}$/, ` @${username} `).replace(/\s{2,}/g, " ");
+    if (!mentionTarget) return;
+    if (mentionTarget.type === "main") {
+      setContent((prev) => apply(prev));
+    } else {
+      const id = mentionTarget.id;
+      setReplyDrafts((prev) => ({ ...prev, [id]: apply(prev[id] ?? "") }));
+    }
+    setMentionSuggestions([]);
+    setMentionTarget(null);
+  };
 
   const totalCommentCount = useCallback(
     (list: Comment[]) =>
@@ -153,6 +215,7 @@ export function ForumCommentSection({
       const json = (await res.json()) as { error?: string; comment?: Comment };
       if (!res.ok) throw new Error(json.error ?? "Failed to post comment.");
       if (json.comment) setComments((prev) => [json.comment!, ...prev]);
+      void mutate("/api/me/reputation");
       setContent("");
       setSuccess(true);
       router.refresh();
@@ -200,6 +263,7 @@ export function ForumCommentSection({
           }),
         );
       }
+      void mutate("/api/me/reputation");
       setReplyDrafts((prev) => ({ ...prev, [parentCommentId]: "" }));
       setActiveReplyFor(null);
       router.refresh();
@@ -241,10 +305,41 @@ export function ForumCommentSection({
           })),
         );
       }
+      void mutate("/api/me/reputation");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to vote.");
     } finally {
       setVotingCommentId(null);
+    }
+  };
+
+  const onDelete = async (commentId: string) => {
+    if (!currentIdentityKey || deletingCommentId) return;
+    setDeletingCommentId(commentId);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/forums/${encodeURIComponent(slug)}/comments/${encodeURIComponent(commentId)}`,
+        { method: "DELETE" },
+      );
+      const payload = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(payload.error ?? "Failed to delete comment.");
+
+      setComments((prev) =>
+        patchCommentTree(prev, commentId, (comment) => ({
+          ...comment,
+          author_name: "[deleted]",
+          content: "[deleted]",
+          is_deleted: true,
+          upvote_count: 0,
+          downvote_count: 0,
+          score: 0,
+        })),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete comment.");
+    } finally {
+      setDeletingCommentId(null);
     }
   };
 
@@ -333,7 +428,7 @@ export function ForumCommentSection({
           {c.is_deleted ? (
             <p className="mt-1 text-sm italic text-slate-400">[deleted]</p>
           ) : (
-            <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">{c.content}</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">{renderContentWithMentions(c.content)}</p>
           )}
 
           {!c.is_deleted && (
@@ -364,6 +459,16 @@ export function ForumCommentSection({
                   Reply
                 </button>
               )}
+              {currentIdentityKey && c.identity_key === currentIdentityKey && (
+                <button
+                  type="button"
+                  disabled={deletingCommentId === c.id}
+                  onClick={() => onDelete(c.id)}
+                  className="rounded-md border border-rose-200 px-2 py-1 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                >
+                  Delete
+                </button>
+              )}
               {/* Mark best — only root comments, only for post creator */}
               {isCreator && depth === 0 && (
                 <button
@@ -386,14 +491,31 @@ export function ForumCommentSection({
             <div className="mt-3 rounded-lg border border-app bg-subtle p-3">
               <textarea
                 value={replyDrafts[c.id] ?? ""}
-                onChange={(e) =>
-                  setReplyDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))
-                }
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setReplyDrafts((prev) => ({ ...prev, [c.id]: next }));
+                  void updateMentionSuggestions(next, { type: "reply", id: c.id });
+                }}
                 rows={3}
                 maxLength={2000}
                 placeholder="Write a reply…"
                 className={inputClass}
               />
+              {mentionTarget?.type === "reply" && mentionTarget.id === c.id && mentionSuggestions.length > 0 && (
+                <div className="mt-2 rounded-lg border border-app bg-surface p-1">
+                  {mentionSuggestions.map((item) => (
+                    <button
+                      key={item.username}
+                      type="button"
+                      onClick={() => applyMentionSuggestion(item.username)}
+                      className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-subtle"
+                    >
+                      <span className="font-medium text-app">@{item.username}</span>
+                      <span className="text-xs text-muted">{item.displayName || "User"}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="mt-2 flex justify-end">
                 <button
                   type="button"
@@ -480,12 +602,31 @@ export function ForumCommentSection({
           <textarea
             placeholder="Share your thoughts…"
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setContent(next);
+              void updateMentionSuggestions(next, { type: "main" });
+            }}
             maxLength={2000}
             rows={4}
             required
             className={inputClass}
           />
+          {mentionTarget?.type === "main" && mentionSuggestions.length > 0 && (
+            <div className="rounded-lg border border-app bg-surface p-1">
+              {mentionSuggestions.map((item) => (
+                <button
+                  key={item.username}
+                  type="button"
+                  onClick={() => applyMentionSuggestion(item.username)}
+                  className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-subtle"
+                >
+                  <span className="font-medium text-app">@{item.username}</span>
+                  <span className="text-xs text-muted">{item.displayName || "User"}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="mt-3 flex items-center justify-between">
           <span className="text-xs text-slate-400">{content.length}/2000</span>

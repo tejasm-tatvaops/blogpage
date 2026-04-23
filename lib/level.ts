@@ -12,3 +12,10 @@ export function getLevelMeta(level: string) {
       return { label: "Member", color: "bg-gray-200 text-gray-700", icon: "" };
   }
 }
+
+export function getLevelFromReputationScore(score: number): string {
+  if (score >= 2000) return "Platinum";
+  if (score >= 500) return "Gold";
+  if (score >= 100) return "Silver";
+  return "Bronze";
+}

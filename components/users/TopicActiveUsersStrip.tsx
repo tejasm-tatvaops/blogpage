@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { EngagedUserProfile, UserProfile } from "@/lib/userProfileService";
 import { getUserAvatar } from "@/lib/identityUI";
+import { getLevelFromReputationScore, getLevelMeta } from "@/lib/level";
 
 type TopicActiveUsersStripProps = {
   title: string;
@@ -50,6 +51,7 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
           const rep = user.reputation_score ?? 0;
           const engagement = ("engagement_score" in user ? user.engagement_score : 0) ?? 0;
           const tier = TIER_CONFIG[user.reputation_tier] ?? TIER_CONFIG.member!;
+          const levelMeta = getLevelMeta(getLevelFromReputationScore(rep));
           const href = user.last_forum_slug
             ? `/forums/${user.last_forum_slug}`
             : user.last_blog_slug
@@ -128,6 +130,9 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
                   </div>
                   <span className={`mt-0.5 inline-block rounded-full px-1.5 py-px text-[9px] font-bold uppercase tracking-wide ${tier.className}`}>
                     {tier.label}
+                  </span>
+                  <span className={`mt-0.5 inline-block rounded px-1.5 py-px text-[9px] font-semibold ${levelMeta.color}`}>
+                    {levelMeta.icon} {levelMeta.label}
                   </span>
                 </div>
               </div>

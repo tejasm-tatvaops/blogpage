@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { mutate } from "swr";
 
 type ForumVoteBarProps = {
   slug: string;
@@ -58,6 +59,7 @@ export function ForumVoteBar({
         setHasDownvoted(true);
         localStorage.setItem(STORAGE_KEY_DOWN(slug), "1");
       }
+      void mutate("/api/me/reputation");
     } finally {
       setVoting(false);
     }

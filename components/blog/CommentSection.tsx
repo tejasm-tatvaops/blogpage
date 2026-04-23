@@ -1,13 +1,14 @@
 "use client";
 
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { mutate } from "swr";
 import type { Comment } from "@/lib/commentService";
 import { useActivityPolling } from "@/lib/activityPolling";
 import { getUserAvatar } from "@/lib/identityUI";
 import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
-import { useAuthModal } from "@/components/providers/AuthProvider";
 
 type CommentSectionProps = {
   slug: string;
@@ -21,10 +22,31 @@ const formatDate = (iso: string) =>
     year: "numeric",
   }).format(new Date(iso));
 
+const renderContentWithMentions = (text: string) =>
+  text.split(/(@[a-zA-Z0-9._-]{2,32})/g).map((part, idx) => {
+    if (/^@[a-zA-Z0-9._-]{2,32}$/.test(part)) {
+      return (
+        <Link
+          key={`${part}-${idx}`}
+          href={`/users?search=${encodeURIComponent(part.slice(1))}`}
+          className="font-semibold text-sky-700 hover:underline"
+        >
+          {part}
+        </Link>
+      );
+    }
+    return <span key={`${part}-${idx}`}>{part}</span>;
+  });
+
+type MentionSuggestion = { username: string; displayName: string };
+const mentionQueryFrom = (value: string): string | null => {
+  const match = value.match(/(?:^|\s)@([a-zA-Z0-9._-]{0,32})$/);
+  return match?.[1]?.toLowerCase() ?? null;
+};
+
 export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const { openLoginModal } = useAuthModal();
+  const { data: session } = useSession();
   const commentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [authorName, setAuthorName] = useState("");
@@ -40,7 +62,41 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [votingCommentId, setVotingCommentId] = useState<string | null>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [mentionSuggestions, setMentionSuggestions] = useState<MentionSuggestion[]>([]);
+  const [mentionTarget, setMentionTarget] = useState<{ type: "main" } | { type: "reply"; id: string } | null>(null);
+  const currentIdentityKey = session?.user?.id ? `google:${session.user.id}` : null;
+
+  const updateMentionSuggestions = useCallback(async (value: string, target: { type: "main" } | { type: "reply"; id: string }) => {
+    const query = mentionQueryFrom(value);
+    if (query === null) {
+      setMentionSuggestions([]);
+      setMentionTarget(null);
+      return;
+    }
+    setMentionTarget(target);
+    try {
+      const response = await fetch(`/api/users/mentions?q=${encodeURIComponent(query)}`, { cache: "no-store" });
+      const payload = (await response.json()) as { suggestions?: MentionSuggestion[] };
+      setMentionSuggestions(Array.isArray(payload.suggestions) ? payload.suggestions : []);
+    } catch {
+      setMentionSuggestions([]);
+    }
+  }, []);
+
+  const applyMentionSuggestion = (username: string) => {
+    const apply = (input: string): string => input.replace(/(?:^|\s)@[a-zA-Z0-9._-]{1,32}$/, ` @${username} `).replace(/\s{2,}/g, " ");
+    if (!mentionTarget) return;
+    if (mentionTarget.type === "main") {
+      setContent((prev) => apply(prev));
+    } else {
+      const id = mentionTarget.id;
+      setReplyDrafts((prev) => ({ ...prev, [id]: apply(prev[id] ?? "") }));
+    }
+    setMentionSuggestions([]);
+    setMentionTarget(null);
+  };
 
   const totalCommentCount = useCallback(
     (list: Comment[]) =>
@@ -129,8 +185,6 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (status === "loading") return;
-    if (!session) { openLoginModal(); return; }
     if (submitting) return;
     setError(null);
     setSuccess(false);
@@ -150,6 +204,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
       if (json.comment) {
         setComments((prev) => [json.comment!, ...prev]);
       }
+      void mutate("/api/me/reputation");
       setAuthorName("");
       setContent("");
       setSuccess(true);
@@ -162,8 +217,6 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   };
 
   const onReply = async (parentCommentId: string) => {
-    if (status === "loading") return;
-    if (!session) { openLoginModal(); return; }
     const replyText = replyDrafts[parentCommentId]?.trim() ?? "";
     const replyAuthor = authorName.trim() || "Anonymous";
     if (!replyText) return;
@@ -203,6 +256,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
           }),
         );
       }
+      void mutate("/api/me/reputation");
 
       setReplyDrafts((prev) => ({ ...prev, [parentCommentId]: "" }));
       setActiveReplyFor(null);
@@ -243,10 +297,41 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
           })),
         );
       }
+      void mutate("/api/me/reputation");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to vote.");
     } finally {
       setVotingCommentId(null);
+    }
+  };
+
+  const onDelete = async (commentId: string) => {
+    if (!currentIdentityKey || deletingCommentId) return;
+    setDeletingCommentId(commentId);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/blog/${encodeURIComponent(slug)}/comments/${encodeURIComponent(commentId)}`,
+        { method: "DELETE" },
+      );
+      const payload = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(payload.error ?? "Failed to delete comment.");
+
+      setComments((prev) =>
+        patchCommentTree(prev, commentId, (comment) => ({
+          ...comment,
+          author_name: "[deleted]",
+          content: "[deleted]",
+          is_deleted: true,
+          upvote_count: 0,
+          downvote_count: 0,
+          score: 0,
+        })),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete comment.");
+    } finally {
+      setDeletingCommentId(null);
     }
   };
 
@@ -325,18 +410,10 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
       <form onSubmit={onSubmit} className="mb-10 rounded-2xl border border-app bg-subtle p-5">
         <p className="mb-4 text-sm font-semibold text-slate-700">Add a comment</p>
 
-        {status !== "loading" && !session && (
-          <button
-            type="button"
-            onClick={openLoginModal}
-            className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            Sign in to comment
-          </button>
+        {!session && (
+          <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+            You are commenting as Anonymous.
+          </p>
         )}
 
         {error && (
@@ -355,33 +432,46 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
             value={authorName}
             onChange={(e) => setAuthorName(e.target.value)}
             maxLength={80}
-            disabled={status === "loading" || !session}
+            disabled={submitting}
             className={`${inputClass} disabled:opacity-50`}
           />
           <textarea
             ref={commentTextareaRef}
-            placeholder={
-              status === "loading"
-                ? "Checking your session..."
-                : session
-                  ? "Share your thoughts or questions…"
-                  : "Sign in to leave a comment"
-            }
+            placeholder="Share your thoughts or questions…"
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setContent(next);
+              void updateMentionSuggestions(next, { type: "main" });
+            }}
             maxLength={2000}
             rows={4}
             required
-            disabled={status === "loading" || !session}
+            disabled={submitting}
             className={`${inputClass} disabled:opacity-50`}
           />
+          {mentionTarget?.type === "main" && mentionSuggestions.length > 0 && (
+            <div className="rounded-lg border border-app bg-surface p-1">
+              {mentionSuggestions.map((item) => (
+                <button
+                  key={item.username}
+                  type="button"
+                  onClick={() => applyMentionSuggestion(item.username)}
+                  className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-subtle"
+                >
+                  <span className="font-medium text-app">@{item.username}</span>
+                  <span className="text-xs text-muted">{item.displayName || "User"}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mt-3 flex items-center justify-between">
           <span className="text-xs text-slate-400">{content.length}/2000</span>
           <button
             type="submit"
-            disabled={status === "loading" || submitting || !content.trim() || !session}
+            disabled={submitting || !content.trim()}
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-slate-700 disabled:opacity-50"
           >
             {submitting ? "Posting…" : "Post comment"}
@@ -441,7 +531,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                   <p className="mt-1 text-sm italic text-slate-400">[deleted]</p>
                 ) : (
                   <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                    {c.content}
+                    {renderContentWithMentions(c.content)}
                   </p>
                 )}
                 {!c.is_deleted && (
@@ -469,6 +559,16 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                     >
                       Reply
                     </button>
+                    {currentIdentityKey && c.identity_key === currentIdentityKey && (
+                      <button
+                        type="button"
+                        disabled={deletingCommentId === c.id}
+                        onClick={() => onDelete(c.id)}
+                        className="rounded-md border border-rose-200 px-2 py-1 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -476,21 +576,38 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                   <div className="mt-3 rounded-lg border border-app bg-subtle p-3">
                     <textarea
                       value={replyDrafts[c.id] ?? ""}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const next = e.target.value;
                         setReplyDrafts((prev) => ({
                           ...prev,
-                          [c.id]: e.target.value,
-                        }))
-                      }
+                          [c.id]: next,
+                        }));
+                        void updateMentionSuggestions(next, { type: "reply", id: c.id });
+                      }}
                       rows={3}
                       maxLength={2000}
                       placeholder="Write a reply..."
                       className={inputClass}
                     />
+                    {mentionTarget?.type === "reply" && mentionTarget.id === c.id && mentionSuggestions.length > 0 && (
+                      <div className="mt-2 rounded-lg border border-app bg-surface p-1">
+                        {mentionSuggestions.map((item) => (
+                          <button
+                            key={item.username}
+                            type="button"
+                            onClick={() => applyMentionSuggestion(item.username)}
+                            className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-subtle"
+                          >
+                            <span className="font-medium text-app">@{item.username}</span>
+                            <span className="text-xs text-muted">{item.displayName || "User"}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <div className="mt-2 flex justify-end">
                       <button
                         type="button"
-                        disabled={status === "loading" || !(replyDrafts[c.id] ?? "").trim() || submitting}
+                        disabled={!(replyDrafts[c.id] ?? "").trim() || submitting}
                         onClick={() => onReply(c.id)}
                         className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold !text-white hover:bg-slate-700 disabled:opacity-50"
                       >
@@ -518,7 +635,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                           <p className="mt-1 text-sm italic text-slate-400">[deleted]</p>
                         ) : (
                           <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                            {reply.content}
+                            {renderContentWithMentions(reply.content)}
                           </p>
                         )}
                         {!reply.is_deleted && (
@@ -547,6 +664,16 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                             >
                               Reply
                             </button>
+                            {currentIdentityKey && reply.identity_key === currentIdentityKey && (
+                              <button
+                                type="button"
+                                disabled={deletingCommentId === reply.id}
+                                onClick={() => onDelete(reply.id)}
+                                className="rounded-md border border-rose-200 px-2 py-1 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                              >
+                                Delete
+                              </button>
+                            )}
                           </div>
                         )}
 
@@ -554,21 +681,38 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                           <div className="mt-3 rounded-lg border border-app bg-subtle p-3">
                             <textarea
                               value={replyDrafts[reply.id] ?? ""}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                const next = e.target.value;
                                 setReplyDrafts((prev) => ({
                                   ...prev,
-                                  [reply.id]: e.target.value,
-                                }))
-                              }
+                                  [reply.id]: next,
+                                }));
+                                void updateMentionSuggestions(next, { type: "reply", id: reply.id });
+                              }}
                               rows={3}
                               maxLength={2000}
                               placeholder="Write a reply..."
                               className={inputClass}
                             />
+                            {mentionTarget?.type === "reply" && mentionTarget.id === reply.id && mentionSuggestions.length > 0 && (
+                              <div className="mt-2 rounded-lg border border-app bg-surface p-1">
+                                {mentionSuggestions.map((item) => (
+                                  <button
+                                    key={item.username}
+                                    type="button"
+                                    onClick={() => applyMentionSuggestion(item.username)}
+                                    className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-subtle"
+                                  >
+                                    <span className="font-medium text-app">@{item.username}</span>
+                                    <span className="text-xs text-muted">{item.displayName || "User"}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                             <div className="mt-2 flex justify-end">
                               <button
                                 type="button"
-                                disabled={status === "loading" || !(replyDrafts[reply.id] ?? "").trim() || submitting}
+                                disabled={!(replyDrafts[reply.id] ?? "").trim() || submitting}
                                 onClick={() => onReply(reply.id)}
                                 className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold !text-white hover:bg-slate-700 disabled:opacity-50"
                               >
@@ -597,7 +741,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                                   <p className="mt-1 text-sm italic text-slate-400">[deleted]</p>
                                 ) : (
                                   <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                                    {nested.content}
+                                    {renderContentWithMentions(nested.content)}
                                   </p>
                                 )}
                                 {!nested.is_deleted && (
@@ -618,6 +762,16 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                                     >
                                       ▼ {nested.downvote_count}
                                     </button>
+                                    {currentIdentityKey && nested.identity_key === currentIdentityKey && (
+                                      <button
+                                        type="button"
+                                        disabled={deletingCommentId === nested.id}
+                                        onClick={() => onDelete(nested.id)}
+                                        className="rounded-md border border-rose-200 px-2 py-1 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                                      >
+                                        Delete
+                                      </button>
+                                    )}
                                   </div>
                                 )}
                               </div>

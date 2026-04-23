@@ -7,6 +7,7 @@ import { recordUserActivity } from "@/lib/userProfileService";
 import { onForumAnswerGiven } from "@/lib/reputationEngine";
 import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
 import { getSystemToggles } from "@/lib/systemToggles";
+import { notifyMentionedUsers } from "@/lib/mentions";
 
 export async function GET(
   _request: Request,
@@ -53,6 +54,13 @@ export async function POST(
 
     const actorKey = await getIdentityKeyFromSessionOrRequest(request);
     const comment = await addCommentWithIdentity(post.id, result.data, actorKey);
+    void notifyMentionedUsers({
+      content: result.data.content,
+      actorIdentityKey: actorKey,
+      postId: post.id,
+      commentId: comment.id,
+      actorDisplayName: result.data.author_name,
+    });
     // Keep comment_count denormalized for fast feed queries
     await incrementForumCommentCount(post.id);
 
