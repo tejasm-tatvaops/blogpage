@@ -28,6 +28,7 @@ This README is intentionally exhaustive and implementation-heavy. It is meant to
 - High-Level Architecture
 - Core Product Surfaces
 - Detailed Feature Inventory
+- Engagement Identity + Reputation Consistency *(new)*
 - SEO Content Engine *(new)*
 - Behavioral Realism System
 - Personalization / Feed System
@@ -140,7 +141,7 @@ TatvaOps is designed to feel like a real social content platform, not just a sta
   - view tracking endpoint integration
   - post vote actions (`upvote`, `downvote`)
   - comments and replies
-  - topic active users strip
+  - **Most engaged users on this post** strip (identity-safe, post-scoped engagement ranking)
   - social share actions
   - cover image fallback chain hardened against placeholder-only outputs
   - **Related Discussions section** — server-rendered list of up to 4 forum threads sharing tags with the article (new)
@@ -177,6 +178,166 @@ TatvaOps is designed to feel like a real social content platform, not just a sta
   - behavior hints (active now, topic contributor, familiarity hints)
   - identity context chips (role, city, experience)
   - weekly activity sparkline and activity snippets
+
+---
+
+## Engagement Identity + Reputation Consistency *(new)*
+
+This section documents the production hardening work that aligns comments, engagement ranking, and reputation math to a single source of truth.
+
+### Why this was needed
+
+Historically, parts of the platform mixed identity sources (`author:*` style fallbacks vs real runtime identity keys). This could make the comment list and the "engaged users" strip disagree.
+
+The system now uses strict identity consistency so all user-facing engagement surfaces reflect the same actors.
+
+---
+
+### Identity contract (single source of truth)
+
+All engagement flows now rely on `identity_key` with allowed prefixes only:
+
+- `fp:`
+- `ip:`
+- `google:`
+
+Any comment/event row without a valid identity key is ignored for engaged-user ranking.
+
+No fallback stitching from author display names is performed.
+
+---
+
+### Comment identity storage
+
+`Comment` now stores `identity_key` explicitly, populated at creation time from request/session identity.
+
+Implications:
+
+- new comments participate in reputation + engagement joins correctly
+- joins across `Comment`, `ReputationEvent`, and `UserProfile` are stable
+- no dependency on brittle name-derived identity mapping
+
+---
+
+### "Most engaged users on this post" logic
+
+Implemented in: `getMostEngagedUsersByPost()` (`lib/userProfileService.ts`)
+
+#### Data sources (post-scoped only)
+
+- **Commented**: `CommentModel` filtered by:
+  - `post_id`
+  - `deleted_at: null`
+  - `identity_key` present/non-empty
+- **Liked**: `ReputationEvent.reason = "article_like_received"`
+- **Shared**: `ReputationEvent.reason = "content_share"`
+- Event rows are scoped to the post via `source_content_slug`
+
+No topic-interest fallback or cross-post blending is used for this strip.
+
+#### Event window and performance
+
+- only recent engagement is considered (`created_at >= now - 7 days`)
+- comment events and reputation events are aggregated in MongoDB
+- user profiles are fetched in a single batched query (`$in`)
+- avoids N+1 profile lookups
+
+#### Scoring model (event-level)
+
+Each event contributes individually:
+
+- comment: `5 * decay`
+- like: `2 * decay`
+- share: `3 * decay`
+
+With:
+
+- `hours = (now - created_at) / 3600000`
+- `decay = exp(-hours / 24)`
+
+This ensures real-time freshness: older actions naturally fade.
+
+#### Anti-spam caps
+
+Per identity, before scoring:
+
+- most recent 3 comments
+- most recent 5 likes
+- most recent 3 shares
+
+This prevents one actor from dominating via repetitive low-quality actions.
+
+#### Reputation tie-strength
+
+Reputation is normalized and added as a light tie-breaker:
+
+- `repScore = log10(reputation_score + 1)`
+- final score = `sum(event-level decayed scores) + repScore`
+
+#### Stable deterministic ordering
+
+Users are sorted by:
+
+1. `engagement_score` DESC
+2. `lastActivity` DESC
+3. `identity_key` ASC
+
+This removes UI flicker on score ties.
+
+#### Returned fields
+
+Each engaged-user row includes:
+
+- `identity_key`
+- `display_name`
+- `reputation_score`
+- `engagement_score`
+- labels (`Commented`, `Liked`, `Shared`)
+
+---
+
+### Reputation engine consistency fixes
+
+Implemented in: `lib/reputationEngine.ts`
+
+#### Breakdown accuracy
+
+`getReputationBreakdown()` now sums `awarded_points` directly from ledger events (grouped by reason), instead of recomputing from `BASE_POINTS * count`.
+
+Benefits:
+
+- multiplier-safe
+- cap-safe
+- resilient to future scoring rule changes
+- UI breakdown aligns with actual awarded history
+
+#### Share event mapping completeness
+
+Both share reasons now map into the `shares` breakdown bucket:
+
+- `article_share_received`
+- `content_share`
+
+#### Daily cap auditability
+
+When daily cap is reached, events are no longer dropped.
+Instead:
+
+- event is still created
+- `multiplier = 0`
+- `awarded_points = 0`
+- note includes `"daily cap reached"`
+
+This preserves immutable audit history and keeps totals explainable.
+
+---
+
+### Operational expectations after these changes
+
+- comment authors and engaged-users strip now align to the same identities
+- fake/legacy stitched identities do not pollute post engagement ranking
+- admin reputation analytics and per-user breakdown are more trustworthy
+- recompute and breakdown behavior are materially closer in semantics because both are ledger-centric
 
 ---
 
@@ -654,6 +815,7 @@ All heavy work is rate-limited in request path and guarded by timeout waiting.
 ## `Comment`
 
 - root + nested replies
+- strict `identity_key` for cross-system identity joins
 - vote counters
 - AI metadata fields (`is_ai_generated`, `persona_name`)
 
@@ -775,6 +937,7 @@ All heavy work is rate-limited in request path and guarded by timeout waiting.
 - `lib/internalLinker.ts` — auto keyword-to-blog markdown link injection; `autoLinkContent`
 - `lib/contentStructureChecker.ts` — markdown structure validation (H1/H2/word count/paragraph length); min 300 words *(updated)*
 - `lib/userProfileService.ts` — profile ingest/backfill/synthetic/maintenance
+- `lib/userProfileService.ts` — includes `getMostEngagedUsersByPost` (strict identity, post-scoped decayed ranking with caps)
 - `lib/userBehavior.ts` — behavioral personas and activity timing helpers
 - `lib/activityRunner.ts` — queue processor and realism timing loop
 - `lib/autopopulateService.ts` — AI-assisted engagement generation
@@ -785,6 +948,7 @@ All heavy work is rate-limited in request path and guarded by timeout waiting.
 - `lib/feedPrecompute.ts` — background precompute hooks
 - `lib/sessionDiversity.ts` — short-term session diversity memory
 - `lib/notificationService.ts` — notification operations + cache
+- `lib/reputationEngine.ts` — immutable ledger awards, breakdown aggregation by `awarded_points`, cap-safe event writes
 - `lib/adminApi.ts` — admin request/response helper patterns
 - `lib/personas.ts` / `lib/personaService.ts` — writing persona + interest vector behavior
 - `lib/blogSeo.ts` — `buildArticleJsonLd`, `buildBreadcrumbJsonLd`, `buildFaqJsonLd`, `extractFaqItems`

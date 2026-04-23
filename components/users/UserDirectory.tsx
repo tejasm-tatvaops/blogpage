@@ -458,15 +458,17 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
     });
 
     const sorted = [...filtered];
+    const realFirst = (a: UserProfile, b: UserProfile) =>
+      (b.user_type === "REAL" ? 1 : 0) - (a.user_type === "REAL" ? 1 : 0);
     sorted.sort((a, b) => {
-      if (sortBy === "blog_views") return b.blog_views - a.blog_views;
+      if (sortBy === "blog_views") return b.blog_views - a.blog_views || realFirst(a, b);
       if (sortBy === "forum_activity") {
         const aForum = a.forum_posts + a.forum_comments + a.forum_votes;
         const bForum = b.forum_posts + b.forum_comments + b.forum_votes;
-        return bForum - aForum;
+        return bForum - aForum || realFirst(a, b);
       }
-      if (sortBy === "reputation") return b.reputation_score - a.reputation_score;
-      return new Date(b.last_seen_at).getTime() - new Date(a.last_seen_at).getTime();
+      if (sortBy === "reputation") return b.reputation_score - a.reputation_score || realFirst(a, b);
+      return realFirst(a, b) || new Date(b.last_seen_at).getTime() - new Date(a.last_seen_at).getTime();
     });
     return sorted;
   }, [resolvedUsers, query, sortBy, photosOnly, userTypeFilter, tierFilter, segmentFilter, activeOnly, gamifiedOnly]);

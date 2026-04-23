@@ -45,6 +45,7 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
       {/* User cards grid */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {users.slice(0, 8).map((user) => {
+          const isLegacy = ("is_legacy" in user) && Boolean(user.is_legacy);
           const tier = TIER_CONFIG[user.reputation_tier] ?? TIER_CONFIG.member!;
           const href = user.last_forum_slug
             ? `/forums/${user.last_forum_slug}`
@@ -56,7 +57,9 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
             <Link
               key={user.id}
               href={href}
-              className="group flex flex-col gap-2 rounded-xl border border-app bg-subtle p-3 transition hover:border-sky-200 hover:bg-sky-50/40 hover:shadow-sm"
+              className={`group flex flex-col gap-2 rounded-xl border border-app bg-subtle p-3 transition hover:border-sky-200 hover:bg-sky-50/40 hover:shadow-sm ${
+                isLegacy ? "opacity-70" : ""
+              }`}
             >
               {/* Avatar row */}
               <div className="flex items-center gap-2.5">
@@ -74,9 +77,23 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-slate-800 group-hover:text-sky-700">
-                    {user.display_name}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-xs font-semibold text-slate-800 group-hover:text-sky-700">
+                      {user.display_name}
+                    </p>
+                    <span
+                      className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${
+                        user.user_type === "REAL" ? "bg-green-500" : "bg-gray-400"
+                      }`}
+                      title={
+                        isLegacy
+                          ? "Legacy comment (untracked user)"
+                          : user.user_type === "REAL"
+                            ? "Real user (active)"
+                            : "AI-generated user"
+                      }
+                    />
+                  </div>
                   <span className={`mt-0.5 inline-block rounded-full px-1.5 py-px text-[9px] font-bold uppercase tracking-wide ${tier.className}`}>
                     {tier.label}
                   </span>
