@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { getUserProfileByDisplayName } from "@/lib/userProfileService";
+import { getUserProfileByIdentityKey } from "@/lib/userProfileService";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const name = searchParams.get("name")?.trim() ?? "";
-    if (!name) return NextResponse.json({ user: null }, { status: 200 });
+    const identityKey = searchParams.get("identity")?.trim() ?? searchParams.get("identity_key")?.trim() ?? "";
+    if (!identityKey) return NextResponse.json({ user: null }, { status: 200 });
 
-    const user = await getUserProfileByDisplayName(name);
+    const user = await getUserProfileByIdentityKey(identityKey);
     return NextResponse.json({ user }, { status: 200, headers: { "Cache-Control": "private, no-store" } });
   } catch {
     return NextResponse.json({ user: null }, { status: 200 });

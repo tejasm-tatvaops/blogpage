@@ -17,6 +17,24 @@ const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const GROQ_MODEL = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
 const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 const AI_TIMEOUT_MS = 30_000;
+const RATE_LIMIT_LOG_COOLDOWN_MS = 5 * 60 * 1000;
+
+const autopopulateState = globalThis as typeof globalThis & {
+  __tatvaopsLastAiRateLimitLogAt?: number;
+};
+
+const isRateLimitError = (error: Error): boolean => {
+  const message = error.message.toLowerCase();
+  return message.includes(" 429") || message.includes("rate limit") || message.includes("exceeded your current quota");
+};
+
+const shouldLogRateLimit = (): boolean => {
+  const now = Date.now();
+  const last = autopopulateState.__tatvaopsLastAiRateLimitLogAt ?? 0;
+  if (now - last < RATE_LIMIT_LOG_COOLDOWN_MS) return false;
+  autopopulateState.__tatvaopsLastAiRateLimitLogAt = now;
+  return true;
+};
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -166,7 +184,16 @@ const callAI = async (prompt: string): Promise<AiComment[]> => {
       return parseAiComments(raw);
     } catch (err) {
       lastError = err instanceof Error ? err : new Error("Unknown AI error.");
-      logger.warn({ provider: provider.name, error: lastError.message }, "autopopulate AI provider failed");
+      if (isRateLimitError(lastError)) {
+        if (shouldLogRateLimit()) {
+          logger.warn(
+            { provider: provider.name, error: lastError.message },
+            "autopopulate AI provider rate-limited; suppressing repeated logs",
+          );
+        }
+      } else {
+        logger.warn({ provider: provider.name, error: lastError.message }, "autopopulate AI provider failed");
+      }
     }
   }
 
@@ -513,10 +540,10 @@ export const preGenerateActivityDrafts = async (
           expiresAt: now + ACTIVITY_DRAFT_CACHE_TTL_MS,
         });
       } catch (error) {
-        logger.warn(
-          { target: cacheKey, error: error instanceof Error ? error.message : String(error) },
-          "activity drafts AI fallback engaged",
-        );
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (!isRateLimitError(error instanceof Error ? error : new Error(errorMessage)) || shouldLogRateLimit()) {
+          logger.warn({ target: cacheKey, error: errorMessage }, "activity drafts AI fallback engaged");
+        }
         drafts = [
           {
             content: "Interesting breakdown. Has anyone validated this with recent site execution costs?",

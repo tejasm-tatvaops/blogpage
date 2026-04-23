@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Comment } from "@/lib/commentService";
 import { getOrCreateFingerprint } from "@/lib/personalization";
 import { useActivityPolling } from "@/lib/activityPolling";
-import { getAvatarForIdentity } from "@/lib/avatar";
+import { getUserAvatar } from "@/lib/identityUI";
 import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
 
 type ForumCommentSectionProps = {
@@ -281,19 +281,36 @@ export function ForumCommentSection({
       >
         <UserProfileQuickView
           displayName={c.author_name}
-          trigger={
-            <img
-              src={getAvatarForIdentity(`forum-comment:${c.author_name}|${c.id}`)}
-              alt={`${c.author_name} avatar`}
-              className={`h-9 w-9 flex-shrink-0 rounded-full border object-cover ${isBest ? "border-emerald-200 bg-emerald-50" : "border-indigo-200 bg-indigo-50"}`}
-              loading="lazy"
-            />
-          }
+          identityKey={c.identity_key ?? `legacy:comment:${c.id}`}
+          trigger={(() => {
+            const avatar = getUserAvatar(c);
+            return (
+              <div className="transition-transform duration-200 hover:scale-105">
+                {avatar.type === "initials" ? (
+                  <div
+                    className={`h-9 w-9 flex-shrink-0 rounded-full flex items-center justify-center text-white text-sm font-semibold bg-gradient-to-br ${avatar.gradient} border border-white/10 shadow-sm ring-1 ring-white/5`}
+                  >
+                    {avatar.name.slice(0, 2).toUpperCase()}
+                  </div>
+                ) : (
+                  <img
+                    src={avatar.src}
+                    alt="User avatar"
+                    className={`h-9 w-9 flex-shrink-0 rounded-full object-cover border border-white/10 shadow-sm ring-1 ring-white/5 ${
+                      avatar.type === "dicebear" ? "opacity-90" : ""
+                    }`}
+                    loading="lazy"
+                  />
+                )}
+              </div>
+            );
+          })()}
         />
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <UserProfileQuickView
               displayName={c.author_name}
+              identityKey={c.identity_key ?? `legacy:comment:${c.id}`}
               trigger={
                 <span className="text-sm font-semibold text-app hover:underline">
                   {c.is_deleted ? "[deleted]" : c.author_name}

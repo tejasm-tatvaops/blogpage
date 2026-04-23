@@ -53,8 +53,6 @@ export async function getIdentityKeyFromSessionOrRequest(request: Request): Prom
     // Authenticated user lost their ID — writes will land on an anonymous identity.
     // This is a data integrity risk; investigate session/token configuration.
     console.error("Identity fallback: authenticated session has no user ID", { email: sessionEmail, source });
-  } else if (process.env.NODE_ENV === "development") {
-    console.log("IDENTITY RESOLUTION", { source, sessionId: null, tokenId: null });
   }
 
   const anonymousIdentity = getIdentityKeyFromRequest(request);

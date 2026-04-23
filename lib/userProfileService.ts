@@ -1204,6 +1204,15 @@ export const getUserProfileByDisplayName = async (displayName: string): Promise<
   return partial ? toUserProfile(partial as never) : null;
 };
 
+export const getUserProfileByIdentityKey = async (identityKey: string): Promise<UserProfile | null> => {
+  await connectToDatabase();
+  const safeIdentityKey = identityKey.trim().slice(0, 160);
+  if (!safeIdentityKey) return null;
+
+  const doc = await UserProfileModel.findOne({ identity_key: safeIdentityKey }).lean();
+  return doc ? toUserProfile(doc as never) : null;
+};
+
 export const getActiveUsersByTopic = async (signals: string[], limit = 8): Promise<UserProfile[]> => {
   await connectToDatabase();
   const cleaned = [...new Set(signals.map((s) => sanitizeKey(s)).filter(Boolean))].slice(0, 8);

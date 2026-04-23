@@ -137,6 +137,7 @@ export function BlogDetail({
   const { mainContent, faqs, references } = parseContentSections(post.content);
 
   const authorInitial = post.author.charAt(0).toUpperCase();
+  const authorIdentityKey = `legacy:blog-author:${post.author.trim().toLowerCase()}`;
 
   return (
     <>
@@ -164,6 +165,7 @@ export function BlogDetail({
                 {/* Author */}
                 <div className="flex items-center gap-2.5">
                   <UserProfileQuickView
+                    identityKey={authorIdentityKey}
                     displayName={post.author}
                     trigger={
                       <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 text-sm font-bold text-white shadow-sm">
@@ -172,6 +174,7 @@ export function BlogDetail({
                     }
                   />
                   <UserProfileQuickView
+                    identityKey={authorIdentityKey}
                     displayName={post.author}
                     trigger={<span className="text-sm font-semibold text-slate-800 hover:underline">{post.author}</span>}
                   />

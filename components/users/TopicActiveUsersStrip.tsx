@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { EngagedUserProfile, UserProfile } from "@/lib/userProfileService";
+import { getUserAvatar } from "@/lib/identityUI";
 
 type TopicActiveUsersStripProps = {
   title: string;
@@ -66,11 +67,29 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
               {/* Avatar row */}
               <div className="flex items-center gap-2.5">
                 <div className="relative flex-shrink-0">
-                  <img
-                    src={user.avatar_url}
-                    alt={`${user.display_name} avatar`}
-                    className="h-9 w-9 rounded-full border border-app object-cover"
-                  />
+                  <div className="transition-transform duration-200 hover:scale-105">
+                    {(() => {
+                      const avatar = getUserAvatar(user);
+                      if (avatar.type === "initials") {
+                        return (
+                          <div
+                            className={`h-9 w-9 rounded-full flex items-center justify-center text-white text-sm font-semibold bg-gradient-to-br ${avatar.gradient} border border-white/10 shadow-sm ring-1 ring-white/5`}
+                          >
+                            {avatar.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        );
+                      }
+                      return (
+                        <img
+                          src={avatar.src}
+                          alt={`${user.display_name} avatar`}
+                          className={`h-9 w-9 rounded-full object-cover border border-white/10 shadow-sm ring-1 ring-white/5 ${
+                            avatar.type === "dicebear" ? "opacity-90" : ""
+                          }`}
+                        />
+                      );
+                    })()}
+                  </div>
                   {user.is_active_now && (
                     <span
                       className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white"

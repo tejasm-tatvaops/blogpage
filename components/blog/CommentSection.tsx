@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { Comment } from "@/lib/commentService";
 import { useActivityPolling } from "@/lib/activityPolling";
-import { getAvatarForIdentity } from "@/lib/avatar";
+import { getUserAvatar } from "@/lib/identityUI";
 import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
 import { useAuthModal } from "@/components/providers/AuthProvider";
 
@@ -23,7 +23,7 @@ const formatDate = (iso: string) =>
 
 export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { openLoginModal } = useAuthModal();
   const commentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [comments, setComments] = useState<Comment[]>(initialComments);
@@ -129,6 +129,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (status === "loading") return;
     if (!session) { openLoginModal(); return; }
     if (submitting) return;
     setError(null);
@@ -161,6 +162,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   };
 
   const onReply = async (parentCommentId: string) => {
+    if (status === "loading") return;
     if (!session) { openLoginModal(); return; }
     const replyText = replyDrafts[parentCommentId]?.trim() ?? "";
     const replyAuthor = authorName.trim() || "Anonymous";
@@ -323,7 +325,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
       <form onSubmit={onSubmit} className="mb-10 rounded-2xl border border-app bg-subtle p-5">
         <p className="mb-4 text-sm font-semibold text-slate-700">Add a comment</p>
 
-        {!session && (
+        {status !== "loading" && !session && (
           <button
             type="button"
             onClick={openLoginModal}
@@ -353,18 +355,24 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
             value={authorName}
             onChange={(e) => setAuthorName(e.target.value)}
             maxLength={80}
-            disabled={!session}
+            disabled={status === "loading" || !session}
             className={`${inputClass} disabled:opacity-50`}
           />
           <textarea
             ref={commentTextareaRef}
-            placeholder={session ? "Share your thoughts or questions…" : "Sign in to leave a comment"}
+            placeholder={
+              status === "loading"
+                ? "Checking your session..."
+                : session
+                  ? "Share your thoughts or questions…"
+                  : "Sign in to leave a comment"
+            }
             value={content}
             onChange={(e) => setContent(e.target.value)}
             maxLength={2000}
             rows={4}
             required
-            disabled={!session}
+            disabled={status === "loading" || !session}
             className={`${inputClass} disabled:opacity-50`}
           />
         </div>
@@ -373,7 +381,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
           <span className="text-xs text-slate-400">{content.length}/2000</span>
           <button
             type="submit"
-            disabled={submitting || !content.trim() || !session}
+            disabled={status === "loading" || submitting || !content.trim() || !session}
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-slate-700 disabled:opacity-50"
           >
             {submitting ? "Posting…" : "Post comment"}
@@ -393,19 +401,36 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
               {/* Avatar */}
               <UserProfileQuickView
                 displayName={c.author_name}
-                trigger={
-                  <img
-                    src={getAvatarForIdentity(`blog-comment:${c.author_name}|${c.id}`)}
-                    alt={`${c.author_name} avatar`}
-                    className="h-9 w-9 flex-shrink-0 rounded-full border border-app bg-slate-100 object-cover"
-                    loading="lazy"
-                  />
-                }
+                identityKey={c.identity_key ?? `legacy:comment:${c.id}`}
+                trigger={(() => {
+                  const avatar = getUserAvatar(c);
+                  return (
+                    <div className="transition-transform duration-200 hover:scale-105">
+                      {avatar.type === "initials" ? (
+                        <div
+                          className={`h-9 w-9 flex-shrink-0 rounded-full flex items-center justify-center text-white text-sm font-semibold bg-gradient-to-br ${avatar.gradient} border border-white/10 shadow-sm ring-1 ring-white/5`}
+                        >
+                          {avatar.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      ) : (
+                        <img
+                          src={avatar.src}
+                          alt="User avatar"
+                          className={`h-9 w-9 flex-shrink-0 rounded-full object-cover border border-white/10 shadow-sm ring-1 ring-white/5 ${
+                            avatar.type === "dicebear" ? "opacity-90" : ""
+                          }`}
+                          loading="lazy"
+                        />
+                      )}
+                    </div>
+                  );
+                })()}
               />
               <div className="flex-1">
                 <div className="flex flex-wrap items-baseline gap-2">
                   <UserProfileQuickView
                     displayName={c.author_name}
+                    identityKey={c.identity_key ?? `legacy:comment:${c.id}`}
                     trigger={<span className="text-sm font-semibold text-app hover:underline">{c.author_name}</span>}
                   />
                   <time className="text-xs text-slate-400" dateTime={c.created_at}>
@@ -465,7 +490,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                     <div className="mt-2 flex justify-end">
                       <button
                         type="button"
-                        disabled={!(replyDrafts[c.id] ?? "").trim() || submitting}
+                        disabled={status === "loading" || !(replyDrafts[c.id] ?? "").trim() || submitting}
                         onClick={() => onReply(c.id)}
                         className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold !text-white hover:bg-slate-700 disabled:opacity-50"
                       >
@@ -482,6 +507,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                         <div className="flex items-baseline gap-2">
                           <UserProfileQuickView
                             displayName={reply.author_name}
+                            identityKey={reply.identity_key ?? `legacy:comment:${reply.id}`}
                             trigger={<span className="text-sm font-semibold text-app hover:underline">{reply.author_name}</span>}
                           />
                           <time className="text-xs text-slate-400" dateTime={reply.created_at}>
@@ -542,7 +568,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                             <div className="mt-2 flex justify-end">
                               <button
                                 type="button"
-                                disabled={!(replyDrafts[reply.id] ?? "").trim() || submitting}
+                                disabled={status === "loading" || !(replyDrafts[reply.id] ?? "").trim() || submitting}
                                 onClick={() => onReply(reply.id)}
                                 className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold !text-white hover:bg-slate-700 disabled:opacity-50"
                               >
@@ -560,6 +586,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                                 <div className="flex items-baseline gap-2">
                                   <UserProfileQuickView
                                     displayName={nested.author_name}
+                                    identityKey={nested.identity_key ?? `legacy:comment:${nested.id}`}
                                     trigger={<span className="text-sm font-semibold text-app hover:underline">{nested.author_name}</span>}
                                   />
                                   <time className="text-xs text-slate-400" dateTime={nested.created_at}>

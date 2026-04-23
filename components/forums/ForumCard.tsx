@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ForumPost } from "@/lib/forumService";
-import { getAvatarForIdentity } from "@/lib/avatar";
+import { getUserAvatar } from "@/lib/identityUI";
 import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
 
 type ForumCardProps = {
@@ -27,21 +27,33 @@ const reputationTone: Record<string, string> = {
 };
 
 export function ForumCard({ post }: ForumCardProps) {
-  const avatarSrc = getAvatarForIdentity(`${post.author_name}|${post.id}`);
+  const identityKey = post.creator_fingerprint || `legacy:forum-post:${post.id}`;
+  const avatar = getUserAvatar({ identity_key: identityKey, display_name: post.author_name });
 
   return (
     <article className="group">
       <div className="flex items-start gap-3">
         <UserProfileQuickView
+          identityKey={identityKey}
           displayName={post.author_name}
           trigger={
-            <div className="relative mt-1 h-11 w-11 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-white shadow-sm">
-              <img
-                src={avatarSrc}
-                alt={`${post.author_name} avatar`}
-                className="h-full w-full object-cover"
-                loading="lazy"
-              />
+            <div className="relative mt-1 h-11 w-11 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-white shadow-sm transition-transform duration-200 hover:scale-105">
+              {avatar.type === "initials" ? (
+                <div
+                  className={`h-full w-full rounded-full flex items-center justify-center text-white text-sm font-semibold bg-gradient-to-br ${avatar.gradient} border border-white/10 shadow-sm ring-1 ring-white/5`}
+                >
+                  {avatar.name.slice(0, 2).toUpperCase()}
+                </div>
+              ) : (
+                <img
+                  src={avatar.src}
+                  alt="User avatar"
+                  className={`h-full w-full object-cover border border-white/10 shadow-sm ring-1 ring-white/5 ${
+                    avatar.type === "dicebear" ? "opacity-90" : ""
+                  }`}
+                  loading="lazy"
+                />
+              )}
             </div>
           }
         />

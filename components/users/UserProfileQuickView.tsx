@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react";
 import type { UserProfile } from "@/lib/userProfileService";
+import { getUserAvatar } from "@/lib/identityUI";
 
 type UserProfileQuickViewProps = {
+  identityKey: string;
   displayName: string;
   trigger: React.ReactNode;
 };
 
 const formatNumber = (value: number): string => new Intl.NumberFormat("en-US").format(value);
 
-export function UserProfileQuickView({ displayName, trigger }: UserProfileQuickViewProps) {
+export function UserProfileQuickView({ displayName, identityKey, trigger }: UserProfileQuickViewProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -21,7 +23,7 @@ export function UserProfileQuickView({ displayName, trigger }: UserProfileQuickV
     const run = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/users/profile?name=${encodeURIComponent(displayName)}`, {
+        const response = await fetch(`/api/users/profile?identity=${encodeURIComponent(identityKey)}`, {
           method: "GET",
           cache: "no-store",
         });
@@ -37,7 +39,7 @@ export function UserProfileQuickView({ displayName, trigger }: UserProfileQuickV
     return () => {
       cancelled = true;
     };
-  }, [displayName, open]);
+  }, [identityKey, open]);
 
   return (
     <>
@@ -68,7 +70,29 @@ export function UserProfileQuickView({ displayName, trigger }: UserProfileQuickV
             ) : (
               <>
                 <div className="flex items-start gap-3">
-                  <img src={user.avatar_url} alt={`${user.display_name} avatar`} className="h-14 w-14 rounded-full object-cover" />
+                  <div className="transition-transform duration-200 hover:scale-105">
+                    {(() => {
+                      const avatar = getUserAvatar(user);
+                      if (avatar.type === "initials") {
+                        return (
+                          <div
+                            className={`h-14 w-14 rounded-full flex items-center justify-center text-white text-base font-semibold bg-gradient-to-br ${avatar.gradient} border border-white/10 shadow-sm ring-1 ring-white/5`}
+                          >
+                            {avatar.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        );
+                      }
+                      return (
+                        <img
+                          src={avatar.src}
+                          alt={`${user.display_name} avatar`}
+                          className={`h-14 w-14 rounded-full object-cover border border-white/10 shadow-sm ring-1 ring-white/5 ${
+                            avatar.type === "dicebear" ? "opacity-90" : ""
+                          }`}
+                        />
+                      );
+                    })()}
+                  </div>
                   <div className="min-w-0">
                     <p className="truncate text-lg font-semibold text-app">{user.display_name}</p>
                     <p className="mt-1 text-sm text-slate-600 line-clamp-2">{user.about}</p>

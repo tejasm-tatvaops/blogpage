@@ -6,7 +6,8 @@ import { getLevelMeta } from "@/lib/level";
 export default function UserStatsBadge() {
   const { data: session, status } = useSession();
 
-  if (status !== "authenticated" || !session?.user) return null;
+  if (status === "loading") return null;
+  if (!session?.user) return null;
 
   const points = Number((session.user as { points?: number }).points ?? 0);
   const level = String((session.user as { level?: string }).level ?? "Bronze");

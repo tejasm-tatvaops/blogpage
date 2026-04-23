@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isRealPhotoAvatar } from "@/lib/avatar";
+import { getUserAvatar } from "@/lib/identityUI";
 import type { UserProfile } from "@/lib/userProfileService";
 import { deriveProfileContext, getBehaviorSegment, getRecentActions } from "@/lib/userProfileHelpers";
 
@@ -413,7 +414,29 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           <div className="mt-3 flex flex-wrap gap-2">
             {helpfulUsers.map((user) => (
               <span key={user.id} className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-sm text-slate-700 shadow-sm">
-                <img src={user.avatar_url || "/default-avatar.png"} alt={`${user.display_name} avatar`} className="h-5 w-5 rounded-full object-cover" />
+                <div className="transition-transform duration-200 hover:scale-105">
+                  {(() => {
+                    const avatar = getUserAvatar(user);
+                    if (avatar.type === "initials") {
+                      return (
+                        <div
+                          className={`h-5 w-5 rounded-full flex items-center justify-center text-white text-[9px] font-semibold bg-gradient-to-br ${avatar.gradient} border border-white/10 shadow-sm ring-1 ring-white/5`}
+                        >
+                          {avatar.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      );
+                    }
+                    return (
+                      <img
+                        src={avatar.src}
+                        alt={`${user.display_name} avatar`}
+                        className={`h-5 w-5 rounded-full object-cover border border-white/10 shadow-sm ring-1 ring-white/5 ${
+                          avatar.type === "dicebear" ? "opacity-90" : ""
+                        }`}
+                      />
+                    );
+                  })()}
+                </div>
                 {user.display_name}
               </span>
             ))}
@@ -450,12 +473,30 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
                 }`}
               >
               <div className="flex items-start gap-4">
-                <img
-                  src={user.avatar_url || "/default-avatar.png"}
-                  alt={`${user.display_name} avatar`}
-                  className="h-14 w-14 rounded-full border border-app bg-subtle object-cover shadow-sm"
-                  loading="lazy"
-                />
+                <div className="transition-transform duration-200 hover:scale-105">
+                  {(() => {
+                    const avatar = getUserAvatar(user);
+                    if (avatar.type === "initials") {
+                      return (
+                        <div
+                          className={`h-14 w-14 rounded-full flex items-center justify-center text-white text-base font-semibold bg-gradient-to-br ${avatar.gradient} border border-white/10 shadow-sm ring-1 ring-white/5`}
+                        >
+                          {avatar.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      );
+                    }
+                    return (
+                      <img
+                        src={avatar.src}
+                        alt={`${user.display_name} avatar`}
+                        className={`h-14 w-14 rounded-full object-cover border border-white/10 shadow-sm ring-1 ring-white/5 ${
+                          avatar.type === "dicebear" ? "opacity-90" : ""
+                        }`}
+                        loading="lazy"
+                      />
+                    );
+                  })()}
+                </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="truncate text-lg font-semibold text-app">
