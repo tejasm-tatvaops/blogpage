@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isRealPhotoAvatar } from "@/lib/avatar";
 import type { UserProfile } from "@/lib/userProfileService";
+import { deriveProfileContext, getBehaviorSegment, getRecentActions } from "@/lib/userProfileHelpers";
 
 type BreakdownData = {
   total: number;
@@ -28,20 +29,6 @@ type UserDirectoryProps = {
   };
 };
 
-type UsersSnapshot = {
-  users: UserProfile[];
-  totals: { blogViews: number; forumViews: number };
-  userTotals: { blogViews: number; forumViews: number };
-  savedAt: number;
-};
-
-const usersClientState = globalThis as typeof globalThis & {
-  __tatvaopsUsersLastGood?: UsersSnapshot | null;
-};
-if (!usersClientState.__tatvaopsUsersLastGood) {
-  usersClientState.__tatvaopsUsersLastGood = null;
-}
-
 const formatNumber = (value: number): string => new Intl.NumberFormat("en-US").format(value);
 const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -54,107 +41,6 @@ const formatRelative = (iso: string): string => {
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
-};
-
-const ROLE_POOL = [
-  "Site Engineer",
-  "Quantity Surveyor",
-  "Procurement Lead",
-  "Project Coordinator",
-  "Architectural Coordinator",
-  "Construction Planner",
-  "Project Manager",
-  "Vendor Manager",
-];
-const CITY_POOL = ["Bangalore", "Pune", "Hyderabad", "Chennai", "Mumbai", "Delhi", "Ahmedabad", "Kochi"];
-
-const hashForIndex = (value: string): number => {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-};
-
-const deriveProfileContext = (user: UserProfile): { role: string; city: string; years: number } => {
-  const seed = `${user.id}|${user.display_name}`;
-  const hash = hashForIndex(seed);
-  return {
-    role: ROLE_POOL[hash % ROLE_POOL.length]!,
-    city: CITY_POOL[(hash >> 2) % CITY_POOL.length]!,
-    years: (hash % 11) + 2,
-  };
-};
-
-const getBehaviorSegment = (user: UserProfile): { label: string; className: string } => {
-  const forumActions = user.forum_posts + user.forum_comments + user.forum_votes;
-  const totalActions = forumActions + user.blog_comments + user.blog_likes;
-  if (user.reputation_score >= 500 || forumActions >= 24) {
-    return { label: "Expert", className: "bg-violet-100 text-violet-700" };
-  }
-  if (totalActions >= 18) {
-    return { label: "Contributor", className: "bg-sky-100 text-sky-700" };
-  }
-  if (user.blog_views >= 25 || user.forum_views >= 12) {
-    return { label: "Reader", className: "bg-emerald-100 text-emerald-700" };
-  }
-  return { label: "Explorer", className: "bg-slate-100 text-slate-600" };
-};
-
-const buildWeeklySparkline = (user: UserProfile): number[] => {
-  const total =
-    user.blog_views +
-    user.forum_views * 2 +
-    user.blog_comments * 4 +
-    user.forum_comments * 4 +
-    user.forum_posts * 6 +
-    user.forum_votes * 2;
-  const seed = hashForIndex(`${user.id}|spark|${total}`);
-  return Array.from({ length: 7 }, (_, index) => {
-    const wave = ((seed >> (index % 12)) & 7) + 2;
-    const base = Math.max(1, Math.round(total / 35));
-    return Math.max(1, Math.min(16, base + wave + (index % 3)));
-  });
-};
-
-const getRecentActions = (user: UserProfile): Array<{ text: string; href: string }> => {
-  const actions: Array<{ text: string; href: string }> = [];
-  if (user.last_forum_slug) {
-    actions.push({
-      text: `Commented on forum thread ${user.last_forum_slug.replace(/-/g, " ")}`,
-      href: `/forums/${user.last_forum_slug}`,
-    });
-  }
-  if (user.last_blog_slug) {
-    actions.push({
-      text: `Read blog ${user.last_blog_slug.replace(/-/g, " ")}`,
-      href: `/blog/${user.last_blog_slug}`,
-    });
-  }
-  if (user.blog_likes > 0) {
-    actions.push({
-      text: `Reacted to ${user.blog_likes} posts this month`,
-      href: user.last_blog_slug ? `/blog/${user.last_blog_slug}` : "/blog",
-    });
-  }
-  if (actions.length === 0) {
-    actions.push({ text: "Browsing community updates", href: "/users" });
-  }
-  return actions.slice(0, 2);
-};
-
-const getTopicContributorHint = (user: UserProfile): string | null => {
-  const top = Object.entries(user.interest_tags)
-    .sort((a, b) => b[1] - a[1])[0]?.[0];
-  if (!top) return null;
-  if (user.forum_comments + user.forum_posts < 6) return null;
-  return `Frequent contributor in ${top.replace(/-/g, " ")}`;
-};
-
-const getSocialHint = (user: UserProfile): string | null => {
-  if (!user.frequent_peer_keys?.length) return null;
-  return "Often replies to familiar users";
 };
 
 const TIER_STYLES: Record<string, { label: string; className: string }> = {
@@ -274,10 +160,7 @@ function ForumGamification({ user }: { user: UserProfile }) {
 export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps) {
   const initialTotals = totals ?? { blogViews: 0, forumViews: 0 };
   const initialUserTotals = userTotals ?? { blogViews: 0, forumViews: 0 };
-  const initialLastGood = usersClientState.__tatvaopsUsersLastGood;
-  const initialUsers = (users?.length ?? 0) > 0
-    ? users
-    : (initialLastGood?.users ?? []);
+  const initialUsers = users ?? [];
 
   const [resolvedUsers, setResolvedUsers] = useState<UserProfile[]>(initialUsers);
   const [resolvedTotals, setResolvedTotals] = useState(initialTotals);
@@ -315,36 +198,15 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
       setBreakdownLoading(false);
     }
   };
-  const [tierFilter, setTierFilter] = useState<"all" | "elite" | "expert" | "contributor" | "member">("all");
-  const [segmentFilter, setSegmentFilter] = useState<"all" | "expert" | "contributor" | "reader" | "explorer">("all");
   const [activeOnly, setActiveOnly] = useState(false);
   const [gamifiedOnly, setGamifiedOnly] = useState(false);
-  const [booting, setBooting] = useState(true);
-  const [syncedAt, setSyncedAt] = useState<string>("");
 
   useEffect(() => {
-    const t = window.setTimeout(() => setBooting(false), 350);
-    return () => window.clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    setSyncedAt(new Date().toISOString());
-  }, []);
-
-  useEffect(() => {
-    const hasFreshUsers = (users?.length ?? 0) > 0;
-    const hasLastGood = (usersClientState.__tatvaopsUsersLastGood?.users.length ?? 0) > 0;
-    setResolvedUsers(hasFreshUsers ? users : (hasLastGood ? usersClientState.__tatvaopsUsersLastGood!.users : []));
-    setResolvedTotals(totals ?? (hasLastGood ? usersClientState.__tatvaopsUsersLastGood!.totals : { blogViews: 0, forumViews: 0 }));
-    setResolvedUserTotals(userTotals ?? (hasLastGood ? usersClientState.__tatvaopsUsersLastGood!.userTotals : { blogViews: 0, forumViews: 0 }));
     if ((users?.length ?? 0) > 0) {
+      setResolvedUsers(users);
+      setResolvedTotals(totals ?? { blogViews: 0, forumViews: 0 });
+      setResolvedUserTotals(userTotals ?? { blogViews: 0, forumViews: 0 });
       setLoading(false);
-      usersClientState.__tatvaopsUsersLastGood = {
-        users,
-        totals: totals ?? { blogViews: 0, forumViews: 0 },
-        userTotals: userTotals ?? { blogViews: 0, forumViews: 0 },
-        savedAt: Date.now(),
-      };
     }
   }, [users, totals, userTotals]);
 
@@ -377,21 +239,12 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
         setResolvedUsers(result.users);
         setResolvedTotals(result.totals);
         setResolvedUserTotals(result.userTotals);
-        if (result.users.length > 0) {
-          usersClientState.__tatvaopsUsersLastGood = {
-            users: result.users,
-            totals: result.totals,
-            userTotals: result.userTotals,
-            savedAt: Date.now(),
-          };
-        }
-        setSyncedAt(new Date().toISOString());
+        setLoading(false);
       } catch (error) {
         console.error(error);
+        setLoading(false);
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (cancelled) return;
       }
     };
 
@@ -403,59 +256,39 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
 
   const visibleUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const resolveIsReal = (user: UserProfile): boolean =>
-      ((typeof user.is_real === "boolean" ? user.is_real : undefined) ??
-        (user.user_type === "REAL")) ||
-      user.identity_key?.startsWith("google:") === true;
 
     const filtered = resolvedUsers.filter((user) => {
-      const isReal = resolveIsReal(user);
-      const isAnonymous = user.user_type === "ANONYMOUS" || (!isReal && user.user_type !== "AI");
       const matchesSearch =
         (user.display_name ?? "").toLowerCase().includes(q) ||
-        (user.about ?? "").toLowerCase().includes(q) ||
-        Object.keys(user.interest_tags).some((t) => t.includes(q)) ||
-        user.reputation_tier.toLowerCase().includes(q) ||
-        (user.forum_badges ?? []).some((badge) => badge.toLowerCase().includes(q));
+        (user.about ?? "").toLowerCase().includes(q);
 
       // Search should behave like a directory lookup and bypass activity-style filters.
       if (q) return matchesSearch;
 
+      if (userTypeFilter !== "all" && user.user_type !== userTypeFilter) return false;
       if (photosOnly && !isRealPhotoAvatar(user.avatar_url)) return false;
-      if (userTypeFilter === "REAL" && !isReal) return false;
-      if (userTypeFilter === "ANONYMOUS" && !isAnonymous) return false;
-      if (userTypeFilter === "AI" && user.user_type !== "AI") return false;
-      if (tierFilter !== "all" && user.reputation_tier !== tierFilter) return false;
-      const segment = getBehaviorSegment(user).label.toLowerCase() as "expert" | "contributor" | "reader" | "explorer";
-      if (segmentFilter !== "all" && segment !== segmentFilter) return false;
-      // Always include REAL users in the directory; apply activity-only gates to non-REAL users.
-      if (!isReal && activeOnly && !user.is_active_now) return false;
+      if (activeOnly && !user.is_active_now) return false;
       if (
-        !isReal &&
         gamifiedOnly &&
         (user.forum_badges?.length ?? 0) === 0 &&
         (user.forum_quality_streak_days ?? 0) <= 0
-      ) {
-        return false;
-      }
+      ) return false;
       return true;
     });
 
     const sorted = [...filtered];
-    const realFirst = (a: UserProfile, b: UserProfile) =>
-      (resolveIsReal(b) ? 1 : 0) - (resolveIsReal(a) ? 1 : 0);
     sorted.sort((a, b) => {
-      if (sortBy === "blog_views") return b.blog_views - a.blog_views || realFirst(a, b);
+      if (sortBy === "blog_views") return b.blog_views - a.blog_views;
       if (sortBy === "forum_activity") {
         const aForum = a.forum_posts + a.forum_comments + a.forum_votes;
         const bForum = b.forum_posts + b.forum_comments + b.forum_votes;
-        return bForum - aForum || realFirst(a, b);
+        return bForum - aForum;
       }
-      if (sortBy === "reputation") return b.reputation_score - a.reputation_score || realFirst(a, b);
-      return realFirst(a, b) || new Date(b.last_seen_at).getTime() - new Date(a.last_seen_at).getTime();
+      if (sortBy === "reputation") return b.reputation_score - a.reputation_score;
+      return new Date(b.last_seen_at).getTime() - new Date(a.last_seen_at).getTime();
     });
     return sorted;
-  }, [resolvedUsers, query, sortBy, photosOnly, userTypeFilter, tierFilter, segmentFilter, activeOnly, gamifiedOnly]);
+  }, [resolvedUsers, query, sortBy, photosOnly, userTypeFilter, activeOnly, gamifiedOnly]);
 
   const safeTotals = resolvedTotals ?? { blogViews: 0, forumViews: 0 };
   const safeUserTotals = resolvedUserTotals ?? { blogViews: 0, forumViews: 0 };
@@ -481,9 +314,6 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           A live directory of readers and contributors who have interacted with TatvaOps through blog
           reading, comments, forum discussions, and community activity.
         </p>
-        {syncedAt && (
-          <p className="mt-2 text-xs text-slate-400">Last synced: {new Date(syncedAt).toLocaleString()}</p>
-        )}
       </header>
 
       <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -548,28 +378,6 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           <option value="ANONYMOUS">Anonymous Users</option>
           <option value="AI">AI Users</option>
         </select>
-        <select
-          value={tierFilter}
-          onChange={(e) => setTierFilter(e.target.value as "all" | "elite" | "expert" | "contributor" | "member")}
-          className="rounded-lg border border-app bg-surface px-3 py-2 text-sm"
-        >
-          <option value="all">All reputation</option>
-          <option value="elite">Elite</option>
-          <option value="expert">Expert</option>
-          <option value="contributor">Contributor</option>
-          <option value="member">Member</option>
-        </select>
-        <select
-          value={segmentFilter}
-          onChange={(e) => setSegmentFilter(e.target.value as "all" | "expert" | "contributor" | "reader" | "explorer")}
-          className="rounded-lg border border-app bg-surface px-3 py-2 text-sm"
-        >
-          <option value="all">All segments</option>
-          <option value="expert">Expert</option>
-          <option value="contributor">Contributor</option>
-          <option value="reader">Reader</option>
-          <option value="explorer">Explorer</option>
-        </select>
         <label className="inline-flex items-center gap-2 rounded-lg border border-app px-3 py-2 text-sm text-slate-600">
           <input
             type="checkbox"
@@ -605,7 +413,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           <div className="mt-3 flex flex-wrap gap-2">
             {helpfulUsers.map((user) => (
               <span key={user.id} className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-sm text-slate-700 shadow-sm">
-                <img src={user.avatar ?? user.avatar_url} alt={`${user.display_name} avatar`} className="h-5 w-5 rounded-full object-cover" />
+                <img src={user.avatar_url || "/default-avatar.png"} alt={`${user.display_name} avatar`} className="h-5 w-5 rounded-full object-cover" />
                 {user.display_name}
               </span>
             ))}
@@ -613,7 +421,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
         </div>
       )}
 
-      {booting || loading ? (
+      {loading ? (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 9 }).map((_, index) => (
             <div key={index} className="h-52 animate-pulse rounded-3xl bg-slate-100" />
@@ -629,25 +437,21 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {visibleUsers.map((user, idx) => {
             const isTop3 = sortBy === "reputation" && idx < 3;
+            const context = deriveProfileContext(user);
+            const segment = getBehaviorSegment(user);
+            const actions = getRecentActions(user);
             return (
-            <article
-              key={user.id}
-              className={`rounded-3xl border bg-surface p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
-                isTop3
-                  ? "border-amber-300 ring-1 ring-amber-200 shadow-amber-100"
-                  : "border-app"
-              }`}
-            >
-              {(() => {
-                const context = deriveProfileContext(user);
-                const segment = getBehaviorSegment(user);
-                const sparkline = buildWeeklySparkline(user);
-                const actions = getRecentActions(user);
-                return (
-                  <>
+              <article
+                key={user.id}
+                className={`rounded-3xl border bg-surface p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                  isTop3
+                    ? "border-amber-300 ring-1 ring-amber-200 shadow-amber-100"
+                    : "border-app"
+                }`}
+              >
               <div className="flex items-start gap-4">
                 <img
-                  src={user.avatar ?? user.avatar_url}
+                  src={user.avatar_url || "/default-avatar.png"}
                   alt={`${user.display_name} avatar`}
                   className="h-14 w-14 rounded-full border border-app bg-subtle object-cover shadow-sm"
                   loading="lazy"
@@ -742,10 +546,6 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
               <div className="mt-4 space-y-1.5 text-sm text-slate-500">
                 <p className="text-xs text-slate-400">Seen {formatRelative(user.last_seen_at)}</p>
                 <p className="text-xs text-slate-400">Joined {formatDate(user.created_at)}</p>
-                {getTopicContributorHint(user) ? (
-                  <p className="text-xs text-indigo-600">{getTopicContributorHint(user)}</p>
-                ) : null}
-                {getSocialHint(user) ? <p className="text-xs text-slate-500">{getSocialHint(user)}</p> : null}
                 {user.last_blog_slug ? (
                   <p>
                     Last blog:{" "}
@@ -772,28 +572,12 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
                     ))}
                   </div>
                 </div>
-                <div className="pt-1">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Weekly activity</p>
-                  <div className="mt-1 flex items-end gap-1">
-                    {sparkline.map((bar, index) => (
-                      <span
-                        key={`${user.id}-spark-${index}`}
-                        className="w-2 rounded-sm bg-slate-300/90"
-                        style={{ height: `${bar}px` }}
-                        aria-hidden
-                      />
-                    ))}
-                  </div>
-                </div>
                 <p className="text-[11px] text-slate-400">
                   Profile derived from activity signals and updated automatically.
                 </p>
               </div>
-                  </>
-                );
-              })()}
-            </article>
-          );
+              </article>
+            );
           })}
         </div>
       )}
