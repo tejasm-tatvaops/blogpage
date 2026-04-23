@@ -21,60 +21,65 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
-    "/api/blog/[slug]/comments/route": [
+    "/api/auth/[...nextauth]/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/blog/[slug]/comments/route.js"
+      "static/chunks/app/api/auth/[...nextauth]/route.js"
     ],
     "/api/notifications/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/notifications/route.js"
     ],
-    "/api/auth/[...nextauth]/route": [
+    "/api/blog/[slug]/comments/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/auth/[...nextauth]/route.js"
+      "static/chunks/app/api/blog/[slug]/comments/route.js"
     ],
-    "/admin/layout": [
+    "/blog/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/layout.js"
+      "static/chunks/app/blog/page.js"
     ],
-    "/admin/login/page": [
+    "/api/users/preferences/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/login/page.js"
+      "static/chunks/app/api/users/preferences/route.js"
     ],
-    "/api/admin/login/route": [
+    "/blog/[slug]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/login/route.js"
+      "static/chunks/app/blog/[slug]/page.js"
     ],
-    "/admin/(dashboard)/layout": [
+    "/api/trending/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/(dashboard)/layout.js"
+      "static/chunks/app/api/trending/route.js"
     ],
-    "/admin/(dashboard)/blog/page": [
+    "/api/blog/[slug]/view/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/(dashboard)/blog/page.js"
+      "static/chunks/app/api/blog/[slug]/view/route.js"
     ],
-    "/api/admin/activity/toggle/route": [
+    "/api/feed/events/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/activity/toggle/route.js"
+      "static/chunks/app/api/feed/events/route.js"
     ],
-    "/users/page": [
+    "/forums/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/users/page.js"
+      "static/chunks/app/forums/layout.js"
     ],
-    "/api/users/route": [
+    "/forums/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/users/route.js"
+      "static/chunks/app/forums/page.js"
+    ],
+    "/api/forums/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/forums/route.js"
     ]
   }
 }

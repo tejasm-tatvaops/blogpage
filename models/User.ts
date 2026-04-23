@@ -6,6 +6,8 @@ const userSchema = new mongoose.Schema(
     username: { type: String, trim: true, lowercase: true, unique: true, sparse: true },
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
     image: { type: String, default: null },
+    points: { type: Number, default: 0 },
+    level: { type: String, default: "Bronze" },
     createdAt: { type: Date, default: Date.now },
   },
   { versionKey: false },

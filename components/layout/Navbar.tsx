@@ -3,6 +3,7 @@ import Link from "next/link";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { NavbarAuthButton } from "@/components/layout/NavbarAuthButton";
+import UserStatsBadge from "@/components/navbar/UserStatsBadge";
 
 export function Navbar() {
   const navPillClass = [
@@ -14,16 +15,19 @@ export function Navbar() {
     <header className="border-b border-app bg-app transition">
       <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between px-6 py-4">
 
-        <Link href="/" className="flex items-center gap-2.5" aria-label="TatvaOps home">
-          <Image
-            src="/tatvaops-logo.png"
-            alt="TatvaOps"
-            width={286}
-            height={72}
-            className="h-14 w-auto sm:h-16 dark:brightness-90"
-            priority
-          />
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-2.5" aria-label="TatvaOps home">
+            <Image
+              src="/tatvaops-logo.png"
+              alt="TatvaOps"
+              width={286}
+              height={72}
+              className="h-14 w-auto sm:h-16 dark:brightness-90"
+              priority
+            />
+          </Link>
+          <UserStatsBadge />
+        </div>
 
         <nav className="flex flex-wrap items-center gap-2">
           <Link href="/"          className={navPillClass}>Home</Link>

@@ -1,11 +1,1 @@
-{
-  "version": 4,
-  "routes": {},
-  "dynamicRoutes": {},
-  "notFoundRoutes": [],
-  "preview": {
-    "previewModeId": "f4c926b560025fa092e89af2224f8549",
-    "previewModeSigningKey": "acba675c39000c04e3fe45e07b3255ad604b38aa6d8c9b4fd29ae8f4b43e5758",
-    "previewModeEncryptionKey": "4d071a07750a14600747839652c47fd7e000b75f94d2c069fa98a7e13d378fc5"
-  }
-}
+{"version":4,"routes":{"/blog/house-construction-cost-in-miyapur-hyderabad-2026":{},"/blog/construction-cost-per-sq-ft-in-pune":{},"/blog/cost-to-build-a-house-in-bangalore":{},"/blog/exploring-fluent-player-pro-a-comprehensive-walkthrough":{},"/blog/transform-your-home-with-tatvaops-a-revolutionary-approach-to-construction-and-renovation":{},"/blog/new-construction-materials-trends-innovations":{},"/blog/interior-design-trends-2026":{},"/blog/bangalore-boq-construction-efficiency":{},"/blog/house-construction-cost-in-baner-pune-2026":{},"/blog/construction-cost-per-sq-ft-in-kukatpally-hyderabad":{},"/blog/cost-to-build-a-house-in-kharadi-pune":{},"/blog/house-construction-cost-gachibowli-hyderabad-2026":{},"/blog/construction-cost-per-sq-ft-kharadi-pune":{},"/blog/cost-to-build-house-electronic-city-bangalore":{},"/blog/house-construction-cost-tambaram-chennai-2026":{},"/blog/construction-cost-hinjewadi-pune":{},"/blog/house-construction-cost-bangalore-2026":{},"/blog/cost-to-build-house-velachery-chennai":{},"/blog/construction-cost-sarjapur-road-bangalore":{},"/blog/construction-cost-per-sq-ft-baner-pune":{},"/blog/construction-cost-per-sq-ft-tambaram-chennai":{},"/blog/house-construction-cost-chennai-2026":{},"/blog/construction-cost-per-sq-ft-electronic-city-bangalore":{},"/blog/cost-to-build-house-miyapur-hyderabad":{},"/blog/boq-explained-for-beginners-drawings-to-reliable-costs":{},"/blog/construction-cost-per-sq-ft-in-hyderabad-local-factors":{},"/blog/cost-to-build-house-in-bangalore-2026-practical-guide":{}},"dynamicRoutes":{"/blog/[slug]":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/blog/[slug]","routeRegex":"^\\/blog\\/([^/]+?)(?:\\/)?$","allowHeader":[]}},"notFoundRoutes":[],"preview":{"previewModeId":"3d2a6da1414cdf8c0e5c08be896296a2","previewModeSigningKey":"a43ee9312f3a8bbbe5ecf1ba7a9196ab4ba2f178062acb47254b4d42f51b2b16","previewModeEncryptionKey":"f79fa2a30b064a28f7115958c10d3e3600c25e54d6917fbd8510fdc995aa65c6"}}

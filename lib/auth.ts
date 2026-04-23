@@ -30,6 +30,8 @@ export const authOptions: NextAuthOptions = {
             $setOnInsert: {
               username: buildUsernameFromEmail(email),
               email,
+              points: 0,
+              level: "Bronze",
               createdAt: new Date(),
             },
             $set: {
@@ -63,13 +65,27 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.picture = user.image;
       }
+      if (token.email) {
+        await connectToDatabase();
+        const dbUser = await AuthUserModel.findOne({ email: String(token.email).toLowerCase() })
+          .select("_id points level")
+          .lean();
+        if (dbUser?._id) {
+          token.id = String(dbUser._id);
+          token.points = Number((dbUser as { points?: number }).points ?? 0);
+          token.level = String((dbUser as { level?: string }).level ?? "Bronze");
+        }
+      }
       return token;
     },
     async session({ session, token }) {
       session.user = {
+        id: (token.id as string) ?? "",
         name: (token.name as string) ?? null,
         email: (token.email as string) ?? null,
         image: (token.picture as string) ?? null,
+        points: Number((token.points as number | undefined) ?? 0),
+        level: String((token.level as string | undefined) ?? "Bronze"),
       };
       return session;
     },
