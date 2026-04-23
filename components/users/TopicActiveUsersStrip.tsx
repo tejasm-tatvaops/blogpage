@@ -47,6 +47,7 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
         {users.slice(0, 8).map((user) => {
           const isLegacy = ("is_legacy" in user) && Boolean(user.is_legacy);
           const rep = user.reputation_score ?? 0;
+          const engagement = ("engagement_score" in user ? user.engagement_score : 0) ?? 0;
           const tier = TIER_CONFIG[user.reputation_tier] ?? TIER_CONFIG.member!;
           const href = user.last_forum_slug
             ? `/forums/${user.last_forum_slug}`
@@ -107,18 +108,22 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
               </p>
 
               {/* Reputation score */}
-              <div className="flex items-center gap-1 text-[10px] font-semibold">
-                {rep > 0 ? (
-                  <>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-amber-600" aria-hidden>
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
-                    <span className="text-amber-600">{rep.toLocaleString()} pts</span>
-                  </>
-                ) : (
-                  <span className="text-slate-400">New</span>
-                )}
-              </div>
+              {rep > 0 ? (
+                <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-600">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  {rep.toLocaleString()} pts
+                </div>
+              ) : engagement > 0 ? (
+                <div className="flex items-center gap-1 text-[10px] font-semibold text-sky-600">
+                  ⚡ {Math.round(engagement * 10)} engagement
+                </div>
+              ) : (
+                <div className="text-[10px] text-slate-400">
+                  New user
+                </div>
+              )}
               {("engagement_labels" in user) && user.engagement_labels.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">
                   {user.engagement_labels.map((label) => (

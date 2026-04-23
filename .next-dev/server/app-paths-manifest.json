@@ -1,5 +1,4 @@
 {
-  "/api/blog/[slug]/comments/route": "app/api/blog/[slug]/comments/route.js",
-  "/blog/[slug]/page": "app/blog/[slug]/page.js",
-  "/blog/page": "app/blog/page.js"
+  "/blog/page": "app/blog/page.js",
+  "/blog/[slug]/page": "app/blog/[slug]/page.js"
 }
