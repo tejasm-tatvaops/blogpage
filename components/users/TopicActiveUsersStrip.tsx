@@ -83,6 +83,11 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
                     <p className="truncate text-xs font-semibold text-slate-800 group-hover:text-sky-700">
                       {user.display_name}
                     </p>
+                    {isLegacy && (
+                      <span className="rounded-full border border-slate-200 bg-slate-100 px-1.5 py-px text-[8px] font-medium uppercase tracking-wide text-slate-500">
+                        Legacy
+                      </span>
+                    )}
                     <span
                       className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${
                         user.user_type === "REAL" ? "bg-green-500" : "bg-gray-400"

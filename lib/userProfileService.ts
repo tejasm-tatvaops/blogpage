@@ -1022,7 +1022,7 @@ export const getMostEngagedUsersByPost = async (
 
   const windowStart = new Date(Date.now() - ENGAGEMENT_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const now = new Date();
-  const validIdentityRegex = /^(fp:|ip:|google:)/;
+  const validIdentityRegex = /^(fp:|ip:|google:|legacy:)/;
   const commentCollection = CommentModel.collection.name;
   const profileCollection = UserProfileModel.collection.name;
   const candidateLimit = Math.max(Math.max(1, limit), 20);
@@ -1323,7 +1323,7 @@ export const getMostEngagedUsersByPost = async (
       { identity_key: { $exists: false } },
       { identity_key: null },
       { identity_key: "" },
-      { identity_key: { $not: /^(fp:|ip:|google:)/ } },
+      { identity_key: { $not: /^(fp:|ip:|google:|legacy:)/ } },
     ],
   })
     .sort({ created_at: -1 })
