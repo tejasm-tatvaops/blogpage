@@ -16,11 +16,16 @@ export async function GET() {
       getPlatformViewTotals().catch(() => ({ blogViews: 0, forumViews: 0 })),
       getUserProfileViewTotals().catch(() => ({ blogViews: 0, forumViews: 0 })),
     ]);
+    const enrichedUsers = (users || []).map((user) => ({
+      ...user,
+      is_real: user.identity_key.startsWith("google:"),
+      is_anonymous: user.user_type === "ANONYMOUS",
+    }));
 
     console.log("users fetched:", users.length);
     return NextResponse.json(
       {
-        users: users || [],
+        users: enrichedUsers,
         totals: totals || { blogViews: 0, forumViews: 0 },
         userTotals: userTotals || { blogViews: 0, forumViews: 0 },
       },

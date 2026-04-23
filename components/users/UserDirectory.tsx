@@ -45,6 +45,7 @@ if (!usersClientState.__tatvaopsUsersLastGood) {
 const formatNumber = (value: number): string => new Intl.NumberFormat("en-US").format(value);
 const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const shortIdentityId = (identityKey: string): string => identityKey.slice(-6).toUpperCase();
 const formatRelative = (iso: string): string => {
   const ts = new Date(iso).getTime();
   const diff = Date.now() - ts;
@@ -163,17 +164,25 @@ const TIER_STYLES: Record<string, { label: string; className: string }> = {
   member:      { label: "Member",      className: "bg-slate-100 text-slate-600 border border-app" },
 };
 
-function UserTypeBadge({ userType }: { userType: "AI" | "REAL" }) {
+function UserTypeBadge({ userType }: { userType: UserProfile["user_type"] }) {
   if (userType === "REAL") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
-        Real User
+      <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+        <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+        Verified
+      </span>
+    );
+  }
+  if (userType === "ANONYMOUS") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+        Guest
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">
-      AI User
+    <span className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700">
+      System
     </span>
   );
 }
@@ -278,7 +287,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "blog_views" | "forum_activity" | "reputation">("recent");
   const [photosOnly, setPhotosOnly] = useState(false);
-  const [userTypeFilter, setUserTypeFilter] = useState<"all" | "AI" | "REAL">("all");
+  const [userTypeFilter, setUserTypeFilter] = useState<"all" | "AI" | "REAL" | "ANONYMOUS">("all");
 
   // Breakdown panel: which card is open + locally cached results (no re-fetch)
   const [openBreakdownId, setOpenBreakdownId] = useState<string | null>(null);
@@ -439,7 +448,9 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
     const q = query.trim().toLowerCase();
     const filtered = resolvedUsers.filter((user) => {
       if (photosOnly && !isRealPhotoAvatar(user.avatar_url)) return false;
-      if (userTypeFilter !== "all" && user.user_type !== userTypeFilter) return false;
+      if (userTypeFilter === "REAL" && !user.identity_key.startsWith("google:")) return false;
+      if (userTypeFilter === "ANONYMOUS" && user.user_type !== "ANONYMOUS") return false;
+      if (userTypeFilter === "AI" && user.user_type !== "AI") return false;
       if (tierFilter !== "all" && user.reputation_tier !== tierFilter) return false;
       const segment = getBehaviorSegment(user).label.toLowerCase() as "expert" | "contributor" | "reader" | "explorer";
       if (segmentFilter !== "all" && segment !== segmentFilter) return false;
@@ -459,7 +470,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
 
     const sorted = [...filtered];
     const realFirst = (a: UserProfile, b: UserProfile) =>
-      (b.user_type === "REAL" ? 1 : 0) - (a.user_type === "REAL" ? 1 : 0);
+      (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0);
     sorted.sort((a, b) => {
       if (sortBy === "blog_views") return b.blog_views - a.blog_views || realFirst(a, b);
       if (sortBy === "forum_activity") {
@@ -564,11 +575,12 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
         )}
         <select
           value={userTypeFilter}
-          onChange={(e) => setUserTypeFilter(e.target.value as "all" | "AI" | "REAL")}
+          onChange={(e) => setUserTypeFilter(e.target.value as "all" | "AI" | "REAL" | "ANONYMOUS")}
           className="rounded-lg border border-app bg-surface px-3 py-2 text-sm"
         >
           <option value="all">All user types</option>
           <option value="REAL">Real Users</option>
+          <option value="ANONYMOUS">Anonymous Users</option>
           <option value="AI">AI Users</option>
         </select>
         <select
@@ -628,7 +640,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           <div className="mt-3 flex flex-wrap gap-2">
             {helpfulUsers.map((user) => (
               <span key={user.id} className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-sm text-slate-700 shadow-sm">
-                <img src={user.avatar_url} alt={`${user.display_name} avatar`} className="h-5 w-5 rounded-full object-cover" />
+                <img src={user.avatar ?? user.avatar_url} alt={`${user.display_name} avatar`} className="h-5 w-5 rounded-full object-cover" />
                 {user.display_name}
               </span>
             ))}
@@ -670,14 +682,21 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
                   <>
               <div className="flex items-start gap-4">
                 <img
-                  src={user.avatar_url}
+                  src={user.avatar ?? user.avatar_url}
                   alt={`${user.display_name} avatar`}
                   className="h-14 w-14 rounded-full border border-app bg-subtle object-cover shadow-sm"
                   loading="lazy"
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="truncate text-lg font-semibold text-app">{user.display_name}</h2>
+                    <h2 className="truncate text-lg font-semibold text-app">
+                      {user.display_name}
+                      {user.user_type === "ANONYMOUS" && (
+                        <span className="ml-2 text-xs font-medium text-gray-400">
+                          · {shortIdentityId(user.identity_key)}
+                        </span>
+                      )}
+                    </h2>
                     <ReputationBadge tier={user.reputation_tier} score={user.reputation_score} />
                     <UserTypeBadge userType={user.user_type} />
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${segment.className}`}>

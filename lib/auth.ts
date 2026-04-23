@@ -2,6 +2,13 @@ import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { connectToDatabase } from "@/lib/mongodb";
 import { AuthUserModel } from "@/models/User";
+import { ensureUserProfileForIdentity } from "@/lib/userProfileService";
+
+const buildUsernameFromEmail = (email: string): string => {
+  const [local] = email.toLowerCase().split("@");
+  const sanitized = (local ?? "member").replace(/[^a-z0-9._-]/g, "");
+  return sanitized || "member";
+};
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -13,23 +20,40 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   callbacks: {
     async signIn({ user }) {
-      if (!user.email) return false;
+      if (!user.email) return true;
       try {
         await connectToDatabase();
-        await AuthUserModel.findOneAndUpdate(
-          { email: user.email },
+        const email = user.email.toLowerCase();
+        const dbUser = await AuthUserModel.findOneAndUpdate(
+          { email },
           {
             $setOnInsert: {
-              name: user.name ?? "User",
-              email: user.email,
-              image: user.image ?? null,
+              username: buildUsernameFromEmail(email),
+              email,
               createdAt: new Date(),
             },
+            $set: {
+              name: user.name ?? "User",
+              image: user.image ?? null,
+            },
           },
-          { upsert: true },
+          { upsert: true, new: true },
         );
-      } catch {
-        return false;
+        if (dbUser?._id) {
+          await ensureUserProfileForIdentity({
+            identityKey: `google:${dbUser._id.toString()}`,
+            displayName:
+              (typeof (dbUser as { username?: string }).username === "string" &&
+                (dbUser as { username?: string }).username) ||
+              dbUser.name ||
+              user.name ||
+              email,
+            avatarSeed: dbUser._id.toString(),
+          });
+        }
+      } catch (error) {
+        console.error("signIn enrichment error", error);
+        return true;
       }
       return true;
     },

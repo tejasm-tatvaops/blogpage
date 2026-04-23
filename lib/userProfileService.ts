@@ -7,7 +7,9 @@ import { ForumPostModel } from "@/models/ForumPost";
 import { ForumVoteModel } from "@/models/ForumVote";
 import { ViewEventModel } from "@/models/ViewEvent";
 import { BlogModel } from "@/models/Blog";
+import { AuthUserModel } from "@/models/User";
 import { FAKE_USERS } from "@/lib/fakeUsers";
+import { deriveUserType, type IdentityUserType } from "@/lib/identity";
 import {
   getAvatarForIdentity,
   getGeneratedAvatarForIdentity,
@@ -23,7 +25,9 @@ export type UserProfile = {
   display_name: string;
   about: string;
   avatar_url: string;
-  user_type: "AI" | "REAL";
+  avatar?: string;
+  is_real?: boolean;
+  user_type: IdentityUserType;
   blog_views: number;
   forum_views: number;
   blog_comments: number;
@@ -107,22 +111,13 @@ type UserActivityInput = {
   category?: string | null;
 };
 
-// fp:, ip:, google: prefixes → verified real human sessions.
-// seed:, author:, ua: → synthetic / bot users.
-const deriveUserType = (identityKey: string): "AI" | "REAL" =>
-  identityKey.startsWith("fp:") ||
-  identityKey.startsWith("ip:") ||
-  identityKey.startsWith("google:")
-    ? "REAL"
-    : "AI";
-
 const toUserProfile = (doc: {
   _id: { toString(): string };
   identity_key?: string;
   display_name: string;
   about: string;
   avatar_url: string;
-  user_type?: "AI" | "REAL";
+  user_type?: IdentityUserType;
   blog_views?: number;
   forum_views?: number;
   blog_comments?: number;
@@ -159,6 +154,8 @@ const toUserProfile = (doc: {
   display_name: doc.display_name,
   about: doc.about,
   avatar_url: doc.avatar_url,
+  avatar: doc.avatar_url,
+  is_real: (doc.user_type ?? deriveUserType(doc.identity_key ?? "")) === "REAL",
   user_type: doc.user_type ?? deriveUserType(doc.identity_key ?? ""),
   blog_views: doc.blog_views ?? 0,
   forum_views: doc.forum_views ?? 0,
@@ -196,6 +193,100 @@ const toUserProfile = (doc: {
   created_at: doc.created_at.toISOString(),
   last_seen_at: doc.last_seen_at.toISOString(),
 });
+
+export const resolveUserIdentities = async (profiles: UserProfile[]): Promise<UserProfile[]> => {
+  const googleIds = profiles
+    .map((profile) => profile.identity_key)
+    .filter((identityKey) => identityKey.startsWith("google:"))
+    .map((identityKey) => identityKey.replace("google:", ""));
+  const anonymousIdentityKeys = profiles
+    .map((profile) => profile.identity_key)
+    .filter((identityKey) => identityKey.startsWith("fp:") || identityKey.startsWith("ip:"));
+
+  const anonymousNameRows = anonymousIdentityKeys.length > 0
+    ? await CommentModel.aggregate<{ _id: string; latest_author_name: string }>([
+      {
+        $match: {
+          identity_key: { $in: [...new Set(anonymousIdentityKeys)] },
+          author_name: { $exists: true, $type: "string", $nin: ["", "Anonymous", "[deleted]"] },
+        },
+      },
+      { $sort: { created_at: -1 } },
+      {
+        $group: {
+          _id: "$identity_key",
+          latest_author_name: { $first: "$author_name" },
+        },
+      },
+    ])
+    : [];
+  const anonymousNameMap = new Map(
+    anonymousNameRows.map((row) => [row._id, String(row.latest_author_name || "").trim()]),
+  );
+  const shortIdFor = (identityKey: string): string =>
+    identityKey.slice(-6).toUpperCase() || "GUEST";
+
+  if (googleIds.length === 0) {
+    return profiles.map((profile) => ({
+      ...profile,
+      display_name:
+        profile.user_type === "ANONYMOUS"
+          ? anonymousNameMap.get(profile.identity_key) || `User ${shortIdFor(profile.identity_key)}`
+          : (profile.display_name || "TatvaOps User"),
+      avatar: profile.avatar_url,
+      is_real: false,
+    }));
+  }
+
+  const users = await AuthUserModel.find({ _id: { $in: googleIds } })
+    .select("_id username name image")
+    .lean();
+  const userMap = new Map<string, { username?: string; name?: string; image?: string | null }>(
+    users.map((user) => [
+      String(user._id),
+      {
+        username: typeof (user as { username?: unknown }).username === "string" ? (user as { username?: string }).username : undefined,
+        name: typeof (user as { name?: unknown }).name === "string" ? (user as { name?: string }).name : undefined,
+        image: typeof (user as { image?: unknown }).image === "string" ? (user as { image?: string }).image : null,
+      },
+    ]),
+  );
+
+  return profiles.map((profile) => {
+    if (profile.identity_key.startsWith("google:")) {
+      const id = profile.identity_key.replace("google:", "");
+      const user = userMap.get(id);
+      const preferredName = (user?.username || user?.name || profile.display_name || "").trim();
+      const safeName =
+        preferredName && !/^tatvaops user\b/i.test(preferredName) ? preferredName : "Member";
+      const preferredAvatar = user?.image?.trim() || profile.avatar_url;
+
+      return {
+        ...profile,
+        display_name: safeName,
+        avatar_url: preferredAvatar,
+        avatar: preferredAvatar,
+        is_real: true,
+      };
+    }
+
+    if (profile.user_type === "ANONYMOUS") {
+      return {
+        ...profile,
+        display_name: anonymousNameMap.get(profile.identity_key) || `User ${shortIdFor(profile.identity_key)}`,
+        avatar: profile.avatar_url,
+        is_real: false,
+      };
+    }
+
+    return {
+      ...profile,
+      display_name: profile.display_name || "TatvaOps User",
+      avatar: profile.avatar_url,
+      is_real: false,
+    };
+  });
+};
 
 const getIpAddress = (request: Request): string | null =>
   request.headers.get("cf-connecting-ip") ??
@@ -261,6 +352,66 @@ const buildHistoricalAvatar = (identityKey: string, displayName?: string | null)
 
 const buildBehaviorSeed = (identityKey: string, displayName?: string | null): ReturnType<typeof buildBehaviorProfile> =>
   buildBehaviorProfile(`${identityKey}|${displayName ?? ""}`);
+
+export const ensureUserProfileForIdentity = async ({
+  identityKey,
+  displayName,
+  about,
+  avatarSeed,
+}: {
+  identityKey: string;
+  displayName?: string | null;
+  about?: string | null;
+  avatarSeed?: string | null;
+}): Promise<void> => {
+  const safeIdentityKey = identityKey.trim();
+  if (!safeIdentityKey) return;
+
+  await connectToDatabase();
+
+  const safeName = displayName?.trim() || buildDisplayName(safeIdentityKey);
+  const safeAbout =
+    about?.trim() ||
+    "Member profile synchronized from authenticated session and platform activity.";
+  const behavior = buildBehaviorSeed(safeIdentityKey, safeName);
+  const derivedType = deriveUserType(safeIdentityKey);
+
+  await UserProfileModel.findOneAndUpdate(
+    { identity_key: safeIdentityKey },
+    {
+      $setOnInsert: {
+        identity_key: safeIdentityKey,
+        avatar_url: buildAvatarUrl(avatarSeed ?? safeIdentityKey, safeName),
+        display_name: safeName,
+        about: safeAbout,
+        user_type: derivedType,
+        reputation_score: 0,
+        reputation_tier: "member",
+        interest_tags: {},
+        blog_likes: 0,
+        behavior_type: behavior.behaviorType,
+        writing_tone: behavior.writingTone,
+        active_start_hour: behavior.activeStartHour,
+        active_end_hour: behavior.activeEndHour,
+        weekend_activity_multiplier: behavior.weekendActivityMultiplier,
+        burstiness: behavior.burstiness,
+        silence_bias: behavior.silenceBias,
+        emoji_level: behavior.emojiLevel,
+        social_cluster: behavior.socialCluster,
+        frequent_peer_keys: [],
+        topic_focus_history: behavior.topicFocus,
+        topic_shift_count: 0,
+      },
+      $set: {
+        display_name: safeName,
+        last_seen_at: new Date(),
+        // Keep classification aligned if profile existed from old/incorrect migrations.
+        user_type: derivedType,
+      },
+    },
+    { upsert: true },
+  ).lean();
+};
 
 // ─── Name / profile pools ─────────────────────────────────────────────────────
 
@@ -932,7 +1083,8 @@ export const getUserProfiles = async (limit = 120): Promise<UserProfile[]> => {
     .limit(Math.min(Math.max(limit, 1), 1200))
     .lean();
 
-  return docs.map((doc) => toUserProfile(doc as never));
+  const profiles = docs.map((doc) => toUserProfile(doc as never));
+  return resolveUserIdentities(profiles);
 };
 
 export const getPlatformViewTotals = async (): Promise<PlatformViewTotals> => {
@@ -1039,7 +1191,7 @@ export const getMostEngagedUsersByPost = async (
       display_name: string;
       about: string;
       avatar_url: string;
-      user_type?: "AI" | "REAL";
+      user_type?: IdentityUserType;
       blog_views?: number;
       forum_views?: number;
       blog_comments?: number;
@@ -1275,11 +1427,12 @@ export const getMostEngagedUsersByPost = async (
       $addFields: {
         rep_score: { $log10: { $add: [{ $ifNull: ["$profile.reputation_score", 0] }, 1] } },
         real_boost: { $cond: [{ $eq: ["$profile.user_type", "REAL"] }, 0.5, 0] },
+        legacy_penalty: { $cond: [{ $eq: ["$profile.user_type", "AI"] }, -0.5, 0] },
       },
     },
     {
       $addFields: {
-        engagement_score: { $add: ["$event_score", "$rep_score", "$real_boost"] },
+        engagement_score: { $add: ["$event_score", "$rep_score", "$real_boost", "$legacy_penalty"] },
       },
     },
     { $match: { engagement_score: { $gte: 0.5 } } },
@@ -1311,8 +1464,9 @@ export const getMostEngagedUsersByPost = async (
   });
 
   const realUsers = mapped.filter((user) => user.user_type === "REAL");
+  const anonymousUsers = mapped.filter((user) => user.user_type === "ANONYMOUS");
   const aiUsers = mapped.filter((user) => user.user_type === "AI");
-  const prioritized = realUsers.length > 0 ? realUsers : aiUsers;
+  const prioritized = realUsers.length > 0 ? realUsers : [...anonymousUsers, ...aiUsers];
   const limited = prioritized.slice(0, Math.max(1, limit));
   if (limited.length > 0) return limited;
 
@@ -1340,7 +1494,7 @@ export const getMostEngagedUsersByPost = async (
       display_name: displayName,
       about: "Legacy comment (untracked user)",
       avatar_url: buildAvatarUrl(legacyIdentityKey, displayName),
-      user_type: "AI" as const,
+      user_type: "ANONYMOUS" as const,
       blog_views: 0,
       forum_views: 0,
       blog_comments: 0,

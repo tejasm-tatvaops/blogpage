@@ -1,4 +1,8 @@
 {
-  "/blog/[slug]/page": "app/blog/[slug]/page.js",
-  "/blog/page": "app/blog/page.js"
+  "/api/blog/[slug]/comments/route": "app/api/blog/[slug]/comments/route.js",
+  "/api/users/route": "app/api/users/route.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/users/page": "app/users/page.js",
+  "/admin/login/page": "app/admin/login/page.js",
+  "/admin/(dashboard)/blog/page": "app/admin/(dashboard)/blog/page.js"
 }

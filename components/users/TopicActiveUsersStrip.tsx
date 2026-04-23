@@ -90,14 +90,20 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
                     )}
                     <span
                       className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${
-                        user.user_type === "REAL" ? "bg-green-500" : "bg-gray-400"
+                        user.user_type === "REAL"
+                          ? "bg-green-500"
+                          : user.user_type === "ANONYMOUS"
+                            ? "bg-gray-400"
+                            : "bg-purple-500"
                       }`}
                       title={
                         isLegacy
                           ? "Legacy comment (untracked user)"
                           : user.user_type === "REAL"
                             ? "Real user (active)"
-                            : "AI-generated user"
+                            : user.user_type === "ANONYMOUS"
+                              ? "Guest user (anonymous)"
+                              : "AI-generated user"
                       }
                     />
                   </div>
