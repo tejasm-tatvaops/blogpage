@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { PipelineStage } from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { UserProfileModel } from "@/models/UserProfile";
 
@@ -12,14 +13,23 @@ export async function GET(request: Request) {
     const typeFilter: LeaderboardTypeFilter | null =
       typeParam === "REAL" || typeParam === "AI" ? (typeParam as LeaderboardTypeFilter) : null;
 
-    const pipeline = [
-      ...(typeFilter ? [{ $match: { user_type: typeFilter } }] : []),
+    const sortStage: Record<string, 1 | -1> = {
+      reputation_score: -1,
+      user_type_sort: 1,
+      identity_key: 1,
+    };
+    const matchStage: PipelineStage.Match | null = typeFilter
+      ? { $match: { user_type: typeFilter } }
+      : null;
+
+    const pipeline: PipelineStage[] = [
+      ...(matchStage ? [matchStage] : []),
       {
         $addFields: {
           user_type_sort: { $cond: [{ $eq: ["$user_type", "REAL"] }, 0, 1] },
         },
       },
-      { $sort: { reputation_score: -1, user_type_sort: 1, identity_key: 1 } },
+      { $sort: sortStage },
       { $limit: 50 },
       {
         $project: {
