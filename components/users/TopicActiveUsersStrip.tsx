@@ -1,9 +1,9 @@
 import Link from "next/link";
-import type { UserProfile } from "@/lib/userProfileService";
+import type { EngagedUserProfile, UserProfile } from "@/lib/userProfileService";
 
 type TopicActiveUsersStripProps = {
   title: string;
-  users: UserProfile[];
+  users: Array<UserProfile | EngagedUserProfile>;
 };
 
 const TIER_CONFIG: Record<string, { label: string; className: string }> = {
@@ -14,7 +14,21 @@ const TIER_CONFIG: Record<string, { label: string; className: string }> = {
 };
 
 export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripProps) {
-  if (users.length === 0) return null;
+  if (users.length === 0) {
+    return (
+      <section className="mt-8 rounded-2xl border border-app bg-surface p-5 shadow-sm">
+        <div className="mb-2 flex items-center gap-2">
+          <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600" aria-hidden>
+              <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+            </svg>
+          </span>
+          <p className="text-sm font-bold text-app">{title}</p>
+        </div>
+        <p className="text-xs text-slate-500">No active users yet</p>
+      </section>
+    );
+  }
 
   return (
     <section className="mt-8 rounded-2xl border border-app bg-surface p-5 shadow-sm">
@@ -81,6 +95,18 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                   {user.reputation_score.toLocaleString()} pts
+                </div>
+              )}
+              {("engagement_labels" in user) && user.engagement_labels.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {user.engagement_labels.map((label) => (
+                    <span
+                      key={`${user.id}-${label}`}
+                      className="rounded-full border border-sky-100 bg-sky-50 px-1.5 py-px text-[9px] font-medium text-sky-700"
+                    >
+                      {label}
+                    </span>
+                  ))}
                 </div>
               )}
             </Link>

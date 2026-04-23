@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getForumPostBySlug, incrementForumCommentCount } from "@/lib/forumService";
-import { addComment, commentInputSchema, getComments } from "@/lib/commentService";
+import { addCommentWithIdentity, commentInputSchema, getComments } from "@/lib/commentService";
 import { forumCommentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
 import { onForumAnswerGiven } from "@/lib/reputationEngine";
-import { getFingerprintFromRequest } from "@/lib/fingerprint";
+import { getIdentityKeyFromRequest } from "@/lib/fingerprint";
 import { getSystemToggles } from "@/lib/systemToggles";
 
 export async function GET(
@@ -51,12 +51,11 @@ export async function POST(
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    const comment = await addComment(post.id, result.data);
+    const actorKey = getIdentityKeyFromRequest(request);
+    const comment = await addCommentWithIdentity(post.id, result.data, actorKey);
     // Keep comment_count denormalized for fast feed queries
     await incrementForumCommentCount(post.id);
 
-    const fp = getFingerprintFromRequest(request);
-    const actorKey = fp ? `fp:${fp}` : `ip:${getRateLimitKey(request)}`;
     if (getSystemToggles().reputationEnabled) {
       void onForumAnswerGiven(actorKey, post.slug, `forum-comment:${actorKey}:${post.slug}:${comment.id}`);
     }

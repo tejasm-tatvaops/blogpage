@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getPostBySlug } from "@/lib/blogService";
-import { addComment, commentInputSchema, getComments } from "@/lib/commentService";
+import { addCommentWithIdentity, commentInputSchema, getComments } from "@/lib/commentService";
 import { commentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
 import { awardPoints, onPositiveFeedback } from "@/lib/reputationEngine";
-import { getFingerprintFromRequest } from "@/lib/fingerprint";
+import { getIdentityKeyFromRequest } from "@/lib/fingerprint";
 
 const mentionsTatvaOps = (text: string) => text.toLowerCase().includes("tatvaops");
 
@@ -51,14 +51,8 @@ export async function POST(
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    const comment = await addComment(post.id, result.data);
-
-    const fingerprintId = getFingerprintFromRequest(request);
-    const ipAddress =
-      request.headers.get("cf-connecting-ip") ??
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      null;
-    const commenterKey = fingerprintId ? `fp:${fingerprintId}` : `ip:${ipAddress ?? "anonymous"}`;
+    const commenterKey = getIdentityKeyFromRequest(request);
+    const comment = await addCommentWithIdentity(post.id, result.data, commenterKey);
 
     void recordUserActivity({
       request,

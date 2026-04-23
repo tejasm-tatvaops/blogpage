@@ -1,14 +1,6 @@
 {
   "/api/blog/[slug]/comments/route": "app/api/blog/[slug]/comments/route.js",
   "/api/feed/events/route": "app/api/feed/events/route.js",
-  "/api/blog/[slug]/share/route": "app/api/blog/[slug]/share/route.js",
-  "/api/users/preferences/route": "app/api/users/preferences/route.js",
-  "/api/trending/route": "app/api/trending/route.js",
-  "/api/blog/[slug]/view/route": "app/api/blog/[slug]/view/route.js",
-  "/api/notifications/route": "app/api/notifications/route.js",
-  "/users/page": "app/users/page.js",
   "/blog/page": "app/blog/page.js",
-  "/blog/[slug]/page": "app/blog/[slug]/page.js",
-  "/admin/(dashboard)/blog/page": "app/admin/(dashboard)/blog/page.js",
-  "/admin/(dashboard)/reputation/page": "app/admin/(dashboard)/reputation/page.js"
+  "/blog/[slug]/page": "app/blog/[slug]/page.js"
 }

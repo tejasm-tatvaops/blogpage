@@ -19,3 +19,13 @@ export const getNotificationRecipientKey = (request: Request): string => {
     "anonymous";
   return `ip:${ip}`;
 };
+
+export const getIdentityKeyFromRequest = (request: Request): string => {
+  const fp = getFingerprintFromRequest(request);
+  if (fp) return `fp:${fp}`;
+  const ip =
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "anonymous";
+  return `ip:${ip}`;
+};

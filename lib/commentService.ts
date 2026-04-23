@@ -7,6 +7,7 @@ import { connectToDatabase } from "./mongodb";
 
 export type Comment = {
   id: string;
+  identity_key: string | null;
   parent_comment_id: string | null;
   author_name: string;
   persona_name: string | null;
@@ -35,11 +36,25 @@ export type AdminComment = {
 };
 
 const notDeleted = { deleted_at: null };
+const AUTHOR_KEY_SANITIZE = /[^a-z0-9]+/g;
+
+const deriveCommentIdentityKey = (doc: {
+  identity_key?: string | null;
+  author_name?: string | null;
+}): string | null => {
+  const direct = doc.identity_key?.trim();
+  if (direct) return direct;
+  const author = doc.author_name?.toLowerCase().trim();
+  if (!author) return null;
+  const slug = author.replace(AUTHOR_KEY_SANITIZE, "-").replace(/^-|-$/g, "");
+  return slug ? `author:${slug}` : null;
+};
 
 const toComment = (doc: CommentDocument): Comment => {
   const deleted = Boolean(doc.deleted_at);
   return {
     id: doc._id.toString(),
+    identity_key: deriveCommentIdentityKey(doc),
     parent_comment_id: doc.parent_comment_id ?? null,
     author_name: deleted ? "[deleted]" : doc.author_name,
     persona_name: deleted ? null : (doc.persona_name ?? null),
@@ -166,6 +181,86 @@ export const addComment = async (postId: string, input: CommentInput): Promise<C
   const doc = await CommentModel.create({
     post_id: postId,
     parent_comment_id: parentId,
+    identity_key: null,
+    author_name: input.author_name,
+    persona_name: input.persona_name ?? null,
+    content: input.content,
+    is_ai_generated: input.is_ai_generated ?? false,
+    upvote_count: 0,
+    downvote_count: 0,
+    deleted_at: null,
+  });
+  const created = toComment(doc.toObject() as unknown as CommentDocument);
+
+  if (parentId) {
+    const parent = (await CommentModel.findById(parentId).select("author_name").lean()) as
+      | { author_name?: string }
+      | null;
+    const parentAuthor = parent?.author_name?.trim();
+    if (parentAuthor && parentAuthor !== input.author_name) {
+      await createNotification({
+        type: "reply",
+        post_id: postId,
+        comment_id: created.id,
+        recipient_key: `author:${parentAuthor.toLowerCase()}`,
+        message: `${input.author_name} replied to your comment.`,
+      });
+    }
+  } else {
+    const forumPost = (await ForumPostModel.findById(postId)
+      .select("creator_fingerprint")
+      .lean()) as { creator_fingerprint?: string | null } | null;
+    if (forumPost?.creator_fingerprint) {
+      await createNotification({
+        type: "comment",
+        post_id: postId,
+        comment_id: created.id,
+        recipient_key: `fp:${forumPost.creator_fingerprint}`,
+        message: `${input.author_name} commented on a post you are watching.`,
+      });
+    }
+  }
+  return created;
+};
+
+export const addCommentWithIdentity = async (
+  postId: string,
+  input: CommentInput,
+  identityKey: string | null,
+): Promise<Comment> => {
+  await connectToDatabase();
+  const parentId = input.parent_comment_id?.trim() || null;
+
+  if (parentId) {
+    if (!isValidObjectId(parentId)) {
+      throw new Error("Invalid parent comment.");
+    }
+
+    const parent = (await CommentModel.findOne({
+      _id: parentId,
+      post_id: postId,
+      ...notDeleted,
+    })
+      .select("_id parent_comment_id")
+      .lean()) as Pick<CommentDocument, "_id" | "parent_comment_id"> | null;
+
+    if (!parent) {
+      throw new Error("Parent comment not found.");
+    }
+    if (parent.parent_comment_id) {
+      const grandparent = (await CommentModel.findById(parent.parent_comment_id)
+        .select("parent_comment_id")
+        .lean()) as { parent_comment_id?: string | null } | null;
+      if (grandparent?.parent_comment_id) {
+        throw new Error("Maximum reply depth reached.");
+      }
+    }
+  }
+
+  const doc = await CommentModel.create({
+    post_id: postId,
+    parent_comment_id: parentId,
+    identity_key: identityKey?.trim() || null,
     author_name: input.author_name,
     persona_name: input.persona_name ?? null,
     content: input.content,

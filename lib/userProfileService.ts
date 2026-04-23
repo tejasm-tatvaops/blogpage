@@ -2,6 +2,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { UserProfileModel } from "@/models/UserProfile";
 import { CommentModel } from "@/models/Comment";
+import { ReputationEventModel } from "@/models/ReputationEvent";
 import { ForumPostModel } from "@/models/ForumPost";
 import { ForumVoteModel } from "@/models/ForumVote";
 import { ViewEventModel } from "@/models/ViewEvent";
@@ -54,6 +55,34 @@ export type UserProfile = {
   is_active_now: boolean;
   created_at: string;
   last_seen_at: string;
+};
+
+export type EngagementLabel = "Commented" | "Liked" | "Shared";
+export type EngagedUserProfile = UserProfile & {
+  labels: EngagementLabel[];
+  engagement_labels: EngagementLabel[];
+  engagement_score: number;
+};
+
+const ENGAGEMENT_SCORE_WEIGHTS = {
+  comment: 5,
+  like: 2,
+  share: 3,
+  reputation: 1,
+} as const;
+const MAX_POST_ENGAGEMENT_COUNTS = {
+  comments: 3,
+  likes: 5,
+  shares: 3,
+} as const;
+const RECENCY_DECAY_HOURS = 24;
+const ENGAGEMENT_WINDOW_DAYS = 7;
+
+const VALID_ENGAGEMENT_IDENTITY_PREFIXES = ["fp:", "ip:", "google:"] as const;
+const isValidEngagementIdentityKey = (value: string | null | undefined): value is string => {
+  if (!value) return false;
+  const key = value.trim();
+  return VALID_ENGAGEMENT_IDENTITY_PREFIXES.some((prefix) => key.startsWith(prefix));
 };
 
 export type PlatformViewTotals = {
@@ -985,4 +1014,190 @@ export const getActiveUsersByTopic = async (signals: string[], limit = 8): Promi
     .limit(Math.max(0, limit - docs.length))
     .lean();
   return [...docs, ...extras].map((doc) => toUserProfile(doc as never));
+};
+
+export const getMostEngagedUsersByPost = async (
+  postId: string,
+  postSlug: string,
+  limit = 8,
+): Promise<EngagedUserProfile[]> => {
+  await connectToDatabase();
+  if (!postId || !postSlug) return [];
+
+  const windowStart = new Date(Date.now() - ENGAGEMENT_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const [commentAgg, eventAgg] = await Promise.all([
+    CommentModel.aggregate<{ _id: string; commentEvents: Date[] }>([
+      {
+        $match: {
+          post_id: postId,
+          deleted_at: null,
+          identity_key: { $exists: true, $nin: [null, ""] },
+          created_at: { $gte: windowStart },
+        },
+      },
+      { $sort: { created_at: -1 } },
+      {
+        $group: {
+          _id: "$identity_key",
+          commentEvents: { $push: "$created_at" },
+        },
+      },
+    ]),
+    ReputationEventModel.aggregate<{
+      _id: string;
+      likeEvents: Date[];
+      shareEvents: Date[];
+    }>([
+      {
+        $match: {
+          source_content_slug: postSlug,
+          reason: { $in: ["article_like_received", "content_share"] },
+          identity_key: { $exists: true, $ne: "" },
+          created_at: { $gte: windowStart },
+        },
+      },
+      { $sort: { created_at: -1 } },
+      {
+        $group: {
+          _id: "$identity_key",
+          likeEvents: {
+            $push: {
+              $cond: [{ $eq: ["$reason", "article_like_received"] }, "$created_at", "$$REMOVE"],
+            },
+          },
+          shareEvents: {
+            $push: {
+              $cond: [{ $eq: ["$reason", "content_share"] }, "$created_at", "$$REMOVE"],
+            },
+          },
+        },
+      },
+    ]),
+  ]);
+
+  const byKey = new Map<string, { comments: Date[]; likes: Date[]; shares: Date[] }>();
+  for (const row of commentAgg) {
+    const identityKey = row._id?.trim();
+    if (!isValidEngagementIdentityKey(identityKey)) continue;
+    const existing = byKey.get(identityKey) ?? { comments: [], likes: [], shares: [] };
+    existing.comments = row.commentEvents ?? [];
+    byKey.set(identityKey, existing);
+  }
+  for (const row of eventAgg) {
+    const identityKey = row._id?.trim();
+    if (!isValidEngagementIdentityKey(identityKey)) continue;
+    const existing = byKey.get(identityKey) ?? { comments: [], likes: [], shares: [] };
+    existing.likes = row.likeEvents ?? [];
+    existing.shares = row.shareEvents ?? [];
+    byKey.set(identityKey, existing);
+  }
+
+  const identityKeys = [...byKey.keys()];
+  if (identityKeys.length === 0) return [];
+
+  const profiles = await UserProfileModel.find({ identity_key: { $in: identityKeys } })
+    .lean();
+  const profileByKey = new Map(
+    profiles.map((doc) => [String(doc.identity_key ?? ""), toUserProfile(doc as never)]),
+  );
+
+  const ranked = identityKeys
+    .map((identityKey) => {
+      const metrics = byKey.get(identityKey)!;
+      const cappedCommentEvents = metrics.comments.slice(0, MAX_POST_ENGAGEMENT_COUNTS.comments);
+      const cappedLikeEvents = metrics.likes.slice(0, MAX_POST_ENGAGEMENT_COUNTS.likes);
+      const cappedShareEvents = metrics.shares.slice(0, MAX_POST_ENGAGEMENT_COUNTS.shares);
+      const labels: EngagementLabel[] = [];
+      if (cappedCommentEvents.length > 0) labels.push("Commented");
+      if (cappedLikeEvents.length > 0) labels.push("Liked");
+      if (cappedShareEvents.length > 0) labels.push("Shared");
+
+      const fallbackDisplay = buildDisplayName(identityKey);
+      const profile = profileByKey.get(identityKey);
+      const baseProfile: UserProfile =
+        profile ??
+        ({
+          id: identityKey,
+          identity_key: identityKey,
+          display_name: fallbackDisplay,
+          about: "Reader engaged with this post.",
+          avatar_url: buildAvatarUrl(identityKey, fallbackDisplay),
+          user_type: deriveUserType(identityKey),
+          blog_views: 0,
+          forum_views: 0,
+          blog_comments: 0,
+          forum_posts: 0,
+          forum_comments: 0,
+          forum_votes: 0,
+          blog_likes: 0,
+          last_blog_slug: postSlug,
+          last_forum_slug: null,
+          reputation_score: 0,
+          reputation_tier: "member",
+          forum_badges: [],
+          forum_posting_streak_days: 0,
+          forum_quality_streak_days: 0,
+          forum_last_posted_at: null,
+          interest_tags: {},
+          behavior_type: "casual",
+          writing_tone: "casual",
+          active_start_hour: 9,
+          active_end_hour: 19,
+          weekend_activity_multiplier: 1,
+          burstiness: 0.3,
+          silence_bias: 0.4,
+          emoji_level: 1,
+          social_cluster: "cluster-1",
+          frequent_peer_keys: [],
+          topic_focus_history: [],
+          topic_shift_count: 0,
+          is_active_now: false,
+          created_at: new Date(0).toISOString(),
+          last_seen_at: new Date().toISOString(),
+        } as UserProfile);
+
+      const nowMs = Date.now();
+      const scoreEvent = (eventTime: Date, weight: number): number => {
+        const hours = Math.max(0, (nowMs - eventTime.getTime()) / (1000 * 60 * 60));
+        const decay = Math.exp(-hours / RECENCY_DECAY_HOURS);
+        return weight * decay;
+      };
+      const eventScore =
+        cappedCommentEvents.reduce(
+          (sum, eventTime) => sum + scoreEvent(eventTime, ENGAGEMENT_SCORE_WEIGHTS.comment),
+          0,
+        ) +
+        cappedLikeEvents.reduce(
+          (sum, eventTime) => sum + scoreEvent(eventTime, ENGAGEMENT_SCORE_WEIGHTS.like),
+          0,
+        ) +
+        cappedShareEvents.reduce(
+          (sum, eventTime) => sum + scoreEvent(eventTime, ENGAGEMENT_SCORE_WEIGHTS.share),
+          0,
+        );
+      const repScore = Math.log10((baseProfile.reputation_score ?? 0) + 1);
+      const engagementScore = eventScore + repScore * ENGAGEMENT_SCORE_WEIGHTS.reputation;
+      const lastActivityMs = Math.max(
+        ...cappedCommentEvents.map((d) => d.getTime()),
+        ...cappedLikeEvents.map((d) => d.getTime()),
+        ...cappedShareEvents.map((d) => d.getTime()),
+        0,
+      );
+      return {
+        ...baseProfile,
+        labels,
+        engagement_labels: labels,
+        engagement_score: engagementScore,
+        last_seen_at: new Date(Math.max(lastActivityMs, Date.parse(baseProfile.last_seen_at))).toISOString(),
+      };
+    })
+    .sort((a, b) => {
+      if (b.engagement_score !== a.engagement_score) return b.engagement_score - a.engagement_score;
+      const aLast = Date.parse(a.last_seen_at);
+      const bLast = Date.parse(b.last_seen_at);
+      if (bLast !== aLast) return bLast - aLast;
+      return a.identity_key.localeCompare(b.identity_key);
+    });
+
+  return ranked.slice(0, Math.max(1, limit));
 };

@@ -15,7 +15,7 @@ import { CoverImage } from "./CoverImage";
 import { AiAssistant } from "./AiAssistant";
 import { BookmarkButton } from "./BookmarkButton";
 import { ReadingTracker } from "./ReadingTracker";
-import type { UserProfile } from "@/lib/userProfileService";
+import type { EngagedUserProfile } from "@/lib/userProfileService";
 import { TopicActiveUsersStrip } from "@/components/users/TopicActiveUsersStrip";
 import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
 import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
@@ -27,7 +27,7 @@ type BlogDetailProps = {
   categories: string[];
   comments: Comment[];
   forumSlug?: string | null;
-  topicUsers?: UserProfile[];
+  topicUsers?: EngagedUserProfile[];
   relatedForumPosts?: ForumPost[];
   relatedTutorials?: Array<{ slug: string; title: string; excerpt: string; difficulty?: string }>;
   relatedShorts?: Array<{ slug: string; title: string; summary: string }>;
@@ -391,7 +391,7 @@ export function BlogDetail({
             </div>
 
             {/* ── Comments ── */}
-            <TopicActiveUsersStrip title="People active on this topic" users={topicUsers} />
+            <TopicActiveUsersStrip title="Most engaged users on this post" users={topicUsers} />
             <div className="mt-10 rounded-2xl border border-slate-100 bg-surface p-1">
               <CommentSection slug={post.slug} initialComments={comments} />
             </div>

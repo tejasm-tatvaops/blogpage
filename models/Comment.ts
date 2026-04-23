@@ -4,6 +4,7 @@ const commentSchema = new mongoose.Schema(
   {
     post_id: { type: String, required: true, index: true },
     parent_comment_id: { type: String, default: null, index: true },
+    identity_key: { type: String, default: null, trim: true, index: true },
     author_name: { type: String, required: true, trim: true, maxlength: 80 },
     persona_name: { type: String, default: null, trim: true, maxlength: 120 },
     content: { type: String, required: true, trim: true, maxlength: 2000 },
@@ -19,6 +20,7 @@ const commentSchema = new mongoose.Schema(
 );
 
 commentSchema.index({ post_id: 1, created_at: -1 });
+commentSchema.index({ post_id: 1, identity_key: 1, created_at: -1 });
 commentSchema.index({ post_id: 1, parent_comment_id: 1, created_at: 1 });
 commentSchema.index({ post_id: 1, deleted_at: 1 });
 

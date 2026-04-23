@@ -363,13 +363,18 @@ export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
     !!targetContentType &&
     sourceContentType !== targetContentType;
 
-  const multiplier = isCrossContent ? CROSS_CONTENT_MULTIPLIER : 1;
-  const awarded = Math.round(base * multiplier);
+  let multiplier = isCrossContent ? CROSS_CONTENT_MULTIPLIER : 1;
+  let awarded = Math.round(base * multiplier);
+  let effectiveNote = note;
 
-  // Daily cap (only for positive awards)
+  // Daily cap: keep immutable ledger entry with zero award for auditability.
   if (awarded > 0) {
     const earned = await getDailyPointsEarned(identityKey);
-    if (earned >= DAILY_CAP) return 0;
+    if (earned >= DAILY_CAP) {
+      multiplier = 0;
+      awarded = 0;
+      effectiveNote = note ? `${note} | daily cap reached` : "daily cap reached";
+    }
   }
 
   let event: { _id: unknown } | null = null;
@@ -383,7 +388,7 @@ export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
       source_content_type: sourceContentType,
       source_content_slug: sourceContentSlug,
       actor_identity_key: actorIdentityKey,
-      note,
+      note: effectiveNote,
       event_key: eventKey,
       is_cross_content: isCrossContent,
     });
@@ -628,25 +633,22 @@ const BREAKDOWN_MAP: Partial<Record<RepEventReason, keyof ReputationBreakdown["b
   article_view_received:     "views",
   article_comment_received:  "comments",
   article_like_received:     "likes",
+  article_share_received:    "shares",
   content_share:             "shares",
   positive_feedback:         "positive_feedback",
 };
 
 /**
  * Aggregate reputation breakdown for a single user from the event ledger.
- * Uses a single MongoDB aggregation (no N+1). Applies current BASE_POINTS so
- * the result is consistent with recomputeReputationScore().
- *
- * Note: these five event types never carry cross-content multipliers, so
- * count × BASE_POINTS is exact for the breakdown categories. The overall
- * total covers all event reasons (same formula as recomputeReputationScore).
+ * Uses awarded_points directly so multipliers, caps, and future rule changes
+ * are represented exactly as recorded.
  */
 export async function getReputationBreakdown(identityKey: string): Promise<ReputationBreakdown> {
   await connectToDatabase();
 
-  const rows = await ReputationEventModel.aggregate<{ _id: string; count: number }>([
+  const rows = await ReputationEventModel.aggregate<{ _id: string; points: number }>([
     { $match: { identity_key: identityKey } },
-    { $group: { _id: "$reason", count: { $sum: 1 } } },
+    { $group: { _id: "$reason", points: { $sum: { $ifNull: ["$awarded_points", 0] } } } },
   ]);
 
   const breakdown: ReputationBreakdown["breakdown"] = {
@@ -656,7 +658,7 @@ export async function getReputationBreakdown(identityKey: string): Promise<Reput
 
   for (const row of rows) {
     const reason = row._id as RepEventReason;
-    const pts = (BASE_POINTS[reason] ?? 0) * row.count;
+    const pts = Number(row.points ?? 0);
     total += pts;
     const bucket = BREAKDOWN_MAP[reason];
     if (bucket) breakdown[bucket] += pts;

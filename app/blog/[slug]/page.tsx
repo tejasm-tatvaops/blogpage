@@ -13,7 +13,7 @@ import { getComments } from "@/lib/commentService";
 import { getForumPostByBlogSlug, getRelatedForumPosts, type ForumPost } from "@/lib/forumService";
 import { getTutorials } from "@/lib/tutorialService";
 import { getVideosByTags } from "@/lib/videoService";
-import { getActiveUsersByTopic } from "@/lib/userProfileService";
+import { getMostEngagedUsersByPost } from "@/lib/userProfileService";
 import { rankSemanticBlogRecommendations } from "@/lib/semanticRecommendations";
 import { getSystemToggles } from "@/lib/systemToggles";
 import { getRevisionsForBlog } from "@/lib/revisionService";
@@ -103,7 +103,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     getRelatedPosts(post, 4).catch(() => [] as BlogPost[]),
     getCategories().catch(() => [] as string[]),
     getComments(post.id).catch(() => []),
-    getActiveUsersByTopic([post.category, ...post.tags], 8).catch(() => []),
+    getMostEngagedUsersByPost(post.id, post.slug, 8).catch(() => []),
     getRelatedForumPosts(post.tags, forumPost?.slug ?? undefined, 4).catch(() => [] as ForumPost[]),
     getAllPosts({ limit: 120 }).catch(() => [] as BlogPost[]),
     getTutorials({ tag: post.tags[0] ?? null, limit: 4, includeUnpublished: false }).catch(() => ({ tutorials: [] })),
