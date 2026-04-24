@@ -10,6 +10,7 @@ type Props = {
 
 export function LoginModal({ isOpen, onClose }: Props) {
   const [loading, setLoading] = useState(false);
+  const [isNight, setIsNight] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,6 +27,16 @@ export function LoginModal({ isOpen, onClose }: Props) {
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
+  useEffect(() => {
+    const applyTimeTheme = () => {
+      const hour = new Date().getHours();
+      setIsNight(hour >= 19 || hour < 6);
+    };
+    applyTimeTheme();
+    const timer = window.setInterval(applyTimeTheme, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   if (!isOpen) return null;
 
   const handleGoogle = async () => {
@@ -37,15 +48,27 @@ export function LoginModal({ isOpen, onClose }: Props) {
     <div
       ref={overlayRef}
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-sm dark:bg-black/60"
+      className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm ${
+        isNight ? "bg-black/60" : "bg-slate-950/45"
+      }`}
     >
-      <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-sky-300/35 bg-white p-8 shadow-2xl dark:border-sky-400/20 dark:bg-[#0b1220]">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-sky-400/15 blur-2xl dark:bg-sky-400/20" />
-        <div className="pointer-events-none absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-indigo-500/15 blur-2xl dark:bg-indigo-500/20" />
+      <div className={`relative w-full max-w-md overflow-hidden rounded-3xl p-8 shadow-2xl ${
+        isNight
+          ? "border border-sky-400/20 bg-[#0b1220]"
+          : "border border-sky-300/35 bg-white"
+      }`}>
+        <div className={`pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full blur-2xl ${
+          isNight ? "bg-sky-400/20" : "bg-sky-400/15"
+        }`} />
+        <div className={`pointer-events-none absolute -bottom-20 -left-10 h-44 w-44 rounded-full blur-2xl ${
+          isNight ? "bg-indigo-500/20" : "bg-indigo-500/15"
+        }`} />
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200"
+          className={`absolute right-4 top-4 rounded-lg p-1 text-slate-400 transition ${
+            isNight ? "hover:text-slate-200" : "hover:text-slate-600"
+          }`}
           aria-label="Close login modal"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -55,16 +78,24 @@ export function LoginModal({ isOpen, onClose }: Props) {
         </button>
 
         <div className="relative">
-          <span className="mb-3 inline-flex items-center gap-1 rounded-full border border-sky-300/40 bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-700 dark:border-sky-300/30 dark:bg-sky-400/15 dark:text-sky-200">
+          <span className={`mb-3 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+            isNight
+              ? "border-sky-300/30 bg-sky-400/15 text-sky-200"
+              : "border-sky-300/40 bg-sky-100 text-sky-700"
+          }`}>
             Unlock full experience
           </span>
-          <h2 className="mb-1 text-3xl font-extrabold leading-tight text-slate-900 dark:text-white">Continue with TatvaOps</h2>
-          <p className="mb-6 text-sm text-slate-600 dark:text-slate-300">
+          <h2 className={`mb-1 text-3xl font-extrabold leading-tight ${isNight ? "text-white" : "text-slate-900"}`}>Continue with TatvaOps</h2>
+          <p className={`mb-6 text-sm ${isNight ? "text-slate-300" : "text-slate-600"}`}>
             Save articles, earn reputation points, get personalized feed, and join higher-quality discussions.
           </p>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+        <div className={`mb-6 grid grid-cols-1 gap-2 rounded-2xl border p-3 text-xs ${
+          isNight
+            ? "border-white/10 bg-white/5 text-slate-200"
+            : "border-slate-200 bg-slate-50 text-slate-700"
+        }`}>
           <p>• Save and resume reading across devices</p>
           <p>• Build reputation with comments and contributions</p>
           <p>• Get smarter recommendations tuned to your interests</p>
@@ -74,7 +105,11 @@ export function LoginModal({ isOpen, onClose }: Props) {
           type="button"
           onClick={handleGoogle}
           disabled={loading}
-          className="relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl border border-sky-300 bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition hover:border-sky-500 hover:bg-sky-700 disabled:opacity-60 dark:border-sky-300/40 dark:bg-sky-500/20 dark:hover:border-sky-300/60 dark:hover:bg-sky-500/30"
+          className={`relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl border px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-60 ${
+            isNight
+              ? "border-sky-300/40 bg-sky-500/20 hover:border-sky-300/60 hover:bg-sky-500/30"
+              : "border-sky-300 bg-sky-600 hover:border-sky-500 hover:bg-sky-700"
+          }`}
         >
           {loading ? (
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -92,7 +127,7 @@ export function LoginModal({ isOpen, onClose }: Props) {
           {loading ? "Redirecting…" : "Continue with Google"}
         </button>
 
-        <p className="mt-5 text-center text-xs text-slate-500 dark:text-slate-400">
+        <p className={`mt-5 text-center text-xs ${isNight ? "text-slate-400" : "text-slate-500"}`}>
           Takes 1 click. No password needed.
         </p>
       </div>
