@@ -12,6 +12,28 @@ type UserProfileQuickViewProps = {
 
 const formatNumber = (value: number): string => new Intl.NumberFormat("en-US").format(value);
 
+function UserTypeBadge({ userType }: { userType: UserProfile["user_type"] }) {
+  if (userType === "REAL") {
+    return (
+      <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+        Real
+      </span>
+    );
+  }
+  if (userType === "ANONYMOUS") {
+    return (
+      <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+        Anonymous
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-full border border-purple-200 bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700">
+      System
+    </span>
+  );
+}
+
 export function UserProfileQuickView({ displayName, identityKey, trigger }: UserProfileQuickViewProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -97,6 +119,7 @@ export function UserProfileQuickView({ displayName, identityKey, trigger }: User
                     <p className="truncate text-lg font-semibold text-app">{user.display_name}</p>
                     <p className="mt-1 text-sm text-slate-600 line-clamp-2">{user.about}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <UserTypeBadge userType={user.user_type} />
                       {user.is_active_now ? (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                           Active now

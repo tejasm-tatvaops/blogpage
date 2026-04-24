@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import type { PipelineStage } from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { UserProfileModel } from "@/models/UserProfile";
+import { getUserType } from "@/lib/identity";
 
-type LeaderboardTypeFilter = "REAL" | "AI";
+type LeaderboardTypeFilter = "REAL" | "SYSTEM";
 
 export async function GET(request: Request) {
   try {
@@ -11,22 +12,27 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const typeParam = searchParams.get("type")?.toUpperCase() ?? "";
     const typeFilter: LeaderboardTypeFilter | null =
-      typeParam === "REAL" || typeParam === "AI" ? (typeParam as LeaderboardTypeFilter) : null;
+      typeParam === "REAL" || typeParam === "SYSTEM" ? (typeParam as LeaderboardTypeFilter) : null;
 
     const sortStage: Record<string, 1 | -1> = {
       reputation_score: -1,
       user_type_sort: 1,
       identity_key: 1,
     };
-    const matchStage: PipelineStage.Match | null = typeFilter
-      ? { $match: { user_type: typeFilter } }
-      : null;
+    const matchStage: PipelineStage.Match | null =
+      typeFilter === "REAL"
+        ? { $match: { identity_key: { $regex: /^google:/ } } }
+        : typeFilter === "SYSTEM"
+          ? { $match: { identity_key: { $not: /^(google:|fp:|ip:)/ } } }
+          : null;
 
     const pipeline: PipelineStage[] = [
       ...(matchStage ? [matchStage] : []),
       {
         $addFields: {
-          user_type_sort: { $cond: [{ $eq: ["$user_type", "REAL"] }, 0, 1] },
+          user_type_sort: {
+            $cond: [{ $regexMatch: { input: "$identity_key", regex: /^google:/ } }, 0, 1],
+          },
         },
       },
       { $sort: sortStage },
@@ -37,7 +43,7 @@ export async function GET(request: Request) {
           identity_key: 1,
           display_name: 1,
           reputation_score: { $ifNull: ["$reputation_score", 0] },
-          user_type: { $ifNull: ["$user_type", "AI"] },
+          user_type: 1,
         },
       },
     ];
@@ -46,14 +52,14 @@ export async function GET(request: Request) {
       identity_key: string;
       display_name: string;
       reputation_score: number;
-      user_type: "REAL" | "AI";
+      user_type: "REAL" | "ANONYMOUS" | "SYSTEM";
     }>(pipeline);
 
     const leaderboard = rows.map((row, index) => ({
       identity_key: row.identity_key,
       display_name: row.display_name,
       reputation_score: row.reputation_score,
-      user_type: row.user_type,
+      user_type: getUserType(row.identity_key),
       rank: index + 1,
     }));
 

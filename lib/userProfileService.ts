@@ -9,7 +9,7 @@ import { ViewEventModel } from "@/models/ViewEvent";
 import { BlogModel } from "@/models/Blog";
 import { AuthUserModel } from "@/models/User";
 import { FAKE_USERS } from "@/lib/fakeUsers";
-import { deriveUserType, type IdentityUserType } from "@/lib/identity";
+import { getUserType, type IdentityUserType } from "@/lib/identity";
 import {
   getAvatarForIdentity,
   getGeneratedAvatarForIdentity,
@@ -157,8 +157,8 @@ const toUserProfile = (doc: {
   about: doc.about,
   avatar_url: doc.avatar_url,
   avatar: doc.avatar_url,
-  is_real: (doc.user_type ?? deriveUserType(doc.identity_key ?? "")) === "REAL",
-  user_type: doc.user_type ?? deriveUserType(doc.identity_key ?? ""),
+  is_real: getUserType(doc.identity_key ?? "") === "REAL",
+  user_type: getUserType(doc.identity_key ?? ""),
   blog_views: doc.blog_views ?? 0,
   forum_views: doc.forum_views ?? 0,
   blog_comments: doc.blog_comments ?? 0,
@@ -376,7 +376,7 @@ export const ensureUserProfileForIdentity = async ({
     about?.trim() ||
     "Member profile synchronized from authenticated session and platform activity.";
   const behavior = buildBehaviorSeed(safeIdentityKey, safeName);
-  const derivedType = deriveUserType(safeIdentityKey);
+  const derivedType = getUserType(safeIdentityKey);
 
   await UserProfileModel.findOneAndUpdate(
     { identity_key: safeIdentityKey },
@@ -478,7 +478,7 @@ const setHistoricalProfile = async ({
         avatar_url: buildHistoricalAvatar(avatarSeed ?? identityKey, displayName),
         display_name: displayName,
         about,
-        user_type: deriveUserType(identityKey),
+        user_type: getUserType(identityKey),
         reputation_score: 0,
         reputation_tier: "member",
         interest_tags: {},
@@ -598,7 +598,7 @@ export const recordUserActivity = async (input: UserActivityInput): Promise<void
         fingerprint_id: fingerprintId,
         ip_address: ipAddress,
         avatar_url: buildAvatarUrl(identityKey, displayName),
-        user_type: deriveUserType(identityKey),
+        user_type: getUserType(identityKey),
         reputation_score: 0,
         reputation_tier: "member",
         interest_tags: {},
@@ -885,7 +885,7 @@ const ensureMinimumSyntheticProfiles = async (minimumCount: number): Promise<voi
       display_name: displayName,
       about: buildSyntheticAbout(i),
       avatar_url: buildAvatarUrl(identityKey, displayName),
-      user_type: "AI",
+      user_type: "SYSTEM",
       behavior_type: buildBehaviorSeed(identityKey, displayName).behaviorType,
       writing_tone: buildBehaviorSeed(identityKey, displayName).writingTone,
       active_start_hour: buildBehaviorSeed(identityKey, displayName).activeStartHour,
@@ -1510,8 +1510,25 @@ export const getMostEngagedUsersByPost = async (
     {
       $addFields: {
         rep_score: { $log10: { $add: [{ $ifNull: ["$profile.reputation_score", 0] }, 1] } },
-        real_boost: { $cond: [{ $eq: ["$profile.user_type", "REAL"] }, 0.5, 0] },
-        legacy_penalty: { $cond: [{ $eq: ["$profile.user_type", "AI"] }, -0.5, 0] },
+        real_boost: {
+          $cond: [{ $regexMatch: { input: "$profile.identity_key", regex: /^google:/ } }, 0.5, 0],
+        },
+        legacy_penalty: {
+          $cond: [
+            {
+              $not: [
+                {
+                  $or: [
+                    { $regexMatch: { input: "$profile.identity_key", regex: /^google:/ } },
+                    { $regexMatch: { input: "$profile.identity_key", regex: /^(fp:|ip:)/ } },
+                  ],
+                },
+              ],
+            },
+            -0.5,
+            0,
+          ],
+        },
       },
     },
     {
@@ -1549,8 +1566,8 @@ export const getMostEngagedUsersByPost = async (
 
   const realUsers = mapped.filter((user) => user.user_type === "REAL");
   const anonymousUsers = mapped.filter((user) => user.user_type === "ANONYMOUS");
-  const aiUsers = mapped.filter((user) => user.user_type === "AI");
-  const prioritized = realUsers.length > 0 ? realUsers : [...anonymousUsers, ...aiUsers];
+  const systemUsers = mapped.filter((user) => user.user_type === "SYSTEM");
+  const prioritized = realUsers.length > 0 ? realUsers : [...anonymousUsers, ...systemUsers];
   const limited = prioritized.slice(0, Math.max(1, limit));
   if (limited.length > 0) return limited;
 

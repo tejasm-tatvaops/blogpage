@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { UserProfileModel } from "@/models/UserProfile";
-import { deriveUserType } from "@/lib/identity";
+import { getUserType } from "@/lib/identity";
 
 dotenv.config({ path: ".env.local" });
 
@@ -20,7 +20,7 @@ async function run() {
   for (const profile of profiles) {
     const identityKey = String(profile.identity_key ?? "").trim();
     if (!identityKey) continue;
-    const correctType = deriveUserType(identityKey);
+    const correctType = getUserType(identityKey);
 
     if (profile.user_type !== correctType) {
       await UserProfileModel.updateOne(

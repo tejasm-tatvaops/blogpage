@@ -55,7 +55,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   useEffect(() => {
     if (session?.user?.name) setAuthorName(session.user.name);
   }, [session]);
-  const [sortMode, setSortMode] = useState<"top" | "newest">("top");
+  const [sortMode, setSortMode] = useState<"top" | "newest">("newest");
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [activeReplyFor, setActiveReplyFor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

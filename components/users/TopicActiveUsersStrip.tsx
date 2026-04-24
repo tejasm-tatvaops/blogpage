@@ -123,10 +123,21 @@ export function TopicActiveUsersStrip({ title, users }: TopicActiveUsersStripPro
                           : user.user_type === "REAL"
                             ? "Real user (active)"
                             : user.user_type === "ANONYMOUS"
-                              ? "Guest user (anonymous)"
-                              : "AI-generated user"
+                              ? "Anonymous user"
+                              : "System user (generated/imported)"
                       }
                     />
+                    <span
+                      className={`rounded-full px-1.5 py-px text-[8px] font-semibold ${
+                        user.user_type === "REAL"
+                          ? "border border-emerald-200 bg-emerald-100 text-emerald-700"
+                          : user.user_type === "ANONYMOUS"
+                            ? "border border-slate-200 bg-slate-100 text-slate-600"
+                            : "border border-purple-200 bg-purple-100 text-purple-700"
+                      }`}
+                    >
+                      {user.user_type === "REAL" ? "Real" : user.user_type === "ANONYMOUS" ? "Anonymous" : "System"}
+                    </span>
                   </div>
                   <span className={`mt-0.5 inline-block rounded-full px-1.5 py-px text-[9px] font-bold uppercase tracking-wide ${tier.className}`}>
                     {tier.label}

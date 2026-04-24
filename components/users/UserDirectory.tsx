@@ -55,16 +55,16 @@ const TIER_STYLES: Record<string, { label: string; className: string }> = {
 function UserTypeBadge({ userType }: { userType: UserProfile["user_type"] }) {
   if (userType === "REAL") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
-        <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
-        Verified
+      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        Real
       </span>
     );
   }
   if (userType === "ANONYMOUS") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-        Guest
+        Anonymous
       </span>
     );
   }
@@ -209,7 +209,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "blog_views" | "forum_activity" | "reputation">("recent");
   const [photosOnly, setPhotosOnly] = useState(false);
-  const [userTypeFilter, setUserTypeFilter] = useState<"all" | "AI" | "REAL" | "ANONYMOUS">("all");
+  const [userTypeFilter, setUserTypeFilter] = useState<"all" | "real" | "anonymous" | "system">("all");
 
   // Breakdown panel: which card is open + locally cached results (no re-fetch)
   const [openBreakdownId, setOpenBreakdownId] = useState<string | null>(null);
@@ -251,40 +251,30 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
   }, [users, totals, userTotals]);
 
   useEffect(() => {
-    if ((users?.length ?? 0) > 0) return;
     let cancelled = false;
 
     const load = async (): Promise<void> => {
       setLoading(true);
       try {
-        const fetchOnce = async () => {
-          const res = await fetch("/api/users", { cache: "no-store" });
-          if (!res.ok) throw new Error(`/api/users returned ${res.status}`);
-          const data = (await res.json()) as {
-            users?: UserProfile[];
-            totals?: { blogViews: number; forumViews: number };
-            userTotals?: { blogViews: number; forumViews: number };
-          };
-          return {
-            users: data.users || [],
-            totals: data.totals || { blogViews: 0, forumViews: 0 },
-            userTotals: data.userTotals || { blogViews: 0, forumViews: 0 },
-          };
+        const params = new URLSearchParams();
+        if (userTypeFilter !== "all") params.set("type", userTypeFilter);
+        const path = params.size > 0 ? `/api/users?${params.toString()}` : "/api/users";
+        const res = await fetch(path, { cache: "no-store" });
+        if (!res.ok) throw new Error(`/api/users returned ${res.status}`);
+        const data = (await res.json()) as {
+          users?: UserProfile[];
+          totals?: { blogViews: number; forumViews: number };
+          userTotals?: { blogViews: number; forumViews: number };
         };
 
-        const result = await fetchOnce();
-
         if (cancelled) return;
-
-        setResolvedUsers(result.users);
-        setResolvedTotals(result.totals);
-        setResolvedUserTotals(result.userTotals);
-        setLoading(false);
+        setResolvedUsers(data.users || []);
+        setResolvedTotals(data.totals || { blogViews: 0, forumViews: 0 });
+        setResolvedUserTotals(data.userTotals || { blogViews: 0, forumViews: 0 });
       } catch (error) {
-        console.error(error);
-        setLoading(false);
+        if (!cancelled) console.error(error);
       } finally {
-        if (cancelled) return;
+        if (!cancelled) setLoading(false);
       }
     };
 
@@ -292,7 +282,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
     return () => {
       cancelled = true;
     };
-  }, [users]);
+  }, [userTypeFilter]);
 
   const visibleUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -305,7 +295,6 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
       // Search should behave like a directory lookup and bypass activity-style filters.
       if (q) return matchesSearch;
 
-      if (userTypeFilter !== "all" && user.user_type !== userTypeFilter) return false;
       if (photosOnly && !isRealPhotoAvatar(user.avatar_url)) return false;
       if (activeOnly && !user.is_active_now) return false;
       if (
@@ -410,13 +399,13 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
         )}
         <select
           value={userTypeFilter}
-          onChange={(e) => setUserTypeFilter(e.target.value as "all" | "AI" | "REAL" | "ANONYMOUS")}
+          onChange={(e) => setUserTypeFilter(e.target.value as "all" | "real" | "anonymous" | "system")}
           className="rounded-lg border border-app bg-surface px-3 py-2 text-sm"
         >
-          <option value="all">All user types</option>
-          <option value="REAL">Real Users</option>
-          <option value="ANONYMOUS">Anonymous Users</option>
-          <option value="AI">AI Users</option>
+          <option value="all">All Users</option>
+          <option value="real">Real Users</option>
+          <option value="anonymous">Anonymous Users</option>
+          <option value="system">System Users</option>
         </select>
         <label className="inline-flex items-center gap-2 rounded-lg border border-app px-3 py-2 text-sm text-slate-600">
           <input

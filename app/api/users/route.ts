@@ -4,22 +4,35 @@ import {
   getUserProfileViewTotals,
   getUserProfiles,
 } from "@/lib/userProfileService";
+import { getUserType } from "@/lib/identity";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const rawType = (searchParams.get("type") ?? searchParams.get("filter") ?? "").toLowerCase();
+    const typeFilter = rawType === "real" || rawType === "anonymous" || rawType === "system"
+      ? rawType
+      : "all";
+
     const userLimit = 1000;
     const [users, totals, userTotals] = await Promise.all([
       getUserProfiles(userLimit),
       getPlatformViewTotals(),
       getUserProfileViewTotals(),
     ]);
-    const enrichedUsers = users.map((user) => ({
+    const filteredUsers = users.filter((user) => {
+      const type = getUserType(user.identity_key);
+      if (typeFilter === "all") return true;
+      if (typeFilter === "real") return type === "REAL";
+      if (typeFilter === "anonymous") return type === "ANONYMOUS";
+      return type === "SYSTEM";
+    });
+    const enrichedUsers = filteredUsers.map((user) => ({
       ...user,
-      is_real: user.identity_key.startsWith("google:"),
-      is_anonymous: user.user_type === "ANONYMOUS",
+      user_type: getUserType(user.identity_key),
     }));
 
     return NextResponse.json(

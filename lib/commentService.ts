@@ -140,10 +140,9 @@ export const getComments = async (postId: string): Promise<Comment[]> => {
     }
   }
 
-  return rootComments.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  return rootComments.sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 };
 
 export const addComment = async (postId: string, input: CommentInput): Promise<Comment> => {

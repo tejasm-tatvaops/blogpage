@@ -58,7 +58,7 @@ export function ForumCommentSection({
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
-  const [sortMode, setSortMode] = useState<"top" | "newest">("top");
+  const [sortMode, setSortMode] = useState<"top" | "newest">("newest");
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [activeReplyFor, setActiveReplyFor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -171,8 +171,6 @@ export function ForumCommentSection({
 
     return clone.sort((a, b) => {
       if (sortMode === "newest") {
-        if (a.id === bestCommentId) return -1;
-        if (b.id === bestCommentId) return 1;
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }
       if (a.id === bestCommentId) return -1;

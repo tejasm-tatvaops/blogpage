@@ -88,8 +88,8 @@ const userProfileSchema = new mongoose.Schema(
     forum_last_posted_at: { type: Date, default: null },
 
     // ── User classification ───────────────────────────────────────────────────
-    // REAL = authenticated (google:), ANONYMOUS = human guest (fp:/ip:), AI = seeded synthetic user
-    user_type: { type: String, enum: ["REAL", "ANONYMOUS", "AI"], default: "ANONYMOUS", index: true },
+    // REAL = authenticated (google:), ANONYMOUS = human guest (fp:/ip:), SYSTEM = seeded/imported profile
+    user_type: { type: String, enum: ["REAL", "ANONYMOUS", "SYSTEM"], default: "ANONYMOUS", index: true },
 
     // ── Navigation breadcrumbs ────────────────────────────────────────────────
     last_blog_slug: { type: String, default: null, trim: true },
