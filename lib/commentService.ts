@@ -1,4 +1,4 @@
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, type ClientSession } from "mongoose";
 import { z } from "zod";
 import { CommentModel, type CommentDocument } from "@/models/Comment";
 import { PositiveMentionCounterModel } from "@/models/PositiveMentionCounter";
@@ -228,10 +228,11 @@ export const addCommentWithIdentity = async (
   postId: string,
   input: CommentInput,
   identityKey: string | null,
-  options?: { isPositiveTatvaMention?: boolean },
+  options?: { isPositiveTatvaMention?: boolean; session?: ClientSession },
 ): Promise<Comment> => {
   await connectToDatabase();
   const parentId = input.parent_comment_id?.trim() || null;
+  const session = options?.session;
 
   if (parentId) {
     if (!isValidObjectId(parentId)) {
@@ -244,6 +245,7 @@ export const addCommentWithIdentity = async (
       ...notDeleted,
     })
       .select("_id parent_comment_id")
+      .session(session ?? null)
       .lean()) as Pick<CommentDocument, "_id" | "parent_comment_id"> | null;
 
     if (!parent) {
@@ -252,6 +254,7 @@ export const addCommentWithIdentity = async (
     if (parent.parent_comment_id) {
       const grandparent = (await CommentModel.findById(parent.parent_comment_id)
         .select("parent_comment_id")
+        .session(session ?? null)
         .lean()) as { parent_comment_id?: string | null } | null;
       if (grandparent?.parent_comment_id) {
         throw new Error("Maximum reply depth reached.");
@@ -259,7 +262,7 @@ export const addCommentWithIdentity = async (
     }
   }
 
-  const doc = await CommentModel.create({
+  const doc = await CommentModel.create([{
     post_id: postId,
     parent_comment_id: parentId,
     identity_key: identityKey?.trim() || null,
@@ -271,7 +274,7 @@ export const addCommentWithIdentity = async (
     upvote_count: 0,
     downvote_count: 0,
     deleted_at: null,
-  });
+  }], session ? { session } : undefined).then((docs) => docs[0]!);
   const created = toComment(doc.toObject() as unknown as CommentDocument);
 
   if (parentId) {
@@ -416,12 +419,15 @@ export type DeleteOwnCommentOutcome =
 export const deleteOwnCommentById = async (
   commentId: string,
   identityKey: string,
+  options?: { session?: ClientSession },
 ): Promise<DeleteOwnCommentOutcome> => {
   await connectToDatabase();
   if (!isValidObjectId(commentId) || !identityKey.trim()) return { status: "not_found" };
+  const session = options?.session;
 
   const existing = await CommentModel.findOne({ _id: commentId, ...notDeleted })
     .select("identity_key post_id content is_positive_tatva_mention")
+    .session(session ?? null)
     .lean();
 
   if (!existing) return { status: "not_found" };
@@ -430,7 +436,7 @@ export const deleteOwnCommentById = async (
   const result = await CommentModel.findOneAndUpdate(
     { _id: commentId, ...notDeleted },
     { deleted_at: new Date() },
-    { new: false },
+    { new: false, session },
   )
     .select("_id")
     .lean();
@@ -452,9 +458,11 @@ export const deleteOwnCommentById = async (
 export const incrementPositiveMentionCounter = async (
   identityKey: string,
   postSlug: string,
+  options?: { session?: ClientSession },
 ): Promise<number> => {
   await connectToDatabase();
   if (!identityKey.trim() || !postSlug.trim()) return 0;
+  const session = options?.session;
 
   const updated = await PositiveMentionCounterModel.findOneAndUpdate(
     {
@@ -465,11 +473,10 @@ export const incrementPositiveMentionCounter = async (
       $setOnInsert: {
         identity_key: identityKey.trim(),
         post_slug: postSlug.trim(),
-        qualifying_count: 0,
       },
       $inc: { qualifying_count: 1 },
     },
-    { new: true, upsert: true },
+    { new: true, upsert: true, session },
   )
     .select("qualifying_count")
     .lean();
@@ -480,9 +487,11 @@ export const incrementPositiveMentionCounter = async (
 export const decrementPositiveMentionCounter = async (
   identityKey: string,
   postSlug: string,
+  options?: { session?: ClientSession },
 ): Promise<number> => {
   await connectToDatabase();
   if (!identityKey.trim() || !postSlug.trim()) return 0;
+  const session = options?.session;
 
   const updated = await PositiveMentionCounterModel.findOneAndUpdate(
     {
@@ -498,7 +507,7 @@ export const decrementPositiveMentionCounter = async (
         },
       },
     ],
-    { new: true },
+    { new: true, session },
   )
     .select("qualifying_count")
     .lean();
@@ -511,16 +520,18 @@ export const seedPositiveMentionCounterFromComments = async (
   identityKey: string,
   postId: string,
   postSlug: string,
+  options?: { session?: ClientSession },
 ): Promise<number> => {
   await connectToDatabase();
   if (!identityKey.trim() || !postId.trim() || !postSlug.trim()) return 0;
+  const session = options?.session;
 
   const qualifyingCount = await CommentModel.countDocuments({
     post_id: postId,
     identity_key: identityKey.trim(),
     is_positive_tatva_mention: true,
     ...notDeleted,
-  });
+  }).session(session ?? null);
 
   await PositiveMentionCounterModel.findOneAndUpdate(
     { identity_key: identityKey.trim(), post_slug: postSlug.trim() },
@@ -531,7 +542,7 @@ export const seedPositiveMentionCounterFromComments = async (
         qualifying_count: qualifyingCount,
       },
     },
-    { upsert: true, new: true },
+    { upsert: true, new: true, session },
   );
 
   return Number(qualifyingCount);
@@ -539,11 +550,14 @@ export const seedPositiveMentionCounterFromComments = async (
 
 export const getCommentMetaById = async (
   commentId: string,
+  options?: { session?: ClientSession },
 ): Promise<{ post_id: string } | null> => {
   await connectToDatabase();
   if (!isValidObjectId(commentId)) return null;
+  const session = options?.session;
   const result = await CommentModel.findOne({ _id: commentId, ...notDeleted })
     .select("post_id")
+    .session(session ?? null)
     .lean();
   if (!result?.post_id) return null;
   return { post_id: result.post_id };

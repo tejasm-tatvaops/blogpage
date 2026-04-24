@@ -14,7 +14,8 @@
     "images:backfill": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/generateMissingImages.ts",
     "generate:images": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/generateBlogImages.ts",
     "users:fix-types": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/fixUserTypes.ts",
-    "identity:fix-drift": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/fixIdentityDrift.ts"
+    "identity:fix-drift": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/fixIdentityDrift.ts",
+    "test:reputation-concurrency": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/reputationConcurrencyTest.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

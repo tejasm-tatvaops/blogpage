@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { getPostBySlug } from "@/lib/blogService";
 import {
   addCommentWithIdentity,
@@ -58,11 +59,57 @@ export async function POST(
     }
 
     const commenterKey = await getIdentityKeyFromSessionOrRequest(request);
+    const flowContext = { flow: "comment_create_blog", identityKey: commenterKey, slug: post.slug };
     const content = (result.data.content ?? "").trim();
     const isPositiveTatvaMention = content.length >= 30 && mentionsTatvaOps(content);
-    const comment = await addCommentWithIdentity(post.id, result.data, commenterKey, {
-      isPositiveTatvaMention,
-    });
+    logger.info({ ...flowContext, step: "transaction_start", isPositiveTatvaMention }, "Comment create flow started");
+    const session = await mongoose.startSession();
+    let comment: Awaited<ReturnType<typeof addCommentWithIdentity>> | null = null;
+    try {
+      comment = await session.withTransaction(async () => {
+        const createdComment = await addCommentWithIdentity(post.id, result.data, commenterKey, {
+          isPositiveTatvaMention,
+          session,
+        });
+        await awardPoints({
+          identityKey: commenterKey,
+          reason: "article_comment_received",
+          sourceContentSlug: post.slug,
+          sourceContentType: "blog",
+          eventKey: `blog-comment:${commenterKey}:${post.slug}:${createdComment.id}`,
+        }, { session });
+        logger.info(
+          { ...flowContext, eventKey: `blog-comment:${commenterKey}:${post.slug}:${createdComment.id}`, step: "base_award_complete" },
+          "Base comment award complete",
+        );
+
+        if (isPositiveTatvaMention) {
+          const count = await incrementPositiveMentionCounter(commenterKey, post.slug, { session });
+          if (count === 1) {
+            await onPositiveFeedback(commenterKey, {
+              note: "Mentioned TatvaOps positively in a comment",
+              sourceSlug: post.slug,
+              eventKey: `positive-feedback:${commenterKey}:${post.slug}`,
+            }, { session });
+            logger.info(
+              { ...flowContext, eventKey: `positive-feedback:${commenterKey}:${post.slug}`, step: "bonus_award_complete" },
+              "Positive feedback award complete",
+            );
+          }
+        }
+        return createdComment;
+      }, {
+        readConcern: { level: "snapshot" },
+        writeConcern: { w: "majority" },
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    if (!comment) {
+      return NextResponse.json({ error: "Failed to post comment." }, { status: 500 });
+    }
+    logger.info({ ...flowContext, step: "transaction_commit", commentId: comment.id }, "Comment create flow committed");
     void notifyMentionedUsers({
       content: result.data.content,
       actorIdentityKey: commenterKey,
@@ -79,29 +126,6 @@ export async function POST(
       about: "Reader who contributes thoughts on blog posts, construction workflows, and planning decisions.",
       lastBlogSlug: post.slug,
     });
-    void awardPoints({
-      identityKey: commenterKey,
-      reason: "article_comment_received",
-      sourceContentSlug: post.slug,
-      sourceContentType: "blog",
-      eventKey: `blog-comment:${commenterKey}:${post.slug}:${comment.id}`,
-    });
-    // +10 for meaningful TatvaOps mention.
-    // Counter transition 0 -> 1 is atomic and avoids duplicate awards under concurrency.
-    if (isPositiveTatvaMention) {
-      void incrementPositiveMentionCounter(commenterKey, post.slug)
-        .then((count) => {
-          if (count !== 1) return;
-          return onPositiveFeedback(commenterKey, {
-            note: "Mentioned TatvaOps positively in a comment",
-            sourceSlug: post.slug,
-            eventKey: `positive-feedback:${commenterKey}:${post.slug}`,
-          });
-        })
-        .catch((error) => {
-          logger.error({ error, commenterKey, slug }, "Failed to process positive mention counter");
-        });
-    }
     logger.info({ postId: post.id, slug }, "New comment added");
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error) {

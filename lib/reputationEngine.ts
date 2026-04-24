@@ -44,6 +44,7 @@
  */
 
 import { connectToDatabase } from "@/lib/mongodb";
+import type { ClientSession } from "mongoose";
 import { UserProfileModel, getReputationTier } from "@/models/UserProfile";
 import {
   ReputationEventModel,
@@ -318,7 +319,10 @@ export type AwardPointsOptions = {
  * Award (or deduct) points from a user.
  * Returns the awarded_points value, or 0 if the event was blocked.
  */
-export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
+export async function awardPoints(
+  opts: AwardPointsOptions,
+  options?: { session?: ClientSession },
+): Promise<number> {
   const {
     identityKey,
     reason,
@@ -370,9 +374,10 @@ export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
 
   let awardedResult = awarded;
   let shouldCheckBadges = false;
-  const session = await UserProfileModel.db.startSession();
+  const externalSession = options?.session;
+  const session = externalSession ?? await UserProfileModel.db.startSession();
   try {
-    await session.withTransaction(async () => {
+    const runAward = async () => {
       if (eventKey) {
         const existing = await ReputationEventModel.findOne({ event_key: eventKey })
           .select("awarded_points")
@@ -446,10 +451,16 @@ export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
 
       awardedResult = awarded;
       shouldCheckBadges = !skipBadgeCheck;
-    }, {
-      readConcern: { level: "snapshot" },
-      writeConcern: { w: "majority" },
-    });
+    };
+
+    if (externalSession) {
+      await runAward();
+    } else {
+      await session.withTransaction(runAward, {
+        readConcern: { level: "snapshot" },
+        writeConcern: { w: "majority" },
+      });
+    }
   } catch (error) {
     const maybeMongo = error as { code?: number };
     if (maybeMongo?.code === 11000 && eventKey) {
@@ -460,7 +471,7 @@ export async function awardPoints(opts: AwardPointsOptions): Promise<number> {
     }
     throw error;
   } finally {
-    await session.endSession();
+    if (!externalSession) await session.endSession();
   }
 
   // Badge check
@@ -546,7 +557,11 @@ export async function onForumAnswerGiven(identityKey: string, forumSlug: string,
  * Revert a previously awarded comment-related event by event_key.
  * Uses an idempotent reverse key so repeated delete calls do not double-deduct.
  */
-export async function revertAwardByEventKey(identityKey: string, sourceEventKey: string): Promise<number> {
+export async function revertAwardByEventKey(
+  identityKey: string,
+  sourceEventKey: string,
+  options?: { session?: ClientSession },
+): Promise<number> {
   const cleanIdentity = identityKey.trim();
   const cleanSourceKey = sourceEventKey.trim();
   if (!cleanIdentity || !cleanSourceKey) return 0;
@@ -558,6 +573,7 @@ export async function revertAwardByEventKey(identityKey: string, sourceEventKey:
     event_key: cleanSourceKey,
   })
     .select("awarded_points")
+    .session(options?.session ?? null)
     .lean();
 
   const awarded = Number(sourceEvent?.awarded_points ?? 0);
@@ -570,7 +586,7 @@ export async function revertAwardByEventKey(identityKey: string, sourceEventKey:
     note: `Auto reversal for deleted comment (${cleanSourceKey})`,
     eventKey: `revert:${cleanSourceKey}`,
     skipBadgeCheck: true,
-  });
+  }, options);
 }
 
 /** Called when a forum comment is marked best answer. */
@@ -793,6 +809,7 @@ export async function recomputeReputationScore(
 export async function onPositiveFeedback(
   identityKey: string,
   opts: { note?: string; sourceSlug?: string; eventKey?: string } = {},
+  options?: { session?: ClientSession },
 ) {
   return awardPoints({
     identityKey,
@@ -800,7 +817,7 @@ export async function onPositiveFeedback(
     sourceContentSlug: opts.sourceSlug ?? null,
     note: opts.note ?? "Positive mention of TatvaOps",
     eventKey: opts.eventKey ?? null,
-  });
+  }, options);
 }
 
 export async function getReputationHistory(
