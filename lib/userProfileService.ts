@@ -612,7 +612,6 @@ export const recordUserActivity = async (input: UserActivityInput): Promise<void
         silence_bias: behavior.silenceBias,
         emoji_level: behavior.emojiLevel,
         social_cluster: behavior.socialCluster,
-        frequent_peer_keys: [],
         topic_focus_history: behavior.topicFocus,
         topic_shift_count: 0,
       },
@@ -622,14 +621,23 @@ export const recordUserActivity = async (input: UserActivityInput): Promise<void
         last_seen_at: new Date(),
         ...(input.lastBlogSlug ? { last_blog_slug: input.lastBlogSlug } : {}),
         ...(input.lastForumSlug ? { last_forum_slug: input.lastForumSlug } : {}),
-        ...(input.action === "forum_comment" && input.lastForumSlug
-          ? { frequent_peer_keys: [`thread:${input.lastForumSlug}`] }
-          : {}),
       },
       $inc: increments,
     },
-    { upsert: true, new: true },
+    {
+      upsert: true,
+      new: true,
+      // Avoid default-insert/operator collisions for array fields that are updated separately.
+      setDefaultsOnInsert: false,
+    },
   ).lean();
+
+  if (input.action === "forum_comment" && input.lastForumSlug) {
+    await UserProfileModel.updateOne(
+      { identity_key: identityKey },
+      { $addToSet: { frequent_peer_keys: `thread:${input.lastForumSlug}` } },
+    );
+  }
 
   const focusSignal = sanitizeKey(input.tags?.[0] ?? input.category ?? "");
   if (focusSignal) {

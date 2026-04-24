@@ -81,15 +81,15 @@ export const BASE_POINTS: Record<RepEventReason, number> = {
 
 // ─── Cross-content multiplier ─────────────────────────────────────────────────
 
-const CROSS_CONTENT_MULTIPLIER = 10;
+export const CROSS_CONTENT_MULTIPLIER = 10;
 
 // ─── Anti-abuse constants ─────────────────────────────────────────────────────
 
-const ABUSE_WINDOW_MS   = 60 * 60 * 1000; // 1 hour
-const ABUSE_MAX_PER_ACTOR = 3;            // same actor, same reason, same target
-const DAILY_CAP         = 500;            // max points earnable per user per day
-const BURST_LIMIT       = 30;             // max events per identity per burst window
-const BURST_WINDOW_MS   = 60_000;         // 1 minute
+export const ABUSE_WINDOW_MS   = 60 * 60 * 1000; // 1 hour
+export const ABUSE_MAX_PER_ACTOR = 3;            // same actor, same reason, same target
+export const DAILY_CAP         = 500;            // max points earnable per user per day
+export const BURST_LIMIT       = 30;             // max events per identity per burst window
+export const BURST_WINDOW_MS   = 60_000;         // 1 minute
 
 // In-process burst tracker (resets on cold start)
 type BurstEntry = { count: number; windowStart: number };

@@ -67,6 +67,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   const [mentionSuggestions, setMentionSuggestions] = useState<MentionSuggestion[]>([]);
   const [mentionTarget, setMentionTarget] = useState<{ type: "main" } | { type: "reply"; id: string } | null>(null);
   const currentIdentityKey = session?.user?.id ? `google:${session.user.id}` : null;
+  const fallbackAuthorName = String(session?.user?.name ?? "").trim() || "Member";
 
   const updateMentionSuggestions = useCallback(async (value: string, target: { type: "main" } | { type: "reply"; id: string }) => {
     const query = mentionQueryFrom(value);
@@ -190,7 +191,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
     setSuccess(false);
     setSubmitting(true);
 
-    const submitAuthor = authorName.trim() || "Anonymous";
+    const submitAuthor = authorName.trim() || (session ? fallbackAuthorName : "Anonymous");
     try {
       const res = await fetch(`/api/blog/${encodeURIComponent(slug)}/comments`, {
         method: "POST",
@@ -218,7 +219,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
 
   const onReply = async (parentCommentId: string) => {
     const replyText = replyDrafts[parentCommentId]?.trim() ?? "";
-    const replyAuthor = authorName.trim() || "Anonymous";
+    const replyAuthor = authorName.trim() || (session ? fallbackAuthorName : "Anonymous");
     if (!replyText) return;
     if (submitting) return;
 

@@ -159,6 +159,44 @@ function ForumGamification({ user }: { user: UserProfile }) {
   );
 }
 
+function UserAvatarImage({
+  user,
+  sizeClass,
+}: {
+  user: UserProfile;
+  sizeClass: string;
+}) {
+  const avatar = getUserAvatar(user);
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = avatar.type !== "initials" && !imageFailed;
+
+  if (!showImage) {
+    const fallbackName = avatar.type === "initials" ? avatar.name : user.display_name || "User";
+    const fallbackGradient =
+      avatar.type === "initials" ? avatar.gradient : "from-slate-500 to-slate-700";
+    return (
+      <div
+        className={`${sizeClass} rounded-full flex items-center justify-center text-white font-semibold bg-gradient-to-br ${fallbackGradient} border border-white/10 shadow-sm ring-1 ring-white/5`}
+      >
+        {fallbackName.slice(0, 2).toUpperCase()}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={avatar.src}
+      alt={`${user.display_name} avatar`}
+      className={`${sizeClass} rounded-full object-cover border border-white/10 shadow-sm ring-1 ring-white/5 ${
+        avatar.type === "dicebear" ? "opacity-90" : ""
+      }`}
+      loading="lazy"
+      onError={() => setImageFailed(true)}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
 export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps) {
   const initialTotals = totals ?? { blogViews: 0, forumViews: 0 };
   const initialUserTotals = userTotals ?? { blogViews: 0, forumViews: 0 };
@@ -416,27 +454,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
             {helpfulUsers.map((user) => (
               <span key={user.id} className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-sm text-slate-700 shadow-sm">
                 <div className="transition-transform duration-200 hover:scale-105">
-                  {(() => {
-                    const avatar = getUserAvatar(user);
-                    if (avatar.type === "initials") {
-                      return (
-                        <div
-                          className={`h-5 w-5 rounded-full flex items-center justify-center text-white text-[9px] font-semibold bg-gradient-to-br ${avatar.gradient} border border-white/10 shadow-sm ring-1 ring-white/5`}
-                        >
-                          {avatar.name.slice(0, 2).toUpperCase()}
-                        </div>
-                      );
-                    }
-                    return (
-                      <img
-                        src={avatar.src}
-                        alt={`${user.display_name} avatar`}
-                        className={`h-5 w-5 rounded-full object-cover border border-white/10 shadow-sm ring-1 ring-white/5 ${
-                          avatar.type === "dicebear" ? "opacity-90" : ""
-                        }`}
-                      />
-                    );
-                  })()}
+                  <UserAvatarImage user={user} sizeClass="h-5 w-5 text-[9px]" />
                 </div>
                 {user.display_name}
               </span>
@@ -476,28 +494,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
               >
               <div className="flex items-start gap-4">
                 <div className="transition-transform duration-200 hover:scale-105">
-                  {(() => {
-                    const avatar = getUserAvatar(user);
-                    if (avatar.type === "initials") {
-                      return (
-                        <div
-                          className={`h-14 w-14 rounded-full flex items-center justify-center text-white text-base font-semibold bg-gradient-to-br ${avatar.gradient} border border-white/10 shadow-sm ring-1 ring-white/5`}
-                        >
-                          {avatar.name.slice(0, 2).toUpperCase()}
-                        </div>
-                      );
-                    }
-                    return (
-                      <img
-                        src={avatar.src}
-                        alt={`${user.display_name} avatar`}
-                        className={`h-14 w-14 rounded-full object-cover border border-white/10 shadow-sm ring-1 ring-white/5 ${
-                          avatar.type === "dicebear" ? "opacity-90" : ""
-                        }`}
-                        loading="lazy"
-                      />
-                    );
-                  })()}
+                  <UserAvatarImage user={user} sizeClass="h-14 w-14 text-base" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">

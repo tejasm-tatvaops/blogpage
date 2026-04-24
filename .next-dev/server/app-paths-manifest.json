@@ -1,14 +1,13 @@
 {
-  "/api/blog/[slug]/comments/route": "app/api/blog/[slug]/comments/route.js",
-  "/api/me/reputation/route": "app/api/me/reputation/route.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/feed/events/route": "app/api/feed/events/route.js",
+  "/api/forums/[slug]/comments/route": "app/api/forums/[slug]/comments/route.js",
   "/api/notifications/route": "app/api/notifications/route.js",
-  "/api/users/profile/route": "app/api/users/profile/route.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/me/reputation/route": "app/api/me/reputation/route.js",
   "/api/trending/route": "app/api/trending/route.js",
+  "/api/blog/[slug]/view/route": "app/api/blog/[slug]/view/route.js",
+  "/api/feed/events/route": "app/api/feed/events/route.js",
+  "/api/blog/[slug]/comments/route": "app/api/blog/[slug]/comments/route.js",
   "/page": "app/page.js",
   "/blog/page": "app/blog/page.js",
-  "/blog/[slug]/page": "app/blog/[slug]/page.js",
-  "/admin/login/page": "app/admin/login/page.js",
-  "/forums/[slug]/page": "app/forums/[slug]/page.js"
+  "/blog/[slug]/page": "app/blog/[slug]/page.js"
 }

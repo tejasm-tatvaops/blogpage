@@ -30,6 +30,25 @@ type DryRunResult = {
   }>;
 };
 
+type ReputationRules = {
+  pointTable: Record<string, number>;
+  tiers: Record<string, number>;
+  crossContentMultiplier: number;
+  antiAbuse: {
+    abuseWindowMs: number;
+    abuseMaxPerActor: number;
+    dailyCap: number;
+    burstLimit: number;
+    burstWindowMs: number;
+  };
+  badges: Array<{
+    id: string;
+    label: string;
+    description: string;
+    bonus: number;
+  }>;
+};
+
 const LS_KEY = "tatvaops_last_recompute_at";
 
 function relativeTime(ts: number): string {
@@ -40,12 +59,19 @@ function relativeTime(ts: number): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function formatDuration(ms: number): string {
+  if (ms < 60_000) return `${Math.round(ms / 1000)} sec`;
+  if (ms < 3_600_000) return `${Math.round(ms / 60_000)} min`;
+  return `${Math.round(ms / 3_600_000)} hr`;
+}
+
 export function ReputationAdminPanel() {
   const [identityKey, setIdentityKey] = useState("");
   const [points, setPoints] = useState("10");
   const [note, setNote] = useState("");
   const [history, setHistory] = useState<HistoryEvent[]>([]);
   const [analytics, setAnalytics] = useState<Record<string, unknown> | null>(null);
+  const [rules, setRules] = useState<ReputationRules | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +98,12 @@ export function ReputationAdminPanel() {
     setAnalytics(data);
   };
 
+  const loadRules = async () => {
+    const res = await fetch("/api/admin/reputation/rules", { cache: "no-store" });
+    const data = await res.json();
+    setRules(data as ReputationRules);
+  };
+
   const loadHistory = async () => {
     if (!identityKey.trim()) return;
     const res = await fetch(
@@ -82,7 +114,9 @@ export function ReputationAdminPanel() {
     setHistory((data as { history?: HistoryEvent[] }).history ?? []);
   };
 
-  useEffect(() => { void loadAnalytics(); }, []);
+  useEffect(() => {
+    void Promise.all([loadAnalytics(), loadRules()]);
+  }, []);
 
   const submitAdjust = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -149,6 +183,14 @@ export function ReputationAdminPanel() {
   const suspicious = useMemo(
     () => (analytics?.suspiciousActors as unknown[]) ?? [],
     [analytics],
+  );
+  const sortedPointTable = useMemo(
+    () => Object.entries(rules?.pointTable ?? {}).sort((a, b) => b[1] - a[1]),
+    [rules],
+  );
+  const sortedTiers = useMemo(
+    () => Object.entries(rules?.tiers ?? {}).sort((a, b) => a[1] - b[1]),
+    [rules],
   );
 
   return (
@@ -284,6 +326,81 @@ export function ReputationAdminPanel() {
                 ))}
               </ul>
             )}
+          </div>
+        )}
+      </section>
+
+      {/* ── Scoring rules reference ─────────────────────────────────────────── */}
+      <section className="ui-card rounded-xl p-4">
+        <div className="mb-3">
+          <h2 className="text-sm font-semibold text-app">Scoring Rules Reference</h2>
+          <p className="mt-0.5 text-xs text-muted">
+            Live rulebook used by recompute and event awards.
+          </p>
+        </div>
+
+        {!rules ? (
+          <p className="text-xs text-muted">Loading scoring rules...</p>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-lg border border-app bg-subtle p-3">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-app">Point Table</h3>
+              <div className="max-h-60 space-y-1 overflow-auto pr-1">
+                {sortedPointTable.map(([reason, pts]) => (
+                  <div key={reason} className="flex items-center justify-between rounded-md border border-app/60 px-2 py-1 text-xs">
+                    <span className="font-mono text-app">{reason}</span>
+                    <span className={pts >= 0 ? "text-emerald-700" : "text-red-600"}>
+                      {pts >= 0 ? "+" : ""}{pts} pts
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-lg border border-app bg-subtle p-3">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-app">Tier Thresholds</h3>
+                <div className="space-y-1">
+                  {sortedTiers.map(([tier, minScore]) => (
+                    <div key={tier} className="flex items-center justify-between rounded-md border border-app/60 px-2 py-1 text-xs">
+                      <span className="text-app">{tier}</span>
+                      <span className="text-muted">{minScore}+ score</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-app bg-subtle p-3">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-app">Special Multipliers</h3>
+                <p className="text-xs text-muted">
+                  Cross-content engagement uses a <strong>{rules.crossContentMultiplier}x</strong> multiplier when source and target content types differ.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-app bg-subtle p-3">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-app">Anti-Abuse Guards</h3>
+                <ul className="space-y-1 text-xs text-muted">
+                  <li>Same actor + reason + content capped at {rules.antiAbuse.abuseMaxPerActor} events per {formatDuration(rules.antiAbuse.abuseWindowMs)}.</li>
+                  <li>Daily positive award cap per identity: {rules.antiAbuse.dailyCap} points.</li>
+                  <li>Burst limit: {rules.antiAbuse.burstLimit} events per {formatDuration(rules.antiAbuse.burstWindowMs)}.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-app bg-subtle p-3 lg:col-span-2">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-app">Badge Bonuses</h3>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {rules.badges.map((badge) => (
+                  <div key={badge.id} className="rounded-md border border-app/60 px-2 py-1 text-xs">
+                    <p className="font-medium text-app">{badge.label}</p>
+                    <p className="text-faint">{badge.description}</p>
+                    <p className="mt-1 text-muted">
+                      Bonus: {badge.bonus > 0 ? `+${badge.bonus}` : "0"} pts
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </section>

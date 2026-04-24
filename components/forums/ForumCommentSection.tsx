@@ -74,6 +74,7 @@ export function ForumCommentSection({
   const currentIdentityKey = session?.user?.id
     ? `google:${session.user.id}`
     : `fp:${getOrCreateFingerprint()}`;
+  const fallbackAuthorName = String(session?.user?.name ?? "").trim() || "Member";
 
   const updateMentionSuggestions = useCallback(async (value: string, target: { type: "main" } | { type: "reply"; id: string }) => {
     const query = mentionQueryFrom(value);
@@ -205,7 +206,7 @@ export function ForumCommentSection({
     setError(null);
     setSuccess(false);
     setSubmitting(true);
-    const submitAuthor = authorName.trim() || "Anonymous";
+    const submitAuthor = authorName.trim() || (session ? fallbackAuthorName : "Anonymous");
     try {
       const res = await fetch(`/api/forums/${encodeURIComponent(slug)}/comments`, {
         method: "POST",
@@ -228,7 +229,7 @@ export function ForumCommentSection({
 
   const onReply = async (parentCommentId: string) => {
     const replyText = replyDrafts[parentCommentId]?.trim() ?? "";
-    const replyAuthor = authorName.trim() || "Anonymous";
+    const replyAuthor = authorName.trim() || (session ? fallbackAuthorName : "Anonymous");
     if (!replyText || submitting) return;
     setError(null);
     setSubmitting(true);
