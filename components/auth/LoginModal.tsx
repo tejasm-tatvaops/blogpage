@@ -37,13 +37,15 @@ export function LoginModal({ isOpen, onClose }: Props) {
     <div
       ref={overlayRef}
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-sm dark:bg-black/60"
     >
-      <div className="relative w-full max-w-sm rounded-2xl border border-slate-700 bg-[#0b1220] p-8 shadow-2xl">
+      <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-sky-300/35 bg-white p-8 shadow-2xl dark:border-sky-400/20 dark:bg-[#0b1220]">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-sky-400/15 blur-2xl dark:bg-sky-400/20" />
+        <div className="pointer-events-none absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-indigo-500/15 blur-2xl dark:bg-indigo-500/20" />
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 transition hover:text-slate-200"
+          className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200"
           aria-label="Close login modal"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -52,14 +54,27 @@ export function LoginModal({ isOpen, onClose }: Props) {
           </svg>
         </button>
 
-        <h2 className="mb-1 text-2xl font-bold text-white">Hello!</h2>
-        <p className="mb-7 text-sm text-slate-400">Welcome Back</p>
+        <div className="relative">
+          <span className="mb-3 inline-flex items-center gap-1 rounded-full border border-sky-300/40 bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-700 dark:border-sky-300/30 dark:bg-sky-400/15 dark:text-sky-200">
+            Unlock full experience
+          </span>
+          <h2 className="mb-1 text-3xl font-extrabold leading-tight text-slate-900 dark:text-white">Continue with TatvaOps</h2>
+          <p className="mb-6 text-sm text-slate-600 dark:text-slate-300">
+            Save articles, earn reputation points, get personalized feed, and join higher-quality discussions.
+          </p>
+        </div>
+
+        <div className="mb-6 grid grid-cols-1 gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+          <p>• Save and resume reading across devices</p>
+          <p>• Build reputation with comments and contributions</p>
+          <p>• Get smarter recommendations tuned to your interests</p>
+        </div>
 
         <button
           type="button"
           onClick={handleGoogle}
           disabled={loading}
-          className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm font-semibold text-white transition hover:border-slate-500 hover:bg-slate-700 disabled:opacity-60"
+          className="relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl border border-sky-300 bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition hover:border-sky-500 hover:bg-sky-700 disabled:opacity-60 dark:border-sky-300/40 dark:bg-sky-500/20 dark:hover:border-sky-300/60 dark:hover:bg-sky-500/30"
         >
           {loading ? (
             <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -77,8 +92,8 @@ export function LoginModal({ isOpen, onClose }: Props) {
           {loading ? "Redirecting…" : "Continue with Google"}
         </button>
 
-        <p className="mt-5 text-center text-xs text-slate-500">
-          By continuing, you agree to our terms of service.
+        <p className="mt-5 text-center text-xs text-slate-500 dark:text-slate-400">
+          Takes 1 click. No password needed.
         </p>
       </div>
     </div>
