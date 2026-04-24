@@ -3,6 +3,7 @@ import { getRelatedPosts } from "@/lib/blogService";
 import { getRelatedForumPosts } from "@/lib/forumService";
 import { getTutorials } from "@/lib/tutorialService";
 import { getVideosByTags } from "@/lib/videoService";
+import { searchSemanticHits } from "@/lib/semanticGraphService";
 
 type GraphSource = {
   sourceType: "blog" | "forum" | "tutorial" | "short";
@@ -26,7 +27,25 @@ export async function buildAskAiGraphContext(currentPost: BlogPost): Promise<{
   sources: GraphSource[];
   sourceMix: Record<GraphSource["sourceType"], number>;
 }> {
+  return buildAskAiGraphContextWithQuery(currentPost);
+}
+
+export async function buildAskAiGraphContextWithQuery(
+  currentPost: BlogPost,
+  query?: string,
+): Promise<{
+  contextText: string;
+  sources: GraphSource[];
+  sourceMix: Record<GraphSource["sourceType"], number>;
+}> {
   const tags = currentPost.tags ?? [];
+  const semanticQuery = String(query ?? `${currentPost.title} ${currentPost.excerpt} ${tags.join(" ")}`).trim();
+  const semanticHits = await searchSemanticHits({
+    query: semanticQuery,
+    limit: 10,
+    exclude: { sourceType: "blog", slug: currentPost.slug },
+  }).catch(() => []);
+
   const [relatedBlogs, relatedForums, tutorialsResult, relatedShorts] = await Promise.all([
     getRelatedPosts(currentPost, 4).catch(() => []),
     getRelatedForumPosts(tags, undefined, 4).catch(() => []),
@@ -44,6 +63,15 @@ export async function buildAskAiGraphContext(currentPost: BlogPost): Promise<{
       trustScore: 0.84,
       relevanceScore: 1,
     },
+    ...semanticHits.map((hit) => ({
+      sourceType: hit.sourceType,
+      slug: hit.slug,
+      title: hit.title,
+      excerpt: hit.excerpt,
+      snippet: truncateWords(hit.snippet, 220),
+      trustScore: hit.trustScore,
+      relevanceScore: hit.relevanceScore,
+    })),
     ...relatedBlogs.map((item) => ({
       sourceType: "blog" as const,
       slug: item.slug,

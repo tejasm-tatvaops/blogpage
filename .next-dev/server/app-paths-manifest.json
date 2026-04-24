@@ -1,4 +1,14 @@
 {
-  "/blog/page": "app/blog/page.js",
-  "/page": "app/page.js"
+  "/api/admin/maintenance/audit/route": "app/api/admin/maintenance/audit/route.js",
+  "/api/admin/semantic/reindex/route": "app/api/admin/semantic/reindex/route.js",
+  "/api/admin/jobs/route": "app/api/admin/jobs/route.js",
+  "/api/admin/system/toggles/route": "app/api/admin/system/toggles/route.js",
+  "/api/admin/research/pipeline/route": "app/api/admin/research/pipeline/route.js",
+  "/api/admin/tutorials/trend-drafts/route": "app/api/admin/tutorials/trend-drafts/route.js",
+  "/api/me/route": "app/api/me/route.js",
+  "/tutorials/[slug]/page": "app/tutorials/[slug]/page.js",
+  "/admin/login/page": "app/admin/login/page.js",
+  "/admin/(dashboard)/tutorials/page": "app/admin/(dashboard)/tutorials/page.js",
+  "/admin/(dashboard)/blog/page": "app/admin/(dashboard)/blog/page.js",
+  "/admin/(dashboard)/tutorials/drafts/page": "app/admin/(dashboard)/tutorials/drafts/page.js"
 }

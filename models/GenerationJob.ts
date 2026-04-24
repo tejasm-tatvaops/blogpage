@@ -1,13 +1,13 @@
 import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
-export type JobType = "generate_forums" | "autopopulate" | "generate_blogs";
+export type JobType = "generate_forums" | "autopopulate" | "generate_blogs" | "forum_trend_drafts";
 export type JobStatus = "pending" | "running" | "completed" | "failed";
 
 const generationJobSchema = new mongoose.Schema(
   {
     type: {
       type: String,
-      enum: ["generate_forums", "autopopulate", "generate_blogs"],
+      enum: ["generate_forums", "autopopulate", "generate_blogs", "forum_trend_drafts"],
       required: true,
     },
     status: {

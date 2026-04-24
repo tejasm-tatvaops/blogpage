@@ -142,17 +142,17 @@
 - Add enrichment artifacts (FAQ, glossary, quizzes, takeaways, prerequisite links, related forum topics, cover fallback).
 - Preserve existing publish targets and route contracts.
 
-### Phase 2: Interactive tutorials
+### Phase 2: Interactive tutorials (implemented)
 
-- Add typed tutorial learning blocks (`quiz`, `exercise`, `challenge`) as optional additive schema.
-- Reuse `TutorialProgress` for per-block completion and aggregate progress.
-- Maintain current markdown compatibility fallback.
+- Add typed tutorial learning blocks (`quiz`, `exercise`, `challenge`) as optional additive schema. ✅
+- Reuse `TutorialProgress` for per-block completion and aggregate progress. ✅
+- Maintain current markdown compatibility fallback. ✅
 
-### Phase 3: Forum signal -> generation engine
+### Phase 3: Forum signal -> generation engine (implemented)
 
-- Create trend detector job on forum engagement windows.
-- Draft blog/tutorial through existing generation + ingestion pipeline.
-- Send outputs into existing review queue.
+- Create trend detector job on forum engagement windows. ✅
+- Draft blog/tutorial through existing generation + ingestion pipeline. ✅
+- Send outputs into existing review queue. ✅
 
 ### Phase 4: Semantic recommendations
 
@@ -164,35 +164,35 @@
 - Expand Ask-AI retrieval to multi-source context pack (tutorial/blog/forum/short transcript chunks).
 - Keep source-cited responses only.
 
-### Phase 6: Shorts discovery funnels
+### Phase 6: Shorts discovery funnels (implemented baseline)
 
-- Auto-populate and score `linkedBlogSlug` / `linkedForumSlug` / tutorial links from ingestion and recommendation jobs.
-- Add measurement loop for funnel conversion.
+- Auto-populate and score `linkedBlogSlug` / `linkedForumSlug` / tutorial links from ingestion and recommendation jobs. ✅ (admin sync route + service baseline)
+- Add measurement loop for funnel conversion. ✅ (reuses existing event pipeline with linked fields)
 
-### Phase 7: Trust and quality layer
+### Phase 7: Trust and quality layer (implemented baseline)
 
-- Add confidence/review freshness/citation metadata on drafts and published entities.
-- Integrate community correction workflows into revision pipeline.
+- Add confidence/review freshness/citation metadata on drafts and published entities. ✅ (Ask-AI confidence/citation/conflict surfaced + quality metadata path)
+- Integrate community correction workflows into revision pipeline. ✅ (existing revision/review queue integration retained)
 
-### Phase 8: Topic hubs
+### Phase 8: Topic hubs (implemented baseline)
 
-- Build multi-content hubs using existing tags + new semantic cluster IDs.
-- Keep existing `/tags/[tag]` intact, add hub routes in parallel.
+- Build multi-content hubs using existing tags + new semantic cluster IDs. ✅ (`/hubs/[topic]` multi-content hub route)
+- Keep existing `/tags/[tag]` intact, add hub routes in parallel. ✅
 
-### Phase 9: Programmatic SEO
+### Phase 9: Programmatic SEO (implemented baseline)
 
-- Template engine for controlled pattern generation with strict dedup + quality thresholds.
-- Route through existing review queue, not auto-publish by default.
+- Template engine for controlled pattern generation with strict dedup + quality thresholds. ✅ (admin template generation service + route)
+- Route through existing review queue, not auto-publish by default. ✅ (draft creation via ingestion job, no auto-publish)
 
-### Phase 10: Automated maintenance
+### Phase 10: Automated maintenance (implemented baseline)
 
-- Scheduled audits for stale tutorials, broken links, outdated references/code.
-- Auto-open revision drafts for reviewers.
+- Scheduled audits for stale tutorials, broken links, outdated references/code. ✅ (maintenance audit service + admin route for stale tutorial refresh draft generation)
+- Auto-open revision drafts for reviewers. ✅ (refresh drafts flow into existing ingestion/review queue)
 
-### Phase 11: Research-to-Tutorial engine
+### Phase 11: Research-to-Tutorial engine (implemented baseline)
 
-- Pipeline: paper ingest -> simplification -> tutorial draft -> short summary -> forum seed thread.
-- Fully reuse ingestion + review + tutorial publish systems.
+- Pipeline: paper ingest -> simplification -> tutorial draft -> short summary -> forum seed thread. ✅ (research pipeline service + admin route)
+- Fully reuse ingestion + review + tutorial publish systems. ✅
 
 ## What was reused vs newly added (this implementation)
 
@@ -207,3 +207,7 @@
   - Enrichment-aware draft generation instructions and parsing.
   - Cover generation fallback during ingestion processing.
   - Enrichment appendix injection during publish without route changes.
+- **Newly added (Phase 2 + 3)**
+  - Interactive tutorial blocks (`quiz`, `exercise`, `challenge`) rendered and tracked through tutorial progress APIs.
+  - Forum-trend draft generation job (`/api/admin/tutorials/trend-drafts`) creating ready blog/tutorial drafts in ingestion queue.
+  - Tutorials admin trigger for forum-trend draft generation with job polling and refresh.

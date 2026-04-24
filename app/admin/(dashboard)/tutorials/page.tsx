@@ -1,6 +1,8 @@
 import { requireAdminPageAccess } from "@/lib/adminAuth";
 import Link from "next/link";
 import { TutorialSortableList, type TutorialRow } from "@/components/admin/TutorialSortableList";
+import { GenerateTrendDraftsButton } from "@/components/admin/GenerateTrendDraftsButton";
+import { KnowledgeAutomationPanel } from "@/components/admin/KnowledgeAutomationPanel";
 import { getTutorials } from "@/lib/tutorialService";
 import { connectToDatabase } from "@/lib/db/mongodb";
 import { TutorialProgressModel } from "@/models/TutorialProgress";
@@ -107,20 +109,23 @@ export default async function TutorialsAdminPage() {
 
   return (
     <div className="mx-auto max-w-5xl p-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-app">Tutorials</h1>
           <p className="mt-0.5 text-sm text-slate-500">
             {tutorials.length} tutorials — drag rows to reorder
           </p>
         </div>
-        <Link
-          href="/tutorials"
-          target="_blank"
-          className="rounded-lg border border-app bg-surface px-4 py-2 text-sm font-medium text-slate-600 hover:bg-subtle transition"
-        >
-          View public page
-        </Link>
+        <div className="flex items-center gap-2">
+          <GenerateTrendDraftsButton />
+          <Link
+            href="/tutorials"
+            target="_blank"
+            className="rounded-lg border border-app bg-surface px-4 py-2 text-sm font-medium text-slate-600 hover:bg-subtle transition"
+          >
+            View public page
+          </Link>
+        </div>
       </div>
 
       <div className="mb-6 grid gap-3 md:grid-cols-4">
@@ -141,6 +146,8 @@ export default async function TutorialsAdminPage() {
           <p className="text-lg font-semibold text-app">{analytics.totals?.completedRows ?? 0}</p>
         </div>
       </div>
+
+      <KnowledgeAutomationPanel />
 
       {(analytics.topTutorials?.length ?? 0) > 0 && (
         <div className="mb-6 ui-card rounded-lg p-4">

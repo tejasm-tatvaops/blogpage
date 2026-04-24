@@ -26,6 +26,7 @@ const TYPE_LABEL: Record<JobType, string> = {
   generate_forums: "Generate Forums",
   autopopulate: "Autopopulate",
   generate_blogs: "Generate Blogs",
+  forum_trend_drafts: "Forum Trend Drafts",
 };
 
 const STATUS_STYLES: Record<JobStatus, string> = {

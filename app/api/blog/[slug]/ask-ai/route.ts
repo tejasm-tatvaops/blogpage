@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPostBySlug } from "@/lib/blogService";
 import { createRateLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
-import { buildAskAiGraphContext, buildSourceAppendix } from "@/lib/askAiGraph";
+import { buildAskAiGraphContextWithQuery, buildSourceAppendix } from "@/lib/askAiGraph";
 import { getSystemToggles } from "@/lib/systemToggles";
 import { recordMetric } from "@/lib/observability";
 import { recordAskAiQualitySample } from "@/lib/askAiQualityMetrics";
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
   const toggles = getSystemToggles();
   let graphContext = null;
   try {
-    graphContext = graphEnabled ? await buildAskAiGraphContext(post) : null;
+    graphContext = graphEnabled ? await buildAskAiGraphContextWithQuery(post, question || mode) : null;
   } catch (e) {
     console.error("buildAskAiGraphContext failed:", e);
   }
