@@ -1,4 +1,4 @@
-import { buildSummary, buildHashtags, buildKeyPoints, type ContentPayload } from "./shared";
+import { buildSummary, buildHashtags, buildKeyPoints, openShareUrl, type ContentPayload } from "./shared";
 
 export interface LinkedInPayload {
   text: string;
@@ -37,5 +37,5 @@ export const transform = (
 /** Opens the LinkedIn share dialog in a new tab (client-side only). */
 export const share = (payload: ContentPayload, resolvedUrl: string): void => {
   const { shareUrl } = transform(payload, resolvedUrl);
-  window.open(shareUrl, "_blank", "noopener,noreferrer");
+  openShareUrl(shareUrl);
 };

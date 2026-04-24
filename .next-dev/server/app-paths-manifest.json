@@ -1,10 +1,10 @@
 {
   "/api/forums/[slug]/comments/route": "app/api/forums/[slug]/comments/route.js",
-  "/api/notifications/route": "app/api/notifications/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/api/me/reputation/route": "app/api/me/reputation/route.js",
-  "/api/users/route": "app/api/users/route.js",
   "/users/page": "app/users/page.js",
-  "/blog/page": "app/blog/page.js",
-  "/blog/[slug]/page": "app/blog/[slug]/page.js"
+  "/blog/[slug]/page": "app/blog/[slug]/page.js",
+  "/tutorials/[slug]/page": "app/tutorials/[slug]/page.js",
+  "/inshorts/page": "app/inshorts/page.js",
+  "/admin/(dashboard)/blog/page": "app/admin/(dashboard)/blog/page.js"
 }

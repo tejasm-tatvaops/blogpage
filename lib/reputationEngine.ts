@@ -542,6 +542,37 @@ export async function onForumAnswerGiven(identityKey: string, forumSlug: string,
   });
 }
 
+/**
+ * Revert a previously awarded comment-related event by event_key.
+ * Uses an idempotent reverse key so repeated delete calls do not double-deduct.
+ */
+export async function revertAwardByEventKey(identityKey: string, sourceEventKey: string): Promise<number> {
+  const cleanIdentity = identityKey.trim();
+  const cleanSourceKey = sourceEventKey.trim();
+  if (!cleanIdentity || !cleanSourceKey) return 0;
+
+  await connectToDatabase();
+
+  const sourceEvent = await ReputationEventModel.findOne({
+    identity_key: cleanIdentity,
+    event_key: cleanSourceKey,
+  })
+    .select("awarded_points")
+    .lean();
+
+  const awarded = Number(sourceEvent?.awarded_points ?? 0);
+  if (awarded <= 0) return 0;
+
+  return awardPoints({
+    identityKey: cleanIdentity,
+    reason: "manual_admin_adjustment",
+    pointsOverride: -Math.abs(awarded),
+    note: `Auto reversal for deleted comment (${cleanSourceKey})`,
+    eventKey: `revert:${cleanSourceKey}`,
+    skipBadgeCheck: true,
+  });
+}
+
 /** Called when a forum comment is marked best answer. */
 export async function onBestAnswerAwarded(
   authorIdentityKey: string,

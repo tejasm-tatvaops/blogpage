@@ -98,7 +98,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <ReadingProgressBar />
-      <main className="mx-auto min-h-screen w-full max-w-3xl px-4 py-10">
+      <main className="mx-auto min-h-screen w-full max-w-[1500px] px-2 py-8 sm:px-4 lg:px-5">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-2 text-sm text-slate-500" aria-label="Breadcrumb">
           <Link href="/forums" className="transition hover:text-app">
@@ -194,7 +194,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
         )}
 
         {/* Engagement bar */}
-        <div className="-mx-4 flex flex-wrap items-center gap-3 border-t border-app bg-surface px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-app bg-surface px-4 py-3">
           <ForumVoteBar
             slug={post.slug}
             initialUpvotes={post.upvote_count}
@@ -205,7 +205,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
         </div>
 
         {/* Action bar — share */}
-        <div className="-mx-4 mb-8 flex flex-wrap items-center gap-3 border-y border-app bg-surface px-4 py-3">
+        <div className="mb-8 flex flex-wrap items-center gap-3 rounded-xl border border-app bg-surface px-4 py-3">
           <ForumShareButtons
             title={post.title}
             slug={post.slug}
@@ -215,8 +215,17 @@ export default async function ForumThreadPage({ params }: PageProps) {
           />
         </div>
 
+        {/* Discussion first */}
+        <ForumCommentSection
+          slug={post.slug}
+          initialComments={comments}
+          bestCommentId={post.best_comment_id}
+          creatorFingerprint={post.creator_fingerprint}
+        />
+        <TopicActiveUsersStrip title="People active in similar threads" users={topicUsers} />
+
         {/* Post content */}
-        <article className="prose prose-slate max-w-none">
+        <article className="prose prose-slate mt-10 max-w-none rounded-2xl border border-app bg-surface p-5 sm:p-6">
           <MarkdownRenderer content={post.content} />
         </article>
 
@@ -278,15 +287,6 @@ export default async function ForumThreadPage({ params }: PageProps) {
             subtitle: "Connected blogs, tutorials, and shorts",
             reason: "Hub",
           }))}
-        />
-
-        {/* Discussion */}
-        <TopicActiveUsersStrip title="People active in similar threads" users={topicUsers} />
-        <ForumCommentSection
-          slug={post.slug}
-          initialComments={comments}
-          bestCommentId={post.best_comment_id}
-          creatorFingerprint={post.creator_fingerprint}
         />
 
         {/* Footer nav */}

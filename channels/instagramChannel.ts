@@ -1,4 +1,4 @@
-import { buildSummary, buildHashtags, trimToWords, type ContentPayload } from "./shared";
+import { buildSummary, buildHashtags, openShareUrl, trimToWords, type ContentPayload } from "./shared";
 
 export interface InstagramPayload {
   caption: string;
@@ -77,6 +77,6 @@ export const share = async (
   } catch {
     // clipboard not available — nothing we can do
   }
-  window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+  openShareUrl("https://www.instagram.com/");
   return false;
 };

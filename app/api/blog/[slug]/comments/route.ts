@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getPostBySlug } from "@/lib/blogService";
-import { addCommentWithIdentity, commentInputSchema, getComments } from "@/lib/commentService";
+import {
+  addCommentWithIdentity,
+  commentInputSchema,
+  getComments,
+  incrementPositiveMentionCounter,
+} from "@/lib/commentService";
 import { commentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
@@ -53,7 +58,11 @@ export async function POST(
     }
 
     const commenterKey = await getIdentityKeyFromSessionOrRequest(request);
-    const comment = await addCommentWithIdentity(post.id, result.data, commenterKey);
+    const content = (result.data.content ?? "").trim();
+    const isPositiveTatvaMention = content.length >= 30 && mentionsTatvaOps(content);
+    const comment = await addCommentWithIdentity(post.id, result.data, commenterKey, {
+      isPositiveTatvaMention,
+    });
     void notifyMentionedUsers({
       content: result.data.content,
       actorIdentityKey: commenterKey,
@@ -77,15 +86,21 @@ export async function POST(
       sourceContentType: "blog",
       eventKey: `blog-comment:${commenterKey}:${post.slug}:${comment.id}`,
     });
-    // +10 for mentioning TatvaOps — capped at once per user per post via eventKey,
-    // and only for comments with meaningful content (≥30 chars) to deter spam.
-    const content = (result.data.content ?? "").trim();
-    if (content.length >= 30 && mentionsTatvaOps(content)) {
-      void onPositiveFeedback(commenterKey, {
-        note: "Mentioned TatvaOps positively in a comment",
-        sourceSlug: post.slug,
-        eventKey: `positive-feedback:${commenterKey}:${post.slug}`,
-      });
+    // +10 for meaningful TatvaOps mention.
+    // Counter transition 0 -> 1 is atomic and avoids duplicate awards under concurrency.
+    if (isPositiveTatvaMention) {
+      void incrementPositiveMentionCounter(commenterKey, post.slug)
+        .then((count) => {
+          if (count !== 1) return;
+          return onPositiveFeedback(commenterKey, {
+            note: "Mentioned TatvaOps positively in a comment",
+            sourceSlug: post.slug,
+            eventKey: `positive-feedback:${commenterKey}:${post.slug}`,
+          });
+        })
+        .catch((error) => {
+          logger.error({ error, commenterKey, slug }, "Failed to process positive mention counter");
+        });
     }
     logger.info({ postId: post.id, slug }, "New comment added");
     return NextResponse.json({ comment }, { status: 201 });

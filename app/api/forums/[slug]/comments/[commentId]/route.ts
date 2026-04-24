@@ -3,6 +3,7 @@ import { getForumPostBySlug } from "@/lib/forumService";
 import { deleteOwnCommentById, getCommentMetaById } from "@/lib/commentService";
 import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
 import { logger } from "@/lib/logger";
+import { revertAwardByEventKey } from "@/lib/reputationEngine";
 
 export async function DELETE(
   request: Request,
@@ -20,12 +21,17 @@ export async function DELETE(
 
     const actorKey = await getIdentityKeyFromSessionOrRequest(request);
     const result = await deleteOwnCommentById(commentId, actorKey);
-    if (result === "forbidden") {
+    if (result.status === "forbidden") {
       return NextResponse.json({ error: "You can only delete your own comment." }, { status: 403 });
     }
-    if (result === "not_found") {
+    if (result.status === "not_found") {
       return NextResponse.json({ error: "Comment not found." }, { status: 404 });
     }
+
+    const sourceEventKey = `forum-comment:${actorKey}:${post.slug}:${commentId}`;
+    void revertAwardByEventKey(actorKey, sourceEventKey).catch((error) => {
+      logger.error({ error, actorKey, commentId, slug }, "Failed to reverse forum comment reputation");
+    });
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {

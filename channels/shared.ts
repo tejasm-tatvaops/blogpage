@@ -100,3 +100,9 @@ export const buildKeyPoints = (value: string): string[] => {
     .slice(0, 3)
     .map((s) => trimToWords(s.replace(/[•\-]+/g, " ").trim(), 18));
 };
+
+export const openShareUrl = (shareUrl: string): void => {
+  if (typeof window === "undefined") return;
+  const opened = window.open(shareUrl, "_blank", "noopener,noreferrer");
+  if (!opened) window.location.assign(shareUrl);
+};

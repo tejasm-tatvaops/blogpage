@@ -1,4 +1,4 @@
-import { buildSummary, buildHashtags, trimToWords, type ContentPayload } from "./shared";
+import { buildSummary, buildHashtags, openShareUrl, trimToWords, type ContentPayload } from "./shared";
 
 export interface ThreadsPayload {
   text: string;
@@ -38,5 +38,5 @@ export const transform = (
 /** Opens the Threads share intent in a new tab (client-side only). */
 export const share = (payload: ContentPayload, resolvedUrl: string): void => {
   const { shareUrl } = transform(payload, resolvedUrl);
-  window.open(shareUrl, "_blank", "noopener,noreferrer");
+  openShareUrl(shareUrl);
 };

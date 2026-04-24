@@ -247,12 +247,7 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
               <span className="text-xs text-white/50">{activeIndex + 1} / {posts.length}</span>
             </div>
 
-            {/* Content type chips */}
-            <div className="flex items-center gap-1.5">
-              <Link href="/blog"   className="rounded-full bg-surface/10 px-3 py-1 text-xs font-medium text-white/70 hover:bg-surface/20 hover:text-white">Articles</Link>
-              <Link href="/forums" className="rounded-full bg-surface/10 px-3 py-1 text-xs font-medium text-white/70 hover:bg-surface/20 hover:text-white">Forums</Link>
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-black">Shorts</span>
-            </div>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-black">Shorts</span>
           </div>
         </div>
       </div>

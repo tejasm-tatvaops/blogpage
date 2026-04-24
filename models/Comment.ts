@@ -8,6 +8,7 @@ const commentSchema = new mongoose.Schema(
     author_name: { type: String, required: true, trim: true, maxlength: 80 },
     persona_name: { type: String, default: null, trim: true, maxlength: 120 },
     content: { type: String, required: true, trim: true, maxlength: 2000 },
+    is_positive_tatva_mention: { type: Boolean, default: false, index: true },
     upvote_count: { type: Number, default: 0, min: 0 },
     downvote_count: { type: Number, default: 0, min: 0 },
     is_ai_generated: { type: Boolean, default: false, index: true },

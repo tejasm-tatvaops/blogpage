@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import GithubSlugger from "github-slugger";
-import { TrendingWidget } from "@/components/blog/TrendingWidget";
-import { NewsletterSignup } from "@/components/blog/NewsletterSignup";
 
 // ── ToC ──────────────────────────────────────────────────────────────────────
 
@@ -115,7 +113,7 @@ export function TutorialSidebar({
   const displayRecs = personalisedRecs.length > 0 ? personalisedRecs : relatedTutorials.slice(0, 4);
 
   return (
-    <aside className="space-y-5">
+    <aside className="space-y-4">
       {/* ── Personalised / Next Learn ── */}
       {displayRecs.length > 0 && (
         <div className="overflow-hidden rounded-2xl border border-app bg-surface">
@@ -162,8 +160,6 @@ export function TutorialSidebar({
           </ul>
         </div>
       )}
-
-      <TrendingWidget />
 
       {/* ── Table of Contents ── */}
       {toc.length > 0 && (
@@ -269,8 +265,6 @@ export function TutorialSidebar({
           </div>
         </div>
       )}
-
-      <NewsletterSignup />
 
       {/* ── About TatvaOps ── */}
       <div className="relative overflow-hidden rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-indigo-50 p-5 shadow-sm">

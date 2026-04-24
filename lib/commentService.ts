@@ -1,6 +1,7 @@
 import { isValidObjectId } from "mongoose";
 import { z } from "zod";
 import { CommentModel, type CommentDocument } from "@/models/Comment";
+import { PositiveMentionCounterModel } from "@/models/PositiveMentionCounter";
 import { ForumPostModel } from "@/models/ForumPost";
 import { createNotification } from "@/lib/notificationService";
 import { connectToDatabase } from "./mongodb";
@@ -227,6 +228,7 @@ export const addCommentWithIdentity = async (
   postId: string,
   input: CommentInput,
   identityKey: string | null,
+  options?: { isPositiveTatvaMention?: boolean },
 ): Promise<Comment> => {
   await connectToDatabase();
   const parentId = input.parent_comment_id?.trim() || null;
@@ -264,6 +266,7 @@ export const addCommentWithIdentity = async (
     author_name: input.author_name,
     persona_name: input.persona_name ?? null,
     content: input.content,
+    is_positive_tatva_mention: options?.isPositiveTatvaMention === true,
     is_ai_generated: input.is_ai_generated ?? false,
     upvote_count: 0,
     downvote_count: 0,
@@ -397,19 +400,32 @@ export const deleteCommentById = async (commentId: string): Promise<boolean> => 
   return Boolean(result);
 };
 
+export type DeleteOwnCommentOutcome =
+  | {
+    status: "deleted";
+    deleted: {
+      id: string;
+      post_id: string;
+      identity_key: string;
+      content: string;
+      is_positive_tatva_mention: boolean;
+    };
+  }
+  | { status: "forbidden" | "not_found" };
+
 export const deleteOwnCommentById = async (
   commentId: string,
   identityKey: string,
-): Promise<"deleted" | "forbidden" | "not_found"> => {
+): Promise<DeleteOwnCommentOutcome> => {
   await connectToDatabase();
-  if (!isValidObjectId(commentId) || !identityKey.trim()) return "not_found";
+  if (!isValidObjectId(commentId) || !identityKey.trim()) return { status: "not_found" };
 
   const existing = await CommentModel.findOne({ _id: commentId, ...notDeleted })
-    .select("identity_key")
+    .select("identity_key post_id content is_positive_tatva_mention")
     .lean();
 
-  if (!existing) return "not_found";
-  if (String(existing.identity_key ?? "") !== identityKey.trim()) return "forbidden";
+  if (!existing) return { status: "not_found" };
+  if (String(existing.identity_key ?? "") !== identityKey.trim()) return { status: "forbidden" };
 
   const result = await CommentModel.findOneAndUpdate(
     { _id: commentId, ...notDeleted },
@@ -419,7 +435,106 @@ export const deleteOwnCommentById = async (
     .select("_id")
     .lean();
 
-  return result ? "deleted" : "not_found";
+  if (!result) return { status: "not_found" };
+
+  return {
+    status: "deleted",
+    deleted: {
+      id: commentId,
+      post_id: String(existing.post_id ?? ""),
+      identity_key: String(existing.identity_key ?? ""),
+      content: String(existing.content ?? ""),
+      is_positive_tatva_mention: Boolean(existing.is_positive_tatva_mention),
+    },
+  };
+};
+
+export const incrementPositiveMentionCounter = async (
+  identityKey: string,
+  postSlug: string,
+): Promise<number> => {
+  await connectToDatabase();
+  if (!identityKey.trim() || !postSlug.trim()) return 0;
+
+  const updated = await PositiveMentionCounterModel.findOneAndUpdate(
+    {
+      identity_key: identityKey.trim(),
+      post_slug: postSlug.trim(),
+    },
+    {
+      $setOnInsert: {
+        identity_key: identityKey.trim(),
+        post_slug: postSlug.trim(),
+        qualifying_count: 0,
+      },
+      $inc: { qualifying_count: 1 },
+    },
+    { new: true, upsert: true },
+  )
+    .select("qualifying_count")
+    .lean();
+
+  return Number(updated?.qualifying_count ?? 0);
+};
+
+export const decrementPositiveMentionCounter = async (
+  identityKey: string,
+  postSlug: string,
+): Promise<number> => {
+  await connectToDatabase();
+  if (!identityKey.trim() || !postSlug.trim()) return 0;
+
+  const updated = await PositiveMentionCounterModel.findOneAndUpdate(
+    {
+      identity_key: identityKey.trim(),
+      post_slug: postSlug.trim(),
+    },
+    [
+      {
+        $set: {
+          qualifying_count: {
+            $max: [{ $subtract: [{ $ifNull: ["$qualifying_count", 0] }, 1] }, 0],
+          },
+        },
+      },
+    ],
+    { new: true },
+  )
+    .select("qualifying_count")
+    .lean();
+
+  if (!updated) return -1;
+  return Number(updated.qualifying_count ?? 0);
+};
+
+export const seedPositiveMentionCounterFromComments = async (
+  identityKey: string,
+  postId: string,
+  postSlug: string,
+): Promise<number> => {
+  await connectToDatabase();
+  if (!identityKey.trim() || !postId.trim() || !postSlug.trim()) return 0;
+
+  const qualifyingCount = await CommentModel.countDocuments({
+    post_id: postId,
+    identity_key: identityKey.trim(),
+    is_positive_tatva_mention: true,
+    ...notDeleted,
+  });
+
+  await PositiveMentionCounterModel.findOneAndUpdate(
+    { identity_key: identityKey.trim(), post_slug: postSlug.trim() },
+    {
+      $set: {
+        identity_key: identityKey.trim(),
+        post_slug: postSlug.trim(),
+        qualifying_count: qualifyingCount,
+      },
+    },
+    { upsert: true, new: true },
+  );
+
+  return Number(qualifyingCount);
 };
 
 export const getCommentMetaById = async (
