@@ -14,7 +14,7 @@ import { NextResponse } from "next/server";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { getPersonaVector, computeInterestMatch, normaliseTag } from "@/lib/personaService";
 import { getSystemToggles } from "@/lib/systemToggles";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { ForumPostModel } from "@/models/ForumPost";
 import { logger } from "@/lib/logger";
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getReputationLeaderboard } from "@/lib/personaService";
-import { BADGES } from "@/lib/reputationEngine";
+import { BADGES } from "@/lib/services/reputation.service";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

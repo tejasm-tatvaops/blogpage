@@ -6,7 +6,7 @@ import { recordAuthorAffinity, recordInterest } from "@/lib/personaService";
 import { invalidateFeedCache } from "@/lib/feedCache";
 import { getPostBySlug } from "@/lib/blogService";
 import { getForumPostBySlug, registerForumDwellSignal } from "@/lib/forumService";
-import { onCrossContentLink } from "@/lib/reputationEngine";
+import { onCrossContentLink } from "@/lib/services/reputation.service";
 import type { RepContentType } from "@/models/ReputationEvent";
 import { getSystemToggles } from "@/lib/systemToggles";
 import { recordMetric } from "@/lib/observability";

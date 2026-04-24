@@ -1,7 +1,7 @@
 import { AuthUserModel } from "@/models/User";
 import { UserProfileModel } from "@/models/UserProfile";
 import { createNotification } from "@/lib/notificationService";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 
 const MENTION_REGEX = /(^|\s)@([a-zA-Z0-9._-]{2,32})/g;
 

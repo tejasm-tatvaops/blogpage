@@ -1,31 +1,15 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import useSWR from "swr";
 import { getLevelMeta } from "@/lib/level";
-
-const fetcher = async (url: string): Promise<{ score: number; level?: string }> => {
-  const response = await fetch(url, { method: "GET", cache: "no-store" });
-  return response.json();
-};
+import { useMe } from "@/hooks/useMe";
 
 export default function UserStatsBadge() {
-  const { data: session, status } = useSession();
-  const { data, isLoading } = useSWR(
-    status === "authenticated" && session?.user ? "/api/me/reputation" : null,
-    fetcher,
-    { revalidateOnFocus: true },
-  );
+  const { data, isLoading } = useMe();
+  const sessionUser = data?.session?.user;
+  if (!sessionUser) return null;
 
-  if (status === "loading") return null;
-  if (!session?.user) return null;
-
-  const points = Number(data?.score ?? 0);
-  const level = String(
-    data?.level
-      ?? (session.user as { level?: string }).level
-      ?? "Bronze",
-  );
+  const points = Number(data?.reputation?.score ?? 0);
+  const level = String(data?.reputation?.level ?? sessionUser.level ?? "Bronze");
   const levelMeta = getLevelMeta(level);
 
   return (

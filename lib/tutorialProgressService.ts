@@ -1,8 +1,8 @@
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { TutorialModel } from "@/models/Tutorial";
 import { LearningPathModel } from "@/models/LearningPath";
 import { TutorialProgressModel } from "@/models/TutorialProgress";
-import { onLearningPathCompleted, onTutorialCompleted } from "@/lib/reputationEngine";
+import { onLearningPathCompleted, onTutorialCompleted } from "@/lib/services/reputation.service";
 import { UserProfileModel } from "@/models/UserProfile";
 import { recordMetric } from "@/lib/observability";
 

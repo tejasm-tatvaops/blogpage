@@ -1,6 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { AuthUserModel } from "@/models/User";
 import { ensureUserProfileForIdentity } from "@/lib/userProfileService";
 

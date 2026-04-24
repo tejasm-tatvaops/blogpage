@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getNotifications } from "@/lib/notificationService";
 import { commentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
-import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/auth/identity";
 
 const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> =>
   Promise.race<T>([

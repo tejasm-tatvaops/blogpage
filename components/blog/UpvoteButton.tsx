@@ -30,7 +30,7 @@ export function UpvoteButton({ slug, initialCount }: UpvoteButtonProps) {
         setCount(json.upvote_count);
         setUpvoted(true);
         localStorage.setItem(storageKey, "1");
-        void mutate("/api/me/reputation");
+        void mutate("/api/me");
       }
     } finally {
       setLoading(false);

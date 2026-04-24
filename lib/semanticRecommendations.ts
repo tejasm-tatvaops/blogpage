@@ -1,5 +1,5 @@
 import type { BlogPost } from "@/lib/blogService";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { FeedEventModel } from "@/models/FeedEvent";
 import { TutorialProgressModel } from "@/models/TutorialProgress";
 import { recordMetric } from "@/lib/observability";

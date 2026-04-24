@@ -1,4 +1,4 @@
-import { addComment, voteComment } from "./commentService";
+import { addComment, voteComment } from "@/lib/services/comment.service";
 import { incrementForumCommentCount } from "./forumService";
 import { getAllPosts } from "./blogService";
 import { getForumPosts } from "./forumService";

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminApiAccess } from "@/lib/adminAuth";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { errorResponse } from "@/lib/adminApi";
-import { deleteCommentById, getCommentMetaById } from "@/lib/commentService";
+import { deleteCommentById, getCommentMetaById } from "@/lib/services/comment.service";
 import { decrementForumCommentCount, getForumPostById } from "@/lib/forumService";
 import { logger } from "@/lib/logger";
 

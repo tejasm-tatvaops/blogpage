@@ -1,4 +1,4 @@
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { logger } from "@/lib/logger";
 import { FeedEventModel } from "@/models/FeedEvent";
 import { enqueueFeedEvent, ensureFeedEventQueueStarted, getFeedEventQueueHealth } from "@/lib/feedEventQueue";

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { incrementViewCount, trackViewEvent } from "@/lib/blogService";
 import { recordUserActivity } from "@/lib/userProfileService";
-import { awardPoints } from "@/lib/reputationEngine";
-import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
+import { awardPoints } from "@/lib/services/reputation.service";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/auth/identity";
 
 type ViewRouteProps = {
   params: Promise<{ slug: string }>;

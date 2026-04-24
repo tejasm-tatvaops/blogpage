@@ -8,11 +8,11 @@ import {
 } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { BlogLikeModel } from "@/models/BlogLike";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { recordInterest } from "@/lib/personaService";
 import { invalidateFeedCache } from "@/lib/feedCache";
-import { awardPoints } from "@/lib/reputationEngine";
-import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
+import { awardPoints } from "@/lib/services/reputation.service";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/auth/identity";
 
 export async function POST(
   request: Request,

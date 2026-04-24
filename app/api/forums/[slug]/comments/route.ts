@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { getForumPostBySlug, incrementForumCommentCount } from "@/lib/forumService";
-import { addCommentWithIdentity, commentInputSchema, getComments } from "@/lib/commentService";
+import { getForumPostBySlug } from "@/lib/forumService";
+import { commentInputSchema, getComments } from "@/lib/services/comment.service";
 import { forumCommentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
-import { onForumAnswerGiven } from "@/lib/reputationEngine";
-import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
-import { getSystemToggles } from "@/lib/systemToggles";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/auth/identity";
 import { notifyMentionedUsers } from "@/lib/mentions";
+import { createCommentWithRewards } from "@/lib/domains/comment.domain";
 
 export async function GET(
   _request: Request,
@@ -53,7 +52,13 @@ export async function POST(
     }
 
     const actorKey = await getIdentityKeyFromSessionOrRequest(request);
-    const comment = await addCommentWithIdentity(post.id, result.data, actorKey);
+    const comment = await createCommentWithRewards({
+      postId: post.id,
+      postSlug: post.slug,
+      postType: "forum",
+      identityKey: actorKey,
+      input: result.data,
+    });
     void notifyMentionedUsers({
       content: result.data.content,
       actorIdentityKey: actorKey,
@@ -61,13 +66,6 @@ export async function POST(
       commentId: comment.id,
       actorDisplayName: result.data.author_name,
     });
-    // Keep comment_count denormalized for fast feed queries
-    await incrementForumCommentCount(post.id);
-
-    if (getSystemToggles().reputationEnabled) {
-      void onForumAnswerGiven(actorKey, post.slug, `forum-comment:${actorKey}:${post.slug}:${comment.id}`);
-    }
-
     void recordUserActivity({
       request,
       identityKeyOverride: actorKey,

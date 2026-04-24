@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { markAsRead } from "@/lib/notificationService";
 import { commentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
-import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/auth/identity";
 
 const payloadSchema = z.object({
   ids: z.array(z.string()).optional(),

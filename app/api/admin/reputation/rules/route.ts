@@ -10,7 +10,7 @@ import {
   BURST_WINDOW_MS,
   CROSS_CONTENT_MULTIPLIER,
   DAILY_CAP,
-} from "@/lib/reputationEngine";
+} from "@/lib/services/reputation.service";
 import { REPUTATION_THRESHOLDS } from "@/models/UserProfile";
 
 export async function GET(request: Request) {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getForumPostBySlug, incrementForumViewCount, trackForumViewEvent } from "@/lib/forumService";
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
-import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/auth/identity";
 
 const getReferrerHost = (value: string | null): string => {
   if (!value) return "direct";

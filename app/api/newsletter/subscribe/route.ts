@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { SubscriberModel } from "@/models/Subscriber";
 import { createRateLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { buildConfirmationEmail } from "@/channels/emailChannel";

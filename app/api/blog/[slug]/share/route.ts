@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { emitFeedEvent } from "@/lib/feedObservability";
-import { awardPoints } from "@/lib/reputationEngine";
-import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
+import { awardPoints } from "@/lib/services/reputation.service";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/auth/identity";
 
 const VALID_CHANNELS = new Set([
   "twitter",

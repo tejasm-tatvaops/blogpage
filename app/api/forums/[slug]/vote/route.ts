@@ -5,9 +5,9 @@ import { forumVoteLimiter, getRateLimitKey, rateLimitResponse, rateLimitHeaders 
 import { logger } from "@/lib/logger";
 import { createNotification } from "@/lib/notificationService";
 import { recordUserActivity } from "@/lib/userProfileService";
-import { onForumUpvoteReceived } from "@/lib/reputationEngine";
+import { onForumUpvoteReceived } from "@/lib/services/reputation.service";
 import { getSystemToggles } from "@/lib/systemToggles";
-import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/auth/identity";
 
 export async function POST(
   request: Request,

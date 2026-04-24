@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminApiAccess } from "@/lib/adminAuth";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
-import { awardPoints } from "@/lib/reputationEngine";
-import { getReputationHistory } from "@/lib/reputationEngine";
+import { awardPoints, getReputationHistory } from "@/lib/services/reputation.service";
 
 const adjustSchema = z.object({
   identity_key: z.string().trim().min(1).max(200),

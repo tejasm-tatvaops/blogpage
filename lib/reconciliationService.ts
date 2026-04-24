@@ -1,4 +1,4 @@
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { logger } from "@/lib/logger";
 import { BlogModel } from "@/models/Blog";
 import { CommentModel } from "@/models/Comment";

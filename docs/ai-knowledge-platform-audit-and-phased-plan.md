@@ -9,7 +9,6 @@
 ## Product/System Audit
 
 ### Blogs
-
 - **Exists**
   - Mature blog model (`Blog`) with versions, scheduling, counters, tags/categories, full-text indexing.
   - Strong SEO hooks (structured data, metadata, internal linking, crawlable tag graph, sitemap).

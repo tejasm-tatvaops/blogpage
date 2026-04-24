@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { UserProfile } from "@/lib/userProfileService";
 import { getUserAvatar } from "@/lib/identityUI";
 
@@ -117,7 +118,17 @@ export function UserProfileQuickView({ displayName, identityKey, trigger }: User
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-lg font-semibold text-app">{user.display_name}</p>
+                    {user.username ? (
+                      <p className="mt-0.5 text-xs font-medium text-sky-700">@{user.username}</p>
+                    ) : null}
                     <p className="mt-1 text-sm text-slate-600 line-clamp-2">{user.about}</p>
+                    <Link
+                      href={`/user/${encodeURIComponent(user.identity_key)}`}
+                      className="mt-1 inline-block text-xs font-medium text-sky-700 hover:underline"
+                      onClick={() => setOpen(false)}
+                    >
+                      Open full profile
+                    </Link>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       <UserTypeBadge userType={user.user_type} />
                       {user.is_active_now ? (

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiAccess } from "@/lib/adminAuth";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { FeedEventModel } from "@/models/FeedEvent";
 import { FailedFeedEventModel } from "@/models/FailedFeedEvent";
 import { CounterDriftEventModel } from "@/models/CounterDriftEvent";

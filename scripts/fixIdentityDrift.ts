@@ -1,4 +1,4 @@
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { ensureUserProfileForIdentity } from "@/lib/userProfileService";
 import { AuthUserModel } from "@/models/User";
 import { UserProfileModel } from "@/models/UserProfile";

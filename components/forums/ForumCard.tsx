@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ForumPost } from "@/lib/forumService";
 import { getUserAvatar } from "@/lib/identityUI";
-import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
+import { UserProfileQuickView } from "@/components/user/UserQuickView";
 
 type ForumCardProps = {
   post: ForumPost;

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiAccess } from "@/lib/adminAuth";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { UserProfileModel } from "@/models/UserProfile";
-import { recomputeReputationScore, getReputationScore } from "@/lib/reputationEngine";
+import { recomputeReputationScore, getReputationScore } from "@/lib/services/reputation.service";
 
 const BATCH_SIZE = 50;
 const DRY_RUN_SAMPLE = 5;

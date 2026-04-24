@@ -1,4 +1,4 @@
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { NotificationModel } from "@/models/Notification";
 import { getSystemToggles } from "@/lib/systemToggles";
 
@@ -72,6 +72,7 @@ export const getNotifications = async (
   await connectToDatabase();
   const [docs, unreadCount] = await Promise.all([
     NotificationModel.find({ recipient_key: recipientKey })
+      .select("type post_id comment_id message is_read created_at")
       .sort({ created_at: -1 })
       .limit(safeLimit)
       .lean(),

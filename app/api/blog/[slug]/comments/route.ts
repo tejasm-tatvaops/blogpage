@@ -1,20 +1,12 @@
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
 import { getPostBySlug } from "@/lib/blogService";
-import {
-  addCommentWithIdentity,
-  commentInputSchema,
-  getComments,
-  incrementPositiveMentionCounter,
-} from "@/lib/commentService";
+import { commentInputSchema, getComments } from "@/lib/services/comment.service";
 import { commentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
-import { awardPoints, onPositiveFeedback } from "@/lib/reputationEngine";
-import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/auth/identity";
 import { notifyMentionedUsers } from "@/lib/mentions";
-
-const mentionsTatvaOps = (text: string) => text.toLowerCase().includes("tatvaops");
+import { createCommentWithRewards } from "@/lib/domains/comment.domain";
 
 export async function GET(
   _request: Request,
@@ -59,57 +51,13 @@ export async function POST(
     }
 
     const commenterKey = await getIdentityKeyFromSessionOrRequest(request);
-    const flowContext = { flow: "comment_create_blog", identityKey: commenterKey, slug: post.slug };
-    const content = (result.data.content ?? "").trim();
-    const isPositiveTatvaMention = content.length >= 30 && mentionsTatvaOps(content);
-    logger.info({ ...flowContext, step: "transaction_start", isPositiveTatvaMention }, "Comment create flow started");
-    const session = await mongoose.startSession();
-    let comment: Awaited<ReturnType<typeof addCommentWithIdentity>> | null = null;
-    try {
-      comment = await session.withTransaction(async () => {
-        const createdComment = await addCommentWithIdentity(post.id, result.data, commenterKey, {
-          isPositiveTatvaMention,
-          session,
-        });
-        await awardPoints({
-          identityKey: commenterKey,
-          reason: "article_comment_received",
-          sourceContentSlug: post.slug,
-          sourceContentType: "blog",
-          eventKey: `blog-comment:${commenterKey}:${post.slug}:${createdComment.id}`,
-        }, { session });
-        logger.info(
-          { ...flowContext, eventKey: `blog-comment:${commenterKey}:${post.slug}:${createdComment.id}`, step: "base_award_complete" },
-          "Base comment award complete",
-        );
-
-        if (isPositiveTatvaMention) {
-          const count = await incrementPositiveMentionCounter(commenterKey, post.slug, { session });
-          if (count === 1) {
-            await onPositiveFeedback(commenterKey, {
-              note: "Mentioned TatvaOps positively in a comment",
-              sourceSlug: post.slug,
-              eventKey: `positive-feedback:${commenterKey}:${post.slug}`,
-            }, { session });
-            logger.info(
-              { ...flowContext, eventKey: `positive-feedback:${commenterKey}:${post.slug}`, step: "bonus_award_complete" },
-              "Positive feedback award complete",
-            );
-          }
-        }
-        return createdComment;
-      }, {
-        readConcern: { level: "snapshot" },
-        writeConcern: { w: "majority" },
-      });
-    } finally {
-      await session.endSession();
-    }
-
-    if (!comment) {
-      return NextResponse.json({ error: "Failed to post comment." }, { status: 500 });
-    }
-    logger.info({ ...flowContext, step: "transaction_commit", commentId: comment.id }, "Comment create flow committed");
+    const comment = await createCommentWithRewards({
+      postId: post.id,
+      postSlug: post.slug,
+      postType: "blog",
+      identityKey: commenterKey,
+      input: result.data,
+    });
     void notifyMentionedUsers({
       content: result.data.content,
       actorIdentityKey: commenterKey,

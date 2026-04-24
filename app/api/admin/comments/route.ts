@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminApiAccess } from "@/lib/adminAuth";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { errorResponse } from "@/lib/adminApi";
-import { getCommentsForAdmin } from "@/lib/commentService";
+import { getCommentsForAdmin } from "@/lib/services/comment.service";
 import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {

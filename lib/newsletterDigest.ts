@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import { SubscriberModel } from "@/models/Subscriber";
 import { getAllPublishedPosts } from "@/lib/blogService";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { getBulkPostPerformance, computeEngagementScore } from "@/lib/contentPerformance";
 
 const DEFAULT_FROM = "TatvaOps Blog <onboarding@resend.dev>";

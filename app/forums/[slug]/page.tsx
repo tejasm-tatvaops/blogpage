@@ -10,7 +10,7 @@ import { ReadingProgressBar } from "@/components/blog/ReadingProgressBar";
 import { BookmarkButton } from "@/components/blog/BookmarkButton";
 import { getForumPostBySlug, getForumPosts } from "@/lib/forumService";
 import { getPostsByTag } from "@/lib/blogService";
-import { getComments } from "@/lib/commentService";
+import { getComments } from "@/lib/services/comment.service";
 import { getActiveUsersByTopic } from "@/lib/userProfileService";
 import { TopicActiveUsersStrip } from "@/components/users/TopicActiveUsersStrip";
 import { buildForumPostJsonLd, buildForumBreadcrumbJsonLd } from "@/lib/forumSeo";

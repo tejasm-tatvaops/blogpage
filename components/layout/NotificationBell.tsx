@@ -1,53 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-type Notification = {
-  id: string;
-  post_id: string;
-  comment_id?: string | null;
-  message: string;
-  type: "reply" | "comment" | "vote";
-  created_at: string;
-  is_read: boolean;
-};
+import { mutate } from "swr";
+import { useMe } from "@/hooks/useMe";
 
 export function NotificationBell() {
-  const [notifs, setNotifs] = useState<Notification[]>([]);
-  const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
-  const [loaded, setLoaded] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-
-  const loadNotifications = async () => {
-    const response = await fetch("/api/notifications?limit=5", { cache: "no-store" });
-    if (!response.ok) return;
-    const payload = (await response.json()) as {
-      items: Notification[];
-      unreadCount: number;
-    };
-    setNotifs(payload.items);
-    setUnread(payload.unreadCount);
-    setLoaded(true);
-  };
-
-  useEffect(() => {
-    let inFlight = false;
-    const run = async () => {
-      if (inFlight || document.visibilityState !== "visible") return;
-      inFlight = true;
-      try {
-        await loadNotifications();
-      } finally {
-        inFlight = false;
-      }
-    };
-    const interval = window.setInterval(() => {
-      void run();
-    }, 45_000);
-    void run();
-    return () => window.clearInterval(interval);
-  }, []);
+  const { data } = useMe();
+  const notifs = data?.notifications?.items ?? [];
+  const unread = Number(data?.notifications?.unreadCount ?? 0);
 
   // Close on outside click
   useEffect(() => {
@@ -66,8 +28,7 @@ export function NotificationBell() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
     });
-    setNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    setUnread(0);
+    await mutate("/api/me");
   };
 
   return (
@@ -76,7 +37,6 @@ export function NotificationBell() {
         onClick={() => {
           const next = !open;
           setOpen(next);
-          if (next && !loaded) void loadNotifications();
           if (next && unread > 0) void markAllRead();
         }}
         aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ""}`}

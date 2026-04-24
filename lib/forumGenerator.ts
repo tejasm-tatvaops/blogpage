@@ -1,5 +1,5 @@
 import { ForumPostModel } from "@/models/ForumPost";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { logger } from "@/lib/logger";
 import { extractJsonPayload } from "@/lib/aiBlogGenerator";
 import { computeHotScore, generateForumExcerpt, generateForumSlug } from "@/lib/forumService";

@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import {
   addCommentWithIdentity,
   deleteOwnCommentById,
   decrementPositiveMentionCounter,
   incrementPositiveMentionCounter,
-} from "@/lib/commentService";
-import { awardPoints, onPositiveFeedback, revertAwardByEventKey } from "@/lib/reputationEngine";
+} from "@/lib/services/comment.service";
+import { awardPoints, onPositiveFeedback, revertAwardByEventKey } from "@/lib/services/reputation.service";
 import { CommentModel } from "@/models/Comment";
 import { PositiveMentionCounterModel } from "@/models/PositiveMentionCounter";
 import { ReputationEventModel } from "@/models/ReputationEvent";

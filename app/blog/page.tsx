@@ -7,7 +7,7 @@ import { hasAdminSession } from "@/lib/adminAuth";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com";
 const BLOG_URL = `${SITE_URL}/blog`;
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 type BlogPageProps = {
   searchParams?: Promise<{

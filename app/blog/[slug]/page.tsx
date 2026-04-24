@@ -9,7 +9,7 @@ import {
   getPostBySlug,
   getRelatedPosts,
 } from "@/lib/blogService";
-import { getComments } from "@/lib/commentService";
+import { getComments } from "@/lib/services/comment.service";
 import { getForumPostByBlogSlug, getRelatedForumPosts, type ForumPost } from "@/lib/forumService";
 import { getTutorials } from "@/lib/tutorialService";
 import { getVideosByTags } from "@/lib/videoService";

@@ -12,7 +12,7 @@
  *   await distributeContent(post, channels);
  */
 
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { FeedEventModel } from "@/models/FeedEvent";
 import type { ChannelName } from "@/channels/distributor";
 

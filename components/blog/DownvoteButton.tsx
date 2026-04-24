@@ -29,7 +29,7 @@ export function DownvoteButton({ slug, initialCount }: DownvoteButtonProps) {
         setCount(json.downvote_count);
         setDownvoted(true);
         localStorage.setItem(storageKey, "1");
-        void mutate("/api/me/reputation");
+        void mutate("/api/me");
       }
     } finally {
       setLoading(false);

@@ -17,6 +17,7 @@ const notificationSchema = new mongoose.Schema(
 
 notificationSchema.index({ post_id: 1 });
 notificationSchema.index({ created_at: -1 });
+notificationSchema.index({ recipient_key: 1, created_at: -1 });
 notificationSchema.index({ recipient_key: 1, is_read: 1, created_at: -1 });
 
 export type NotificationSchemaType = InferSchemaType<typeof notificationSchema>;

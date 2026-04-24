@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
-import { getReputationHistory } from "@/lib/reputationEngine";
+import { getReputationHistory } from "@/lib/services/reputation.service";
 
 export async function GET(request: Request) {
   const fp = getFingerprintFromRequest(request);

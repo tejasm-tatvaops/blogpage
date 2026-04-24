@@ -3,7 +3,7 @@ import { setBestAnswer } from "@/lib/forumService";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
-import { onBestAnswerAwarded } from "@/lib/reputationEngine";
+import { onBestAnswerAwarded } from "@/lib/services/reputation.service";
 import { getSystemToggles } from "@/lib/systemToggles";
 
 export async function POST(

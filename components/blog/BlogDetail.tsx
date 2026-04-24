@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { BlogPost } from "@/lib/blogService";
-import type { Comment } from "@/lib/commentService";
+import type { Comment } from "@/lib/services/comment.service";
 import type { ForumPost } from "@/lib/forumService";
 import { calculateReadingTime } from "@/lib/blogService";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -17,7 +17,7 @@ import { BookmarkButton } from "./BookmarkButton";
 import { ReadingTracker } from "./ReadingTracker";
 import type { EngagedUserProfile } from "@/lib/userProfileService";
 import { TopicActiveUsersStrip } from "@/components/users/TopicActiveUsersStrip";
-import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
+import { UserProfileQuickView } from "@/components/user/UserQuickView";
 import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
 
 type BlogDetailProps = {

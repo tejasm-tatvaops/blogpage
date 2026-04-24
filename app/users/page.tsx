@@ -15,6 +15,7 @@ export const revalidate = 0;
 export default async function UsersPage() {
   await requireAdminPageAccess();
   noStore();
+  const nowMs = Date.now();
 
   const [users, totals, userTotals] = await Promise.all([
     getUserProfiles(1000),
@@ -22,5 +23,5 @@ export default async function UsersPage() {
     getUserProfileViewTotals(),
   ]);
 
-  return <UserDirectory users={users} totals={totals} userTotals={userTotals} />;
+  return <UserDirectory users={users} totals={totals} userTotals={userTotals} nowMs={nowMs} />;
 }

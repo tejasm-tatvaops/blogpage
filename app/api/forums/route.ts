@@ -8,9 +8,9 @@ import {
 import { forumPostLimiter, getRateLimitKey, rateLimitResponse, rateLimitHeaders } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
-import { onForumPostCreated } from "@/lib/reputationEngine";
+import { onForumPostCreated } from "@/lib/services/reputation.service";
 import { getSystemToggles } from "@/lib/systemToggles";
-import { getIdentityKeyFromSessionOrRequest } from "@/lib/requestIdentity";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/auth/identity";
 
 export async function GET(request: Request) {
   try {

@@ -18,7 +18,9 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  ensureActivityRunnerStarted();
+  if (process.env.DEV_DISABLE_AUTOMATION !== "true") {
+    ensureActivityRunnerStarted();
+  }
   return (
     <html lang="en" data-theme="light" suppressHydrationWarning>
       <body suppressHydrationWarning>

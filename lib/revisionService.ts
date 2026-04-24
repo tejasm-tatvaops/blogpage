@@ -9,11 +9,11 @@
  *  - Rollback restores a previously approved revision to the blog document.
  */
 
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { ArticleRevisionModel, type RevisionStatus } from "@/models/ArticleRevision";
 import { BlogModel } from "@/models/Blog";
 import { UserProfileModel } from "@/models/UserProfile";
-import { awardPoints } from "@/lib/reputationEngine";
+import { awardPoints } from "@/lib/services/reputation.service";
 
 const REVIEWER_MIN_TIER = ["expert", "elite"] as const;
 

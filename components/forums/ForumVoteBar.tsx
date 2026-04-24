@@ -59,7 +59,7 @@ export function ForumVoteBar({
         setHasDownvoted(true);
         localStorage.setItem(STORAGE_KEY_DOWN(slug), "1");
       }
-      void mutate("/api/me/reputation");
+      void mutate("/api/me");
     } finally {
       setVoting(false);
     }

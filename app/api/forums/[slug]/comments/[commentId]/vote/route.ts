@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getForumPostBySlug } from "@/lib/forumService";
-import { voteComment } from "@/lib/commentService";
+import { voteComment } from "@/lib/services/comment.service";
 import { forumVoteLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 

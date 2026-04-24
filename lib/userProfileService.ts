@@ -1,4 +1,4 @@
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { UserProfileModel } from "@/models/UserProfile";
 import { CommentModel } from "@/models/Comment";
@@ -18,10 +18,21 @@ import {
 } from "@/lib/avatar";
 import { recordInterest, type PersonaAction } from "@/lib/personaService";
 import { buildBehaviorProfile, isLikelyActiveNow, type UserBehaviorType, type UserWritingTone } from "@/lib/userBehavior";
+import { maskEmail, maskPhone } from "@/lib/utils/mask";
 
 export type UserProfile = {
   id: string;
   identity_key: string;
+  username?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  website?: string | null;
+  email?: string | null;
+  email_verified?: boolean;
+  phone?: string | null;
+  phone_verified?: boolean;
+  email_masked?: string | null;
+  phone_masked?: string | null;
   display_name: string;
   about: string;
   avatar_url: string;
@@ -116,6 +127,14 @@ type UserActivityInput = {
 const toUserProfile = (doc: {
   _id: { toString(): string };
   identity_key?: string;
+  username?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  website?: string | null;
+  email?: string | null;
+  email_verified?: boolean;
+  phone?: string | null;
+  phone_verified?: boolean;
   display_name: string;
   about: string;
   avatar_url: string;
@@ -153,6 +172,16 @@ const toUserProfile = (doc: {
 }): UserProfile => ({
   id: doc._id.toString(),
   identity_key: doc.identity_key ?? "",
+  username: typeof doc.username === "string" && doc.username.trim() ? doc.username.trim() : null,
+  bio: typeof doc.bio === "string" && doc.bio.trim() ? doc.bio.trim() : null,
+  location: typeof doc.location === "string" && doc.location.trim() ? doc.location.trim() : null,
+  website: typeof doc.website === "string" && doc.website.trim() ? doc.website.trim() : null,
+  email: typeof doc.email === "string" && doc.email.trim() ? doc.email.trim() : null,
+  email_verified: Boolean(doc.email_verified ?? false),
+  phone: typeof doc.phone === "string" && doc.phone.trim() ? doc.phone.trim() : null,
+  phone_verified: Boolean(doc.phone_verified ?? false),
+  email_masked: null,
+  phone_masked: null,
   display_name: doc.display_name,
   about: doc.about,
   avatar_url: doc.avatar_url,
@@ -194,6 +223,14 @@ const toUserProfile = (doc: {
   ),
   created_at: doc.created_at.toISOString(),
   last_seen_at: doc.last_seen_at.toISOString(),
+});
+
+export const toPublicUserProfile = (profile: UserProfile): UserProfile => ({
+  ...profile,
+  email_masked: maskEmail(profile.email),
+  phone_masked: maskPhone(profile.phone),
+  email: null,
+  phone: null,
 });
 
 export const resolveUserIdentities = async (profiles: UserProfile[]): Promise<UserProfile[]> => {

@@ -1,6 +1,6 @@
 import { BlogModel } from "@/models/Blog";
 import { CommentModel } from "@/models/Comment";
-import { addComment } from "./commentService";
+import { addComment } from "@/lib/services/comment.service";
 import {
   voteForumPost,
   incrementForumCommentCount,

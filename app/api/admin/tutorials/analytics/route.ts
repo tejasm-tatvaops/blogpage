@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiAccess } from "@/lib/adminAuth";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { TutorialModel } from "@/models/Tutorial";
 import { TutorialProgressModel } from "@/models/TutorialProgress";
 import { LearningPathModel } from "@/models/LearningPath";

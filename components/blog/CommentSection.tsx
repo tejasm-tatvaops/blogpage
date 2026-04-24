@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { mutate } from "swr";
-import type { Comment } from "@/lib/commentService";
+import type { Comment } from "@/lib/services/comment.service";
 import { useActivityPolling } from "@/lib/activityPolling";
 import { getUserAvatar } from "@/lib/identityUI";
-import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
+import { UserProfileQuickView } from "@/components/user/UserQuickView";
+import { FollowButton } from "@/components/user/FollowButton";
 
 type CommentSectionProps = {
   slug: string;
@@ -68,6 +69,14 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
   const [mentionTarget, setMentionTarget] = useState<{ type: "main" } | { type: "reply"; id: string } | null>(null);
   const currentIdentityKey = session?.user?.id ? `google:${session.user.id}` : null;
   const fallbackAuthorName = String(session?.user?.name ?? "").trim() || "Member";
+  const getDisplayName = useCallback((comment: Comment) => {
+    const username = String(comment.username ?? "").trim();
+    if (username) return username;
+    const author = String(comment.author_name ?? "").trim();
+    if (author) return author;
+    const identity = String(comment.identity_key ?? "").trim();
+    return identity ? `user:${identity.slice(-6)}` : "User";
+  }, []);
 
   const updateMentionSuggestions = useCallback(async (value: string, target: { type: "main" } | { type: "reply"; id: string }) => {
     const query = mentionQueryFrom(value);
@@ -205,7 +214,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
       if (json.comment) {
         setComments((prev) => [json.comment!, ...prev]);
       }
-      void mutate("/api/me/reputation");
+      void mutate("/api/me");
       setAuthorName("");
       setContent("");
       setSuccess(true);
@@ -257,7 +266,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
           }),
         );
       }
-      void mutate("/api/me/reputation");
+      void mutate("/api/me");
 
       setReplyDrafts((prev) => ({ ...prev, [parentCommentId]: "" }));
       setActiveReplyFor(null);
@@ -298,7 +307,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
           })),
         );
       }
-      void mutate("/api/me/reputation");
+      void mutate("/api/me");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to vote.");
     } finally {
@@ -519,14 +528,37 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
               />
               <div className="flex-1">
                 <div className="flex flex-wrap items-baseline gap-2">
-                  <UserProfileQuickView
-                    displayName={c.author_name}
-                    identityKey={c.identity_key ?? `legacy:comment:${c.id}`}
-                    trigger={<span className="text-sm font-semibold text-app hover:underline">{c.author_name}</span>}
-                  />
+                  {c.identity_key ? (
+                    <Link
+                      href={`/user/${encodeURIComponent(c.identity_key)}`}
+                      className="text-sm font-semibold text-app hover:underline"
+                    >
+                      {getDisplayName(c)}
+                    </Link>
+                  ) : (
+                    <span className="text-sm font-semibold text-app">{getDisplayName(c)}</span>
+                  )}
+                  {!c.is_deleted && c.identity_key && (
+                            <UserProfileQuickView
+                              displayName={getDisplayName(c)}
+                      identityKey={c.identity_key}
+                      trigger={
+                        <span
+                          className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                          title="Quick view"
+                          aria-label="Quick view"
+                        >
+                          👁
+                        </span>
+                      }
+                    />
+                  )}
                   <time className="text-xs text-slate-400" dateTime={c.created_at}>
                     {formatDate(c.created_at)}
                   </time>
+                  {!c.is_deleted && c.identity_key && (
+                    <FollowButton targetIdentityKey={c.identity_key} variant="compact" />
+                  )}
                 </div>
                 {c.is_deleted ? (
                   <p className="mt-1 text-sm italic text-slate-400">[deleted]</p>
@@ -623,14 +655,37 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                     {c.replies.map((reply) => (
                       <div key={reply.id}>
                         <div className="flex items-baseline gap-2">
-                          <UserProfileQuickView
-                            displayName={reply.author_name}
-                            identityKey={reply.identity_key ?? `legacy:comment:${reply.id}`}
-                            trigger={<span className="text-sm font-semibold text-app hover:underline">{reply.author_name}</span>}
-                          />
+                          {reply.identity_key ? (
+                            <Link
+                              href={`/user/${encodeURIComponent(reply.identity_key)}`}
+                              className="text-sm font-semibold text-app hover:underline"
+                            >
+                              {getDisplayName(reply)}
+                            </Link>
+                          ) : (
+                            <span className="text-sm font-semibold text-app">{getDisplayName(reply)}</span>
+                          )}
+                          {!reply.is_deleted && reply.identity_key && (
+                            <UserProfileQuickView
+                              displayName={getDisplayName(reply)}
+                              identityKey={reply.identity_key}
+                              trigger={
+                                <span
+                                  className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                                  title="Quick view"
+                                  aria-label="Quick view"
+                                >
+                                  👁
+                                </span>
+                              }
+                            />
+                          )}
                           <time className="text-xs text-slate-400" dateTime={reply.created_at}>
                             {formatDate(reply.created_at)}
                           </time>
+                          {!reply.is_deleted && reply.identity_key && (
+                            <FollowButton targetIdentityKey={reply.identity_key} variant="compact" />
+                          )}
                         </div>
                         {reply.is_deleted ? (
                           <p className="mt-1 text-sm italic text-slate-400">[deleted]</p>
@@ -729,14 +784,37 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                             {reply.replies.map((nested) => (
                               <div key={nested.id}>
                                 <div className="flex items-baseline gap-2">
-                                  <UserProfileQuickView
-                                    displayName={nested.author_name}
-                                    identityKey={nested.identity_key ?? `legacy:comment:${nested.id}`}
-                                    trigger={<span className="text-sm font-semibold text-app hover:underline">{nested.author_name}</span>}
-                                  />
+                                  {nested.identity_key ? (
+                                    <Link
+                                      href={`/user/${encodeURIComponent(nested.identity_key)}`}
+                                      className="text-sm font-semibold text-app hover:underline"
+                                    >
+                                      {getDisplayName(nested)}
+                                    </Link>
+                                  ) : (
+                                    <span className="text-sm font-semibold text-app">{getDisplayName(nested)}</span>
+                                  )}
+                                  {!nested.is_deleted && nested.identity_key && (
+                                    <UserProfileQuickView
+                                      displayName={getDisplayName(nested)}
+                                      identityKey={nested.identity_key}
+                                      trigger={
+                                        <span
+                                          className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                                          title="Quick view"
+                                          aria-label="Quick view"
+                                        >
+                                          👁
+                                        </span>
+                                      }
+                                    />
+                                  )}
                                   <time className="text-xs text-slate-400" dateTime={nested.created_at}>
                                     {formatDate(nested.created_at)}
                                   </time>
+                                  {!nested.is_deleted && nested.identity_key && (
+                                    <FollowButton targetIdentityKey={nested.identity_key} variant="compact" />
+                                  )}
                                 </div>
                                 {nested.is_deleted ? (
                                   <p className="mt-1 text-sm italic text-slate-400">[deleted]</p>

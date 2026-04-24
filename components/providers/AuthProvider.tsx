@@ -25,7 +25,7 @@ export function useAuthModal() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   return (
-    <SessionProvider>
+    <SessionProvider refetchOnWindowFocus={false} refetchInterval={0}>
       <AuthModalStateProvider>{children}</AuthModalStateProvider>
     </SessionProvider>
   );

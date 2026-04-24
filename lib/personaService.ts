@@ -46,7 +46,7 @@
  *   + diversity_boost  × 0.05  (tag-freshness in current page)
  */
 
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { UserProfileModel, getReputationTier } from "@/models/UserProfile";
 
 // ─── Constants ────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { TutorialModel } from "@/models/Tutorial";
 import { LearningPathModel } from "@/models/LearningPath";
 import { TutorialProgressModel } from "@/models/TutorialProgress";

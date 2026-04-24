@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getReputationBreakdown } from "@/lib/reputationEngine";
+import { getReputationBreakdown } from "@/lib/services/reputation.service";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 
 type RouteContext = { params: Promise<{ identityKey: string }> };

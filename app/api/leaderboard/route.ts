@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { PipelineStage } from "mongoose";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { UserProfileModel } from "@/models/UserProfile";
 import { getUserType } from "@/lib/identity";
 

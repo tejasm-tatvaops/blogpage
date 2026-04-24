@@ -28,6 +28,30 @@ export const getReputationTier = (score: number): ReputationTier => {
 const userProfileSchema = new mongoose.Schema(
   {
     identity_key: { type: String, required: true, unique: true, trim: true, index: true },
+    username: {
+      type: String,
+      default: null,
+      trim: true,
+      minlength: 3,
+      maxlength: 30,
+      match: /^[a-zA-Z0-9_]{3,30}$/,
+    },
+    username_lower: {
+      type: String,
+      default: null,
+      trim: true,
+      minlength: 3,
+      maxlength: 30,
+      match: /^[a-z0-9_]{3,30}$/,
+    },
+    bio: { type: String, default: null, trim: true, maxlength: 200 },
+    location: { type: String, default: null, trim: true, maxlength: 120 },
+    website: { type: String, default: null, trim: true, maxlength: 280 },
+    email: { type: String, default: null, trim: true, maxlength: 320 },
+    email_lower: { type: String, default: null, trim: true, maxlength: 320 },
+    email_verified: { type: Boolean, default: false },
+    phone: { type: String, default: null, trim: true, maxlength: 20 },
+    phone_verified: { type: Boolean, default: false },
     fingerprint_id: { type: String, default: null, trim: true, index: true },
     ip_address: { type: String, default: null, trim: true, index: true },
     display_name: { type: String, required: true, trim: true, maxlength: 120 },
@@ -103,6 +127,9 @@ const userProfileSchema = new mongoose.Schema(
 );
 
 userProfileSchema.index({ created_at: -1 });
+userProfileSchema.index({ username: 1 }, { unique: true, sparse: true });
+userProfileSchema.index({ username_lower: 1 }, { unique: true, sparse: true });
+userProfileSchema.index({ email_lower: 1 }, { unique: true, sparse: true });
 userProfileSchema.index({ blog_views: -1, last_seen_at: -1 });
 userProfileSchema.index({ forum_posts: -1, forum_comments: -1, last_seen_at: -1 });
 userProfileSchema.index({ reputation_score: -1, last_seen_at: -1 }); // leaderboard queries

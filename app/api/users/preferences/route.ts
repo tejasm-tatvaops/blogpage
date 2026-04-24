@@ -8,7 +8,7 @@
 
 import { NextResponse } from "next/server";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { UserPreferencesModel } from "@/models/UserPreferences";
 
 export const dynamic = "force-dynamic";

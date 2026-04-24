@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { AdminComment } from "@/lib/commentService";
+import type { AdminComment } from "@/lib/services/comment.service";
 
 type AdminCommentTableProps = {
   comments: AdminComment[];

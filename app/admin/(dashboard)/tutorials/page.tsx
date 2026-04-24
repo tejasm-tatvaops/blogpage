@@ -2,7 +2,7 @@ import { requireAdminPageAccess } from "@/lib/adminAuth";
 import Link from "next/link";
 import { TutorialSortableList, type TutorialRow } from "@/components/admin/TutorialSortableList";
 import { getTutorials } from "@/lib/tutorialService";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { TutorialProgressModel } from "@/models/TutorialProgress";
 import { ContentIngestionJobModel } from "@/models/ContentIngestionJob";
 

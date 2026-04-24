@@ -5,7 +5,7 @@
  * "share" events carry metadata.channel to split channel-level stats.
  */
 
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { FeedEventModel } from "@/models/FeedEvent";
 
 export type ChannelShareCounts = {

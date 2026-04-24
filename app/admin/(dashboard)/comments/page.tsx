@@ -1,6 +1,6 @@
 import { AdminCommentTable } from "@/components/admin/AdminCommentTable";
 import { requireAdminPageAccess } from "@/lib/adminAuth";
-import { getCommentsForAdmin, type AdminComment } from "@/lib/commentService";
+import { getCommentsForAdmin, type AdminComment } from "@/lib/services/comment.service";
 
 export const revalidate = 0;
 

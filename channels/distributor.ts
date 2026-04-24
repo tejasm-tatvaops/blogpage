@@ -12,7 +12,7 @@
  */
 
 import { Resend } from "resend";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { SubscriberModel } from "@/models/Subscriber";
 import { getTopChannels } from "@/lib/channelIntelligence";
 import * as emailChannel from "./emailChannel";

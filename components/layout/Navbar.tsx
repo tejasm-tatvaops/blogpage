@@ -16,13 +16,13 @@ export function Navbar() {
       <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between px-6 py-4">
 
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2.5" aria-label="TatvaOps home">
+          <Link href="/" className="flex shrink-0 items-center" aria-label="TatvaOps home">
             <Image
               src="/tatvaops-logo.png"
               alt="TatvaOps"
-              width={286}
-              height={72}
-              className="h-14 w-auto sm:h-16 dark:brightness-90"
+              width={430}
+              height={108}
+              className="h-12 w-auto rounded-md object-contain sm:h-14 dark:brightness-95"
               priority
             />
           </Link>

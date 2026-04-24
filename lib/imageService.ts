@@ -1,5 +1,5 @@
 import { logger } from "@/lib/logger";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { BlogModel } from "@/models/Blog";
 import { persistBlogCoverImage } from "@/lib/imageStorage";
 

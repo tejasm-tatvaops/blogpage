@@ -1,22 +1,26 @@
 "use client";
 
 import Image from "next/image";
-import { signOut, useSession } from "next-auth/react";
+import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { useAuthModal } from "@/components/providers/AuthProvider";
+import { useMe } from "@/hooks/useMe";
 
 type Props = { pillClass: string };
 
 export function NavbarAuthButton({ pillClass }: Props) {
-  const { data: session, status } = useSession();
+  const { data, isLoading } = useMe();
   const { openLoginModal } = useAuthModal();
+  const session = data?.session;
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <span className={`${pillClass} w-20 animate-pulse !bg-slate-200 dark:!bg-slate-700`} />
     );
   }
 
   if (session?.user) {
+    const myIdentityKey = session.user.id ? `google:${session.user.id}` : "";
     return (
       <div className="relative group">
         <button
@@ -48,6 +52,14 @@ export function NavbarAuthButton({ pillClass }: Props) {
             <p className="truncate text-xs font-semibold text-app">{session.user.name}</p>
             <p className="truncate text-xs text-muted">{session.user.email}</p>
           </div>
+          {myIdentityKey ? (
+            <Link
+              href={`/user/${encodeURIComponent(myIdentityKey)}`}
+              className="block w-full px-4 py-2.5 text-left text-sm text-muted transition hover:bg-subtle hover:text-app"
+            >
+              My profile
+            </Link>
+          ) : null}
           <button
             type="button"
             onClick={() => signOut()}

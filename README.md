@@ -977,6 +977,7 @@ All heavy work is rate-limited in request path and guarded by timeout waiting.
 - `REDIS_URL`
 - `DAILY_AUTO_BLOGS_ENABLED`
 - `DAILY_AUTO_BLOGS_RUN_ON_START`
+- `DEV_DISABLE_AUTOMATION` (set `true` in local dev to disable background automation loop startup)
 
 ## Notes
 
@@ -1063,6 +1064,8 @@ vercel deploy --prod --yes --force
 
 - remove build cache and rebuild:
   - `rm -rf .next && npm run build`
+- for dev cache corruption (`ENOENT ... .next-dev/server/app/page.js`), reset and restart:
+  - `rm -rf .next-dev .next && npm run dev`
 
 ## Long-running `/users` calls
 
@@ -1075,10 +1078,38 @@ vercel deploy --prod --yes --force
 - dev fallback path may intentionally bypass full heavy ranking branch
 - check server logs for timeout fallback markers
 
+## Dev mode feels noisy / unstable (excessive background activity)
+
+- disable automation loops in development:
+  - `DEV_DISABLE_AUTOMATION=true`
+- this prevents activity runner startup from `app/layout.tsx`, reducing background churn while debugging UI/API behavior
+
 ## AI output parse failures
 
 - inspect provider response for malformed JSON
 - parser includes extraction fallback but can still fail on severe format drift
+
+## Groq `429` rate-limit in dev logs (`tokens per day`)
+
+If you see logs like:
+
+- `groq error 429 ... tokens per day (TPD) ...`
+- `autopopulate AI provider rate-limited; suppressing repeated logs`
+
+that means the Groq daily token quota is exhausted for the configured key/model.
+
+Expected behavior in this project:
+
+- server keeps running (no crash)
+- repetitive error spam is intentionally suppressed
+- activity queue refill logs can still appear (`activity queue refilled`)
+- AI-dependent autopopulate branches may be skipped/degraded until quota resets
+
+Recommended actions:
+
+- wait for quota reset window, or
+- switch to another API key with available quota, or
+- lower/disable autopopulate load during development if not needed
 
 ## Repeated avatars
 
@@ -1090,6 +1121,16 @@ vercel deploy --prod --yes --force
 - confirm the tag exists in at least one published Blog or non-deleted ForumPost document
 - check that `getAllTags` / `getAllForumTags` are returning the tag (query filters include `deleted_at: null` and `published: true` for blogs)
 - revalidate or force-rebuild the page if content was added after the last static generation pass
+
+## Sporadic `/blog 404` during dev navigation
+
+Occasional `GET /blog 404` lines can appear during hot reload / route recompilation windows in Next.js dev mode.
+
+Checks:
+
+- if subsequent `/blog` requests return `200`, treat this as transient dev behavior
+- if persistent, clear cache and restart:
+  - `rm -rf .next-dev .next && npm run dev`
 
 ## Related Discussions / Related Articles not appearing
 

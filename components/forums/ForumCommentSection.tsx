@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { mutate } from "swr";
-import type { Comment } from "@/lib/commentService";
+import type { Comment } from "@/lib/services/comment.service";
 import { getOrCreateFingerprint } from "@/lib/personalization";
 import { useActivityPolling } from "@/lib/activityPolling";
 import { getUserAvatar } from "@/lib/identityUI";
-import { UserProfileQuickView } from "@/components/users/UserProfileQuickView";
+import { UserProfileQuickView } from "@/components/user/UserQuickView";
+import { FollowButton } from "@/components/user/FollowButton";
 
 type ForumCommentSectionProps = {
   slug: string;
@@ -75,6 +76,14 @@ export function ForumCommentSection({
     ? `google:${session.user.id}`
     : `fp:${getOrCreateFingerprint()}`;
   const fallbackAuthorName = String(session?.user?.name ?? "").trim() || "Member";
+  const getDisplayName = useCallback((comment: Comment) => {
+    const username = String(comment.username ?? "").trim();
+    if (username) return username;
+    const author = String(comment.author_name ?? "").trim();
+    if (author) return author;
+    const identity = String(comment.identity_key ?? "").trim();
+    return identity ? `user:${identity.slice(-6)}` : "User";
+  }, []);
 
   const updateMentionSuggestions = useCallback(async (value: string, target: { type: "main" } | { type: "reply"; id: string }) => {
     const query = mentionQueryFrom(value);
@@ -214,7 +223,7 @@ export function ForumCommentSection({
       const json = (await res.json()) as { error?: string; comment?: Comment };
       if (!res.ok) throw new Error(json.error ?? "Failed to post comment.");
       if (json.comment) setComments((prev) => [json.comment!, ...prev]);
-      void mutate("/api/me/reputation");
+      void mutate("/api/me");
       setContent("");
       setSuccess(true);
       router.refresh();
@@ -262,7 +271,7 @@ export function ForumCommentSection({
           }),
         );
       }
-      void mutate("/api/me/reputation");
+      void mutate("/api/me");
       setReplyDrafts((prev) => ({ ...prev, [parentCommentId]: "" }));
       setActiveReplyFor(null);
       router.refresh();
@@ -304,7 +313,7 @@ export function ForumCommentSection({
           })),
         );
       }
-      void mutate("/api/me/reputation");
+      void mutate("/api/me");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to vote.");
     } finally {
@@ -374,7 +383,7 @@ export function ForumCommentSection({
         className={`flex gap-3 ${isBest ? "rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 -mx-3" : ""}`}
       >
         <UserProfileQuickView
-          displayName={c.author_name}
+          displayName={getDisplayName(c)}
           identityKey={c.identity_key ?? `legacy:comment:${c.id}`}
           trigger={(() => {
             const avatar = getUserAvatar(c);
@@ -402,18 +411,39 @@ export function ForumCommentSection({
         />
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <UserProfileQuickView
-              displayName={c.author_name}
-              identityKey={c.identity_key ?? `legacy:comment:${c.id}`}
-              trigger={
-                <span className="text-sm font-semibold text-app hover:underline">
-                  {c.is_deleted ? "[deleted]" : c.author_name}
-                </span>
-              }
-            />
+            {c.is_deleted ? (
+              <span className="text-sm font-semibold text-app">[deleted]</span>
+            ) : c.identity_key ? (
+              <Link
+                href={`/user/${encodeURIComponent(c.identity_key)}`}
+                className="text-sm font-semibold text-app hover:underline"
+              >
+                {getDisplayName(c)}
+              </Link>
+            ) : (
+              <span className="text-sm font-semibold text-app">{getDisplayName(c)}</span>
+            )}
+            {!c.is_deleted && c.identity_key && (
+              <UserProfileQuickView
+                displayName={getDisplayName(c)}
+                identityKey={c.identity_key}
+                trigger={
+                  <span
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                    title="Quick view"
+                    aria-label="Quick view"
+                  >
+                    👁
+                  </span>
+                }
+              />
+            )}
             <time className="text-xs text-slate-400" dateTime={c.created_at}>
               {formatDate(c.created_at)}
             </time>
+            {!c.is_deleted && c.identity_key && (
+              <FollowButton targetIdentityKey={c.identity_key} variant="compact" />
+            )}
             {isBest && (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>

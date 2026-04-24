@@ -13,7 +13,7 @@
  * to avoid adding new dependencies.
  */
 
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import {
   ContentIngestionJobModel,
   type IngestionOutputType,

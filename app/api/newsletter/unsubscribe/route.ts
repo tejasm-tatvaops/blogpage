@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/db/mongodb";
 import { SubscriberModel } from "@/models/Subscriber";
 import { createRateLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 

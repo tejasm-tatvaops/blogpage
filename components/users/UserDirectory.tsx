@@ -29,15 +29,16 @@ type UserDirectoryProps = {
     blogViews: number;
     forumViews: number;
   };
+  nowMs?: number;
 };
 
 const formatNumber = (value: number): string => new Intl.NumberFormat("en-US").format(value);
 const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 const shortIdentityId = (identityKey: string): string => identityKey.slice(-6).toUpperCase();
-const formatRelative = (iso: string): string => {
+const formatRelative = (iso: string, nowMs: number): string => {
   const ts = new Date(iso).getTime();
-  const diff = Date.now() - ts;
+  const diff = nowMs - ts;
   const mins = Math.max(1, Math.floor(diff / 60_000));
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
@@ -197,7 +198,8 @@ function UserAvatarImage({
   );
 }
 
-export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps) {
+export function UserDirectory({ users, totals, userTotals, nowMs }: UserDirectoryProps) {
+  const renderNowMs = nowMs ?? Date.now();
   const initialTotals = totals ?? { blogViews: 0, forumViews: 0 };
   const initialUserTotals = userTotals ?? { blogViews: 0, forumViews: 0 };
   const initialUsers = users ?? [];
@@ -290,7 +292,9 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
     const filtered = resolvedUsers.filter((user) => {
       const matchesSearch =
         (user.display_name ?? "").toLowerCase().includes(q) ||
-        (user.about ?? "").toLowerCase().includes(q);
+        (user.username ?? "").toLowerCase().includes(q) ||
+        (user.about ?? "").toLowerCase().includes(q) ||
+        (user.identity_key ?? "").toLowerCase().includes(q);
 
       // Search should behave like a directory lookup and bypass activity-style filters.
       if (q) return matchesSearch;
@@ -379,7 +383,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search users, bio, or interests"
+          placeholder="Search users, usernames, bio, or identity"
           className="min-w-[220px] flex-1 rounded-lg border border-app px-3 py-2 text-sm outline-none ring-sky-500 focus:ring-2"
         />
         <select
@@ -445,7 +449,10 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
                 <div className="transition-transform duration-200 hover:scale-105">
                   <UserAvatarImage user={user} sizeClass="h-5 w-5 text-[9px]" />
                 </div>
-                {user.display_name}
+                <span className="font-medium">{user.display_name}</span>
+                {user.username ? (
+                  <span className="text-xs text-sky-700">@{user.username}</span>
+                ) : null}
               </span>
             ))}
           </div>
@@ -495,6 +502,11 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
                         </span>
                       )}
                     </h2>
+                    {user.username ? (
+                      <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+                        @{user.username}
+                      </span>
+                    ) : null}
                     <ReputationBadge tier={user.reputation_tier} score={user.reputation_score} />
                     <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${levelMeta.color}`}>
                       {levelMeta.icon} {levelMeta.label}
@@ -576,7 +588,7 @@ export function UserDirectory({ users, totals, userTotals }: UserDirectoryProps)
               </div>
 
               <div className="mt-4 space-y-1.5 text-sm text-slate-500">
-                <p className="text-xs text-slate-400">Seen {formatRelative(user.last_seen_at)}</p>
+                <p className="text-xs text-slate-400">Seen {formatRelative(user.last_seen_at, renderNowMs)}</p>
                 <p className="text-xs text-slate-400">Joined {formatDate(user.created_at)}</p>
                 {user.last_blog_slug ? (
                   <p>
