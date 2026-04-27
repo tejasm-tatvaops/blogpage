@@ -217,6 +217,11 @@ export default async function ForumThreadPage({ params }: PageProps) {
               />
             </div>
 
+            {/* Post content */}
+            <article className="prose prose-slate mt-6 max-w-none rounded-2xl border border-gray-100 bg-gray-50 p-5">
+              <MarkdownRenderer content={post.content} />
+            </article>
+
             {/* Discussion first */}
             <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
               <ForumCommentSection
@@ -226,11 +231,6 @@ export default async function ForumThreadPage({ params }: PageProps) {
                 creatorFingerprint={post.creator_fingerprint}
               />
             </div>
-
-            {/* Post content */}
-            <article className="prose prose-slate mt-6 max-w-none rounded-2xl border border-gray-100 bg-gray-50 p-5">
-              <MarkdownRenderer content={post.content} />
-            </article>
 
             {/* Related Articles */}
             {relatedBlogs.length > 0 && (

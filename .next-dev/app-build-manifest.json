@@ -21,6 +21,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
+    "/api/blog/[slug]/comments/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/blog/[slug]/comments/route.js"
+    ],
     "/api/me/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -56,30 +61,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/blog/[slug]/view/route.js"
     ],
-    "/api/blog/[slug]/comments/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/blog/[slug]/comments/route.js"
-    ],
     "/api/feed/events/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/feed/events/route.js"
     ],
-    "/api/users/follow-stats/batch/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/users/follow-stats/batch/route.js"
-    ],
     "/forums/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/forums/layout.js"
-    ],
-    "/forums/[slug]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/forums/[slug]/page.js"
     ],
     "/forums/page": [
       "static/chunks/webpack.js",
@@ -91,6 +81,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/forums/route.js"
     ],
+    "/forums/[slug]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/forums/[slug]/page.js"
+    ],
     "/api/forums/[slug]/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -100,21 +95,6 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/forums/[slug]/comments/route.js"
-    ],
-    "/user/[identityKey]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/user/[identityKey]/page.js"
-    ],
-    "/api/notifications/read/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/notifications/read/route.js"
-    ],
-    "/api/users/profile/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/users/profile/route.js"
     ]
   }
 }
