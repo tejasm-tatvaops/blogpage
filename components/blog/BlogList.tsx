@@ -273,29 +273,29 @@ export function BlogList({
   const resolvedImageMap = resolveCardImages(fallbackPosts);
 
   return (
-    <section className="mx-auto w-full max-w-[1500px] px-6 py-12">
-      <header className="mb-10 flex flex-col gap-6">
+    <section className="mx-auto w-full max-w-[1500px] px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
+      <header className="mb-8 flex flex-col gap-5 sm:mb-10 sm:gap-6">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight text-app sm:text-5xl">TatvaOps Blog</h1>
-          <p className="mt-3 max-w-3xl text-base leading-8 text-slate-600">
+          <h1 className="text-3xl font-bold tracking-tight text-app sm:text-4xl lg:text-5xl">TatvaOps Blog</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
             Tactical insights on BOQ workflows, construction estimation, procurement strategy, and
             vendor decisions to help teams execute with confidence.
           </p>
         </div>
 
-        <form method="GET" action="/blog" className="flex flex-wrap items-center gap-3">
+        <form method="GET" action="/blog" className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           {activeCategory ? <input type="hidden" name="category" value={activeCategory} /> : null}
           <input
             type="search"
             name="q"
             defaultValue={query ?? ""}
             placeholder="Search by title, excerpt, or tag"
-            className="min-w-[220px] flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring-2"
+            className="w-full min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring-2 sm:min-w-[220px]"
           />
           <select
             name="sort"
             defaultValue={sort}
-            className="rounded-lg border border-slate-300 bg-surface px-3 py-2 text-sm text-slate-700 outline-none ring-sky-500 transition focus:ring-2"
+            className="w-full rounded-lg border border-slate-300 bg-surface px-3 py-2 text-sm text-slate-700 outline-none ring-sky-500 transition focus:ring-2 sm:w-auto"
           >
             <option value="latest">Latest</option>
             <option value="most_viewed">Most viewed</option>
@@ -303,14 +303,14 @@ export function BlogList({
           </select>
           <button
             type="submit"
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-slate-700"
+            className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-slate-700 sm:w-auto"
           >
             Search
           </button>
           {canCreatePost ? (
             <Link
               href="/admin/blog/new"
-              className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-sky-400"
+              className="w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-sky-400 sm:w-auto"
             >
               New post
             </Link>
@@ -329,7 +329,7 @@ export function BlogList({
                 </span>
               ))}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 whitespace-nowrap">
               <button
                 type="button"
                 onClick={() => setFeedTab("for_you")}
@@ -361,8 +361,8 @@ export function BlogList({
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-3 border-b border-app pb-6">
-          <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-col gap-3 border-b border-app pb-5 sm:flex-row sm:flex-wrap sm:items-center sm:pb-6">
+          <div className="flex gap-2 overflow-x-auto pb-1 whitespace-nowrap sm:flex-wrap sm:overflow-visible sm:pb-0">
             <Link
               href={buildBlogHref({ query, sort })}
               className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
@@ -388,7 +388,7 @@ export function BlogList({
           <button
             type="button"
             onClick={() => setShowPersonalizationModal(true)}
-            className="ml-auto flex items-center gap-1.5 rounded-full border border-app bg-surface px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-subtle hover:text-app"
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-app bg-surface px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-subtle hover:text-app sm:ml-auto sm:w-auto"
           >
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
               <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />

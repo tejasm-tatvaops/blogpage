@@ -156,7 +156,7 @@ export function BlogDetail({
               </span>
 
               {/* Title */}
-              <h1 className="mt-4 text-[2.1rem] font-extrabold leading-[1.18] tracking-[-0.02em] text-app sm:text-5xl">
+              <h1 className="mt-4 text-3xl font-extrabold leading-[1.2] tracking-[-0.02em] text-app sm:text-4xl lg:text-5xl">
                 {post.title}
               </h1>
 
@@ -205,7 +205,7 @@ export function BlogDetail({
                 <BookmarkButton slug={post.slug} title={post.title} excerpt={post.excerpt} />
                 <UpvoteButton slug={post.slug} initialCount={post.upvote_count} />
                 <DownvoteButton slug={post.slug} initialCount={post.downvote_count} />
-                <div className="ml-auto flex items-center">
+                <div className="w-full sm:ml-auto sm:w-auto flex items-center justify-end">
                   <ShareButtons
                     title={post.title}
                     slug={post.slug}
@@ -302,7 +302,7 @@ export function BlogDetail({
             </div>
 
             {/* ── Article body ── */}
-            <div className="prose prose-lg max-w-none prose-slate prose-headings:font-bold prose-headings:tracking-tight prose-p:leading-[1.85] prose-a:text-sky-700 prose-a:no-underline prose-a:font-medium hover:prose-a:underline prose-code:rounded-md prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:text-sm prose-code:text-slate-800 prose-pre:overflow-x-auto prose-pre:rounded-2xl prose-pre:bg-slate-950 prose-pre:p-5 prose-pre:text-slate-100 prose-blockquote:not-italic prose-blockquote:border-l-4 prose-blockquote:border-sky-300 prose-blockquote:bg-sky-50/60 prose-blockquote:rounded-r-xl prose-blockquote:py-1 prose-blockquote:text-slate-700 prose-img:rounded-xl prose-img:shadow-md prose-table:text-sm prose-th:bg-subtle prose-thead:border-app prose-tr:border-slate-100">
+            <div className="prose prose-base sm:prose-lg max-w-none prose-slate prose-headings:font-bold prose-headings:tracking-tight prose-p:leading-[1.8] sm:prose-p:leading-[1.85] prose-a:text-sky-700 prose-a:no-underline prose-a:font-medium hover:prose-a:underline prose-code:rounded-md prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:text-sm prose-code:text-slate-800 prose-pre:overflow-x-auto prose-pre:rounded-2xl prose-pre:bg-slate-950 prose-pre:p-4 sm:prose-pre:p-5 prose-pre:text-slate-100 prose-blockquote:not-italic prose-blockquote:border-l-4 prose-blockquote:border-sky-300 prose-blockquote:bg-sky-50/60 prose-blockquote:rounded-r-xl prose-blockquote:py-1 prose-blockquote:text-slate-700 prose-img:rounded-xl prose-img:shadow-md prose-table:text-sm prose-th:bg-subtle prose-thead:border-app prose-tr:border-slate-100">
               <MarkdownRenderer content={mainContent} />
             </div>
 
@@ -374,14 +374,14 @@ export function BlogDetail({
             )}
 
             {/* ── Action bar (bottom) ── */}
-            <div className="mt-8 flex flex-wrap items-center gap-3 rounded-2xl border border-app bg-surface px-5 py-4">
+            <div className="mt-8 flex flex-wrap items-center gap-3 rounded-2xl border border-app bg-surface px-4 py-4 sm:px-5">
               <div className="mr-1">
                 <p className="text-sm font-semibold text-app">Was this helpful?</p>
                 <p className="text-xs text-muted">Let us know what you think</p>
               </div>
               <UpvoteButton slug={post.slug} initialCount={post.upvote_count} />
               <DownvoteButton slug={post.slug} initialCount={post.downvote_count} />
-              <div className="ml-auto flex items-center">
+              <div className="w-full sm:ml-auto sm:w-auto flex items-center justify-end">
                 <ShareButtons
                   title={post.title}
                   slug={post.slug}

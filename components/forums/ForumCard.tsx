@@ -60,7 +60,7 @@ export function ForumCard({ post }: ForumCardProps) {
 
         <Link
           href={`/forums/${post.slug}`}
-          className="relative block min-w-0 flex-1 rounded-2xl border border-app bg-surface px-4 py-4 shadow-sm transition duration-200 hover:border-slate-300 hover:shadow-md"
+          className="relative block min-w-0 flex-1 rounded-2xl border border-app bg-surface px-3 py-3 shadow-sm transition duration-200 hover:border-slate-300 hover:shadow-md sm:px-4 sm:py-4"
         >
           <span className="absolute -left-2 top-4 h-3 w-3 rotate-45 border-b border-l border-app bg-surface" />
 
@@ -90,10 +90,10 @@ export function ForumCard({ post }: ForumCardProps) {
             ))}
           </div>
 
-          <h2 className="line-clamp-2 text-[1.72rem] font-bold leading-snug text-app transition group-hover:text-indigo-700">
+          <h2 className="line-clamp-2 break-words text-xl font-bold leading-snug text-app transition group-hover:text-indigo-700 sm:text-2xl lg:text-[1.72rem]">
             {post.title}
           </h2>
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{post.excerpt}</p>
+          <p className="mt-2 line-clamp-2 text-xs leading-6 text-slate-600 sm:text-sm">{post.excerpt}</p>
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
@@ -105,7 +105,7 @@ export function ForumCard({ post }: ForumCardProps) {
             <span className="font-medium text-slate-700">{post.author_name}</span>
             <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
 
-            <div className="ml-auto flex items-center gap-3">
+            <div className="w-full sm:ml-auto sm:w-auto flex items-center gap-3">
               <span className="inline-flex items-center gap-1">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-indigo-500">
                   <path d="M12 19V5M5 12l7-7 7 7" />

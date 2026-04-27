@@ -95,7 +95,7 @@ export function BlogCard({
 
   return (
     <article className="group relative h-full min-h-[26rem] overflow-hidden bg-black">
-      <Link href={`/blog/${post.slug}`} className="block h-full">
+      <Link href={`/blog/${post.slug}`} className="block h-full tap-target">
         <div className="absolute inset-0 overflow-hidden bg-slate-100">
           <CoverImage
             src={imageResolution.primary}
@@ -132,7 +132,7 @@ export function BlogCard({
               )}
             </div>
           )}
-          <div className="flex items-center gap-2 text-xs font-medium text-white/80">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs font-medium text-white/80">
             <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
             <span aria-hidden>•</span>
             <span>{post.author}</span>
@@ -144,7 +144,7 @@ export function BlogCard({
             <span>{post.upvote_count.toLocaleString()} likes</span>
           </div>
 
-          <h2 className="line-clamp-2 text-2xl font-extrabold leading-tight text-white sm:text-[1.75rem]">
+          <h2 className="line-clamp-2 break-words text-xl font-extrabold leading-tight text-white sm:text-[1.75rem]">
             {post.title}
           </h2>
 
