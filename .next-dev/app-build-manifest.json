@@ -95,6 +95,11 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/forums/[slug]/comments/route.js"
+    ],
+    "/shorts/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/shorts/page.js"
     ]
   }
 }

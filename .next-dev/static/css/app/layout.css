@@ -206,6 +206,7 @@
     --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
     --drop-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.15);
     --drop-shadow-2xl: 0 25px 25px rgb(0 0 0 / 0.15);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
     --ease-out: cubic-bezier(0, 0, 0.2, 1);
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     --animate-spin: spin 1s linear infinite;
@@ -3864,6 +3865,10 @@
     --tw-duration: 700ms;
     transition-duration: 700ms;
   }
+  .ease-in {
+    --tw-ease: var(--ease-in);
+    transition-timing-function: var(--ease-in);
+  }
   .ease-in-out {
     --tw-ease: var(--ease-in-out);
     transition-timing-function: var(--ease-in-out);
@@ -5246,6 +5251,16 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
+  .dark\:block {
+    &:where([data-theme="dark"], [data-theme="dark"] *) {
+      display: block;
+    }
+  }
+  .dark\:hidden {
+    &:where([data-theme="dark"], [data-theme="dark"] *) {
+      display: none;
+    }
+  }
   .dark\:border {
     &:where([data-theme="dark"], [data-theme="dark"] *) {
       border-style: var(--tw-border-style);
@@ -5446,6 +5461,11 @@
       color: var(--color-white);
     }
   }
+  .dark\:mix-blend-multiply {
+    &:where([data-theme="dark"], [data-theme="dark"] *) {
+      mix-blend-mode: multiply;
+    }
+  }
   .dark\:ring-slate-700 {
     &:where([data-theme="dark"], [data-theme="dark"] *) {
       --tw-ring-color: var(--color-slate-700);
@@ -5454,6 +5474,18 @@
   .dark\:brightness-95 {
     &:where([data-theme="dark"], [data-theme="dark"] *) {
       --tw-brightness: brightness(95%);
+      filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
+    }
+  }
+  .dark\:brightness-110 {
+    &:where([data-theme="dark"], [data-theme="dark"] *) {
+      --tw-brightness: brightness(110%);
+      filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
+    }
+  }
+  .dark\:contrast-110 {
+    &:where([data-theme="dark"], [data-theme="dark"] *) {
+      --tw-contrast: contrast(110%);
       filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
     }
   }

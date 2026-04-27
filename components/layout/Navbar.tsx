@@ -22,7 +22,15 @@ export function Navbar() {
               alt="TatvaOps"
               width={430}
               height={108}
-              className="h-12 w-auto rounded-md object-contain sm:h-14 dark:brightness-95"
+              className="h-12 w-auto rounded-md object-contain sm:h-14 dark:hidden"
+              priority
+            />
+            <Image
+              src="/tatvaops-logo-transparent.png"
+              alt="TatvaOps"
+              width={430}
+              height={108}
+              className="hidden h-12 w-auto rounded-md object-contain sm:h-14 dark:block"
               priority
             />
           </Link>
