@@ -16,7 +16,7 @@ import { AiAssistant } from "./AiAssistant";
 import { BookmarkButton } from "./BookmarkButton";
 import { ReadingTracker } from "./ReadingTracker";
 import type { EngagedUserProfile } from "@/lib/userProfileService";
-import { TopicActiveUsersStrip } from "@/components/users/TopicActiveUsersStrip";
+import { BlogActiveUsersStrip } from "@/components/users/BlogActiveUsersStrip";
 import { UserProfileQuickView } from "@/components/user/UserQuickView";
 import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
 
@@ -394,7 +394,7 @@ export function BlogDetail({
             </div>
 
             {/* ── Comments ── */}
-            <TopicActiveUsersStrip title="Most engaged users on this post" users={topicUsers} />
+            <BlogActiveUsersStrip title="Most engaged users on this post" users={topicUsers} />
             <div className="mt-10 rounded-2xl border border-slate-100 bg-surface p-1">
               <CommentSection slug={post.slug} initialComments={comments} />
             </div>

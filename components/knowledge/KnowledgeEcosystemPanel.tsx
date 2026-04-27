@@ -20,15 +20,18 @@ type Props = {
 
 function SectionList({ title, items }: { title: string; items: Item[] }) {
   if (items.length === 0) return null;
+  const isTopicHubs = title === "Topic hubs";
   return (
-    <section className="rounded-xl border border-app bg-surface p-4">
+    <section className={`rounded-xl border border-app bg-surface p-4 ${isTopicHubs ? "lg:col-span-2" : ""}`}>
       <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{title}</h3>
-      <ul className="mt-3 space-y-2.5">
+      <ul className={isTopicHubs ? "mt-3 grid grid-cols-2 gap-2.5" : "mt-3 space-y-2.5"}>
         {items.map((item) => (
           <li key={`${title}:${item.href}`}>
             <Link
               href={item.href}
-              className="group block rounded-lg border border-app bg-subtle px-3 py-2 transition hover:border-sky-300 hover:bg-sky-50"
+              className={`group block rounded-lg border border-app bg-subtle px-3 py-2 transition hover:border-sky-300 hover:bg-sky-50 ${
+                isTopicHubs ? "h-full" : ""
+              }`}
             >
               <p className="text-sm font-semibold text-app transition group-hover:text-sky-700 line-clamp-2">
                 {item.title}
