@@ -244,11 +244,20 @@ export function VerticalVideoPlayer({
 }: VerticalVideoPlayerProps) {
   const [thumbnailError, setThumbnailError] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const youtubeFrameRef = useRef<HTMLIFrameElement | null>(null);
 
   const thumbnail = thumbnailError ? null : post.thumbnailUrl;
 
+  useEffect(() => {
+    if (post.sourceType !== "youtube" || !post.youtubeVideoId || !isActive) return;
+    const frame = youtubeFrameRef.current;
+    if (!frame) return;
+    const command = muted ? "mute" : "unMute";
+    const payload = JSON.stringify({ event: "command", func: command, args: [] });
+    frame.contentWindow?.postMessage(payload, "https://www.youtube.com");
+  }, [isActive, muted, post.sourceType, post.youtubeVideoId]);
+
   if (post.sourceType === "youtube" && post.youtubeVideoId) {
-    const embedKey = `${post.youtubeVideoId}-${muted ? "m" : "u"}`;
     const embedSrc =
       `https://www.youtube.com/embed/${post.youtubeVideoId}` +
       `?autoplay=1&mute=${muted ? 1 : 0}&loop=1&rel=0&modestbranding=1&controls=1&playsinline=1&enablejsapi=1` +
@@ -268,7 +277,8 @@ export function VerticalVideoPlayer({
 
         {isActive && (
           <iframe
-            key={embedKey}
+            ref={youtubeFrameRef}
+            key={post.youtubeVideoId}
             src={embedSrc}
             title={post.title}
             allow="autoplay; encrypted-media; picture-in-picture"

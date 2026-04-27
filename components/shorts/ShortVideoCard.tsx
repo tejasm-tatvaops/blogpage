@@ -15,7 +15,6 @@ type ShortVideoCardProps = {
   onLike: (slug: string) => void;
   onMuteToggle: () => void;
   onFirstInteraction: () => void;
-  onShare: (post: VideoPost) => void;
 };
 
 export function ShortVideoCard({
@@ -28,7 +27,6 @@ export function ShortVideoCard({
   onLike,
   onMuteToggle,
   onFirstInteraction,
-  onShare,
 }: ShortVideoCardProps) {
   return (
     <div
@@ -61,7 +59,7 @@ export function ShortVideoCard({
             muted={muted}
             onLike={() => onLike(post.slug)}
             onMuteToggle={onMuteToggle}
-            onShare={() => onShare(post)}
+            onFirstInteraction={onFirstInteraction}
           />
         </motion.div>
       ) : (

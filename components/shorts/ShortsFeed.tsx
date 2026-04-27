@@ -10,6 +10,18 @@ type ShortsFeedProps = {
   initialPosts: VideoPost[];
 };
 
+const navLinks = [
+  { label: "Home", href: "/" },
+  { label: "Blogs", href: "/blog" },
+  { label: "Forums", href: "/forums" },
+  { label: "Shorts", href: "/shorts", active: true },
+  { label: "Tatva Inshorts", href: "/inshorts" },
+  { label: "Tutorials", href: "/tutorials" },
+  { label: "Ask AI", href: "/ask", highlight: true },
+  { label: "Saved", href: "/saved" },
+  { label: "Admin", href: "/admin/login" },
+];
+
 // ─── Feed event helper ────────────────────────────────────────────────────────
 // Reuses the existing /api/feed/events endpoint so video signals flow into
 // the same FeedEvent collection and analytics pipeline as blogs/forums.
@@ -184,17 +196,6 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
     }).catch(() => undefined);
   }, [likedById]);
 
-  const handleShare = useCallback((post: VideoPost) => {
-    const url = `${window.location.origin}/shorts/${post.slug}`;
-    if (typeof navigator !== "undefined" && navigator.share) {
-      void navigator.share({ title: post.title, text: post.shortCaption, url }).catch(() => undefined);
-    } else {
-      void navigator.clipboard?.writeText(url).catch(() => undefined);
-      setInteractionAck("Link copied!");
-      window.setTimeout(() => setInteractionAck(null), 1500);
-    }
-  }, []);
-
   const handleFirstInteraction = useCallback(() => {
     if (hasInteracted) return;
     setHasInteracted(true);
@@ -232,8 +233,8 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
           </div>
 
           {/* Header row */}
-          <div className="flex items-center justify-between pb-2">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 pb-2">
+            <div className="flex flex-shrink-0 items-center gap-3">
               <Link
                 href="/"
                 className="flex items-center gap-1.5 rounded-full bg-surface/10 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-surface/20"
@@ -246,8 +247,32 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
               <span className="text-sm font-bold tracking-wide">Shorts</span>
               <span className="text-xs text-white/50">{activeIndex + 1} / {posts.length}</span>
             </div>
-
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-black">Shorts</span>
+            <div className="flex min-w-0 flex-1 justify-end overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex items-center gap-1">
+                {navLinks.map((link) =>
+                  link.active ? (
+                    <span
+                      key={link.href}
+                      className="whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-black"
+                    >
+                      {link.label}
+                    </span>
+                  ) : (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition hover:text-white ${
+                        link.highlight
+                          ? "bg-indigo-600/80 text-white hover:bg-indigo-500"
+                          : "bg-white/10 text-white/70 hover:bg-white/20"
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  )
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -270,7 +295,6 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
             onLike={handleLike}
             onMuteToggle={() => setMuted((v) => !v)}
             onFirstInteraction={handleFirstInteraction}
-            onShare={handleShare}
           />
         ))}
 
