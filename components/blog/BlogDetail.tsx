@@ -308,6 +308,7 @@ export function BlogDetail({
 
             <ReadingTracker slug={post.slug} readingTimeMinutes={readingTimeMinutes} tags={post.tags} category={post.category} />
             <AiAssistant slug={post.slug} />
+            <div id="knowledge-ecosystem-section">
             <KnowledgeEcosystemPanel
               topicLabel={post.category}
               confidence="high"
@@ -338,6 +339,7 @@ export function BlogDetail({
                 reason: "Knowledge hub",
               }))}
             />
+            </div>
 
             {/* ── Related Discussions ── */}
             {relatedForumPosts.length > 0 && (
