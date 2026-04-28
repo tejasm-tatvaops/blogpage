@@ -40,10 +40,15 @@ export async function POST(request: Request) {
   // Store production uploads in Blob and keep local disk writes for dev.
   if (process.env.VERCEL === "1" || process.env.VERCEL_ENV) {
     try {
+      const blobToken =
+        process.env.bbbb_READ_WRITE_TOKEN ??
+        process.env.BLOB_PUBLIC_READ_WRITE_TOKEN ??
+        process.env.BLOB_READ_WRITE_TOKEN;
       const blob = await put(`tutorial-videos/${safeName}`, file, {
         access: "public",
         addRandomSuffix: false,
         contentType: file.type || "video/mp4",
+        token: blobToken,
       });
       return NextResponse.json({ videoUrl: blob.url }, { status: 201 });
     } catch (error) {
