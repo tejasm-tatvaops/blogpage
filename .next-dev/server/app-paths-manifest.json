@@ -1,12 +1,12 @@
 {
-  "/api/feed/events/route": "app/api/feed/events/route.js",
-  "/api/shorts/[slug]/view/route": "app/api/shorts/[slug]/view/route.js",
   "/api/me/route": "app/api/me/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/tutorials/[slug]/progress/route": "app/api/tutorials/[slug]/progress/route.js",
+  "/api/feed/events/route": "app/api/feed/events/route.js",
   "/tutorials/page": "app/tutorials/page.js",
   "/shorts/page": "app/shorts/page.js",
   "/page": "app/page.js",
-  "/inshorts/page": "app/inshorts/page.js",
+  "/tutorials/[slug]/page": "app/tutorials/[slug]/page.js",
   "/admin/login/page": "app/admin/login/page.js",
   "/admin/(dashboard)/tutorials/page": "app/admin/(dashboard)/tutorials/page.js"
 }
