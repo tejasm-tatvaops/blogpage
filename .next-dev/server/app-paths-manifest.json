@@ -1,12 +1,12 @@
 {
-  "/api/blog/[slug]/comments/route": "app/api/blog/[slug]/comments/route.js",
-  "/api/trending/route": "app/api/trending/route.js",
-  "/api/feed/events/route": "app/api/feed/events/route.js",
   "/api/me/route": "app/api/me/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/users/preferences/route": "app/api/users/preferences/route.js",
+  "/api/trending/route": "app/api/trending/route.js",
+  "/api/blog/[slug]/view/route": "app/api/blog/[slug]/view/route.js",
+  "/api/blog/[slug]/comments/route": "app/api/blog/[slug]/comments/route.js",
+  "/api/feed/events/route": "app/api/feed/events/route.js",
   "/page": "app/page.js",
-  "/blog/[slug]/page": "app/blog/[slug]/page.js",
-  "/supplier/page": "app/supplier/page.js",
   "/blog/page": "app/blog/page.js",
-  "/forums/page": "app/forums/page.js"
+  "/blog/[slug]/page": "app/blog/[slug]/page.js"
 }

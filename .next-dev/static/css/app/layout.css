@@ -1299,9 +1299,6 @@
   .mb-0 {
     margin-bottom: calc(var(--spacing) * 0);
   }
-  .mb-0\.5 {
-    margin-bottom: calc(var(--spacing) * 0.5);
-  }
   .mb-1 {
     margin-bottom: calc(var(--spacing) * 1);
   }
@@ -2561,9 +2558,6 @@
       background-color: color-mix(in oklab, var(--color-sky-100) 50%, transparent);
     }
   }
-  .bg-sky-200 {
-    background-color: var(--color-sky-200);
-  }
   .bg-sky-200\/30 {
     background-color: color-mix(in srgb, oklch(90.1% 0.058 230.902) 30%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -2626,12 +2620,6 @@
   }
   .bg-slate-200 {
     background-color: var(--color-slate-200);
-  }
-  .bg-slate-200\/60 {
-    background-color: color-mix(in srgb, oklch(92.9% 0.013 255.508) 60%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-slate-200) 60%, transparent);
-    }
   }
   .bg-slate-200\/80 {
     background-color: color-mix(in srgb, oklch(92.9% 0.013 255.508) 80%, transparent);
@@ -4035,13 +4023,6 @@
       }
     }
   }
-  .group-hover\:border-sky-300 {
-    &:is(:where(.group):hover *) {
-      @media (hover: hover) {
-        border-color: var(--color-sky-300);
-      }
-    }
-  }
   .group-hover\:bg-indigo-100 {
     &:is(:where(.group):hover *) {
       @media (hover: hover) {
@@ -4060,13 +4041,6 @@
     &:is(:where(.group):hover *) {
       @media (hover: hover) {
         background-color: var(--color-rose-100);
-      }
-    }
-  }
-  .group-hover\:bg-sky-50 {
-    &:is(:where(.group):hover *) {
-      @media (hover: hover) {
-        background-color: var(--color-sky-50);
       }
     }
   }
@@ -5669,11 +5643,6 @@
       color: var(--color-emerald-400);
     }
   }
-  .dark\:text-emerald-500 {
-    &:where([data-theme="dark"], [data-theme="dark"] *) {
-      color: var(--color-emerald-500);
-    }
-  }
   .dark\:text-indigo-400 {
     &:where([data-theme="dark"], [data-theme="dark"] *) {
       color: var(--color-indigo-400);
@@ -5722,27 +5691,6 @@
   .dark\:ring-slate-700 {
     &:where([data-theme="dark"], [data-theme="dark"] *) {
       --tw-ring-color: var(--color-slate-700);
-    }
-  }
-  .dark\:group-hover\:border-sky-700 {
-    &:where([data-theme="dark"], [data-theme="dark"] *) {
-      &:is(:where(.group):hover *) {
-        @media (hover: hover) {
-          border-color: var(--color-sky-700);
-        }
-      }
-    }
-  }
-  .dark\:group-hover\:bg-sky-900\/20 {
-    &:where([data-theme="dark"], [data-theme="dark"] *) {
-      &:is(:where(.group):hover *) {
-        @media (hover: hover) {
-          background-color: color-mix(in srgb, oklch(39.1% 0.09 240.876) 20%, transparent);
-          @supports (color: color-mix(in lab, red, red)) {
-            background-color: color-mix(in oklab, var(--color-sky-900) 20%, transparent);
-          }
-        }
-      }
     }
   }
   .dark\:group-hover\:text-sky-400 {
