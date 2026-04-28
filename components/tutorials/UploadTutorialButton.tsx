@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
 
 type Step = "select" | "details" | "success";
@@ -9,6 +10,7 @@ const DIFFICULTY_OPTIONS = ["Beginner", "Intermediate", "Advanced"];
 const CONTENT_TAGS = ["Cement", "Concrete", "Steel", "Waterproofing", "Masonry", "RCC", "BOQ", "Site Management", "Quality Control", "Safety"];
 
 function UploadModal({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
   const [step, setStep] = useState<Step>("select");
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -16,6 +18,7 @@ function UploadModal({ onClose }: { onClose: () => void }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: "",
@@ -62,52 +65,32 @@ function UploadModal({ onClose }: { onClose: () => void }) {
       tags: f.tags.includes(tag) ? f.tags.filter((t) => t !== tag) : [...f.tags, tag],
     }));
 
-  const isValid =
-    form.title.trim().length > 3 && form.difficulty !== "";
+  const isValid = form.title.trim().length >= 3 && form.difficulty !== "";
 
   const publishTutorial = async () => {
     if (!isValid || isSubmitting) return;
     setSubmitError(null);
     setIsSubmitting(true);
+    setUploadProgress(0);
     try {
       const estimatedMinutes = Number(form.estimatedMinutes);
-      const source = youtubeUrl.trim();
-      if (!source && !selectedFile) {
+      const ytUrl = youtubeUrl.trim();
+
+      let videoSourceUrl: string;
+
+      if (ytUrl) {
+        videoSourceUrl = ytUrl;
+      } else if (selectedFile) {
+        const blob = await upload(selectedFile.name, selectedFile, {
+          access: "public",
+          handleUploadUrl: "/api/admin/videos/client-upload",
+          contentType: selectedFile.type || "video/mp4",
+          multipart: true,
+          onUploadProgress: ({ percentage }) => setUploadProgress(Math.round(percentage)),
+        });
+        videoSourceUrl = blob.url;
+      } else {
         throw new Error("Please upload a video file or paste a video link.");
-      }
-
-      let videoSourceUrl = source || "";
-
-      if (!videoSourceUrl && selectedFile) {
-        try {
-          const blob = await upload(selectedFile.name, selectedFile, {
-            access: "public",
-            handleUploadUrl: "/api/admin/videos/client-upload",
-            contentType: selectedFile.type || "video/mp4",
-            multipart: true,
-          });
-          videoSourceUrl = blob.url;
-        } catch {
-          // Local/dev fallback path when client uploads are unavailable.
-          const uploadForm = new FormData();
-          uploadForm.append("file", selectedFile);
-          const uploadRes = await fetch("/api/admin/videos/upload", {
-            method: "POST",
-            body: uploadForm,
-          });
-          if (!uploadRes.ok) {
-            if (uploadRes.status === 413) {
-              throw new Error(
-                "Video file is too large for this upload path. Use a smaller file or YouTube link.",
-              );
-            }
-            const uploadData = await uploadRes.json().catch(() => null);
-            throw new Error((uploadData && typeof uploadData.error === "string" && uploadData.error) || "Failed to upload video file.");
-          }
-          const uploadData = await uploadRes.json().catch(() => null) as { videoUrl?: string } | null;
-          if (!uploadData?.videoUrl) throw new Error("Upload succeeded but no video URL returned.");
-          videoSourceUrl = uploadData.videoUrl;
-        }
       }
 
       const excerpt =
@@ -145,10 +128,12 @@ function UploadModal({ onClose }: { onClose: () => void }) {
       }
 
       setStep("success");
+      router.refresh();
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Failed to publish tutorial.");
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(0);
     }
   };
 
@@ -259,11 +244,11 @@ function UploadModal({ onClose }: { onClose: () => void }) {
                     className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:ring-sky-900/40"
                   />
                   <button
-                  onClick={() => {
-                    setSelectedFile(null);
-                    setFileName("YouTube link");
-                    setStep("details");
-                  }}
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setFileName("YouTube link");
+                      setStep("details");
+                    }}
                     className="shrink-0 rounded-lg bg-red-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-red-400"
                   >
                     Use Link
@@ -387,9 +372,9 @@ function UploadModal({ onClose }: { onClose: () => void }) {
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </div>
-              <p className="mt-4 text-base font-bold text-slate-900 dark:text-white">Tutorial Submitted!</p>
+              <p className="mt-4 text-base font-bold text-slate-900 dark:text-white">Tutorial Published!</p>
               <p className="mt-2 max-w-xs text-sm text-slate-500 dark:text-slate-400">
-                Your video is under review and will appear in Tutorials within 24 hours after approval.
+                Your video is live and will appear on the Tutorials page.
               </p>
               <div className="mt-5 w-full rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-left dark:border-slate-700/40 dark:bg-slate-800/40">
                 <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{form.title || "Video tutorial"}</p>
@@ -406,9 +391,6 @@ function UploadModal({ onClose }: { onClose: () => void }) {
                   )}
                   <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-900/20 dark:text-sky-400">
                     Video
-                  </span>
-                  <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-semibold text-orange-600 dark:bg-orange-900/20 dark:text-orange-400">
-                    Pending Review
                   </span>
                 </div>
               </div>
@@ -427,11 +409,21 @@ function UploadModal({ onClose }: { onClose: () => void }) {
                 Back
               </button>
               <button
-                disabled={!isValid}
+                disabled={!isValid || isSubmitting}
                 onClick={publishTutorial}
-                className="flex-1 rounded-lg bg-sky-500 py-2 text-xs font-semibold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="relative flex-1 overflow-hidden rounded-lg bg-sky-500 py-2 text-xs font-semibold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmitting ? "Publishing..." : "Publish Tutorial"}
+                {isSubmitting && uploadProgress > 0 && (
+                  <span
+                    className="absolute inset-y-0 left-0 bg-sky-300/40 transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                )}
+                <span className="relative">
+                  {isSubmitting
+                    ? uploadProgress > 0 ? `Uploading ${uploadProgress}%…` : "Publishing…"
+                    : "Publish Tutorial"}
+                </span>
               </button>
             </>
           )}
