@@ -15,6 +15,7 @@ import { rankSemanticTutorialRecommendations } from "@/lib/semanticRecommendatio
 import { getForumPosts } from "@/lib/forumService";
 import { getVideosByTags } from "@/lib/videoService";
 import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
+import { extractInlineVideoSource, getTutorialVideoSource } from "@/lib/tutorialVideo";
 
 type Params = { slug: string };
 
@@ -33,14 +34,6 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   intermediate: "bg-amber-50 text-amber-700 border-amber-200",
   advanced:     "bg-red-50 text-red-700 border-red-200",
 };
-
-function extractInlineVideoSource(content: string): { videoUrl: string | null; cleanedContent: string } {
-  const sourceLineRegex = /^\s*Video source:\s*(https?:\/\/\S+)\s*$/im;
-  const match = content.match(sourceLineRegex);
-  const videoUrl = match?.[1] ?? null;
-  const cleanedContent = content.replace(sourceLineRegex, "").replace(/\n{3,}/g, "\n\n").trim();
-  return { videoUrl, cleanedContent };
-}
 
 export default async function TutorialDetailPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
@@ -218,13 +211,30 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
           {/* Inline video for video tutorials uploaded via admin */}
           {t.content_type === "video" && inlineVideoUrl && (
             <div className="mb-6 overflow-hidden rounded-xl border border-app bg-surface">
-              <video
-                src={inlineVideoUrl}
-                controls
-                playsInline
-                preload="metadata"
-                className="w-full"
-              />
+              {(() => {
+                const videoSource = getTutorialVideoSource(inlineVideoUrl);
+                if (videoSource.kind === "youtube") {
+                  return (
+                    <iframe
+                      src={videoSource.url}
+                      title={`${t.title} video`}
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="aspect-video w-full"
+                    />
+                  );
+                }
+                return (
+                  <video
+                    src={videoSource.url}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="w-full"
+                  />
+                );
+              })()}
             </div>
           )}
 

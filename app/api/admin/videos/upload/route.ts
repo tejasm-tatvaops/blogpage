@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { put } from "@vercel/blob";
 import { requireAdminApiAccess } from "@/lib/adminAuth";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 
@@ -34,6 +35,26 @@ export async function POST(request: Request) {
 
   const ext = path.extname(file.name || "").toLowerCase() || ".mp4";
   const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+
+  // Vercel serverless filesystem is not persistent/public writable.
+  // Store production uploads in Blob and keep local disk writes for dev.
+  if (process.env.VERCEL === "1" || process.env.VERCEL_ENV) {
+    try {
+      const blob = await put(`tutorial-videos/${safeName}`, file, {
+        access: "public",
+        addRandomSuffix: false,
+        contentType: file.type || "video/mp4",
+      });
+      return NextResponse.json({ videoUrl: blob.url }, { status: 201 });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Blob upload failed.";
+      return NextResponse.json(
+        { error: `Video upload failed in production storage. ${message}` },
+        { status: 500 },
+      );
+    }
+  }
+
   const uploadDir = path.join(process.cwd(), "public", "uploads", "videos");
   await mkdir(uploadDir, { recursive: true });
   const target = path.join(uploadDir, safeName);
@@ -41,7 +62,6 @@ export async function POST(request: Request) {
   const bytes = Buffer.from(await file.arrayBuffer());
   await writeFile(target, bytes);
 
-  const origin = new URL(request.url).origin;
-  return NextResponse.json({ videoUrl: `${origin}/uploads/videos/${safeName}` }, { status: 201 });
+  return NextResponse.json({ videoUrl: `/uploads/videos/${safeName}` }, { status: 201 });
 }
 

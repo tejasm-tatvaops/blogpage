@@ -1,7 +1,8 @@
 {
-  "/page": "app/page.js",
+  "/api/feed/events/route": "app/api/feed/events/route.js",
+  "/tutorials/page": "app/tutorials/page.js",
   "/tutorials/[slug]/page": "app/tutorials/[slug]/page.js",
   "/admin/login/page": "app/admin/login/page.js",
-  "/admin/(dashboard)/tutorials/page": "app/admin/(dashboard)/tutorials/page.js",
-  "/tutorials/page": "app/tutorials/page.js"
+  "/admin/(dashboard)/blog/page": "app/admin/(dashboard)/blog/page.js",
+  "/admin/(dashboard)/tutorials/page": "app/admin/(dashboard)/tutorials/page.js"
 }

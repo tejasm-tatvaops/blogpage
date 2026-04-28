@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTutorials, getLearningPaths } from "@/lib/tutorialService";
+import { extractVideoSource, getTutorialVideoSource } from "@/lib/tutorialVideo";
 
 export const metadata: Metadata = {
   title: "Tutorials",
@@ -33,12 +34,6 @@ type LearningPath = {
   description: string;
   estimated_total_minutes: number;
 };
-
-function extractVideoSource(content?: string): string | null {
-  if (!content) return null;
-  const match = content.match(/^\s*Video source:\s*(https?:\/\/\S+)\s*$/im);
-  return match?.[1] ?? null;
-}
 
 export default async function TutorialsPage({
   searchParams,
@@ -135,19 +130,39 @@ export default async function TutorialsPage({
               href={`/tutorials/${t.slug}`}
               className="group flex flex-col rounded-xl border border-app bg-surface p-5 shadow-sm transition hover:border-sky-200 hover:shadow"
             >
-              {t.content_type === "video" && extractVideoSource(t.content) && (
-                <div className="mb-3 overflow-hidden rounded-lg border border-app bg-black">
-                  <video
-                    src={extractVideoSource(t.content) ?? undefined}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="metadata"
-                    className="h-40 w-full object-cover"
-                  />
-                </div>
-              )}
+              {(() => {
+                if (t.content_type !== "video") return null;
+                const sourceUrl = extractVideoSource(t.content);
+                if (!sourceUrl) return null;
+                const videoSource = getTutorialVideoSource(sourceUrl);
+
+                if (videoSource.kind === "youtube") {
+                  return (
+                    <div className="mb-3 overflow-hidden rounded-lg border border-app bg-black">
+                      <iframe
+                        src={videoSource.url}
+                        title={`${t.title} video preview`}
+                        loading="lazy"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="h-40 w-full"
+                      />
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="mb-3 overflow-hidden rounded-lg border border-app bg-black">
+                    <video
+                      src={videoSource.url}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="h-40 w-full object-cover"
+                    />
+                  </div>
+                );
+              })()}
               <div className="mb-3 flex items-center gap-2">
                 <span
                   className={`rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${
