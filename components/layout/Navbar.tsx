@@ -47,6 +47,7 @@ export function Navbar() {
 
           <Link href="/tutorials" className={navPillClass}>Tutorials</Link>
           <Link href="/supplier" className={navPillClass}>Suppliers</Link>
+          <Link href="/brand-profile" className={navPillClass}>Brands</Link>
           <Link href="/ask" className={`${navPillClass} ui-btn-primary border-transparent hover:text-white`}>
             Ask AI
           </Link>

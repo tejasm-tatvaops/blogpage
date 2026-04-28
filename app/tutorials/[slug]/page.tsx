@@ -34,6 +34,14 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   advanced:     "bg-red-50 text-red-700 border-red-200",
 };
 
+function extractInlineVideoSource(content: string): { videoUrl: string | null; cleanedContent: string } {
+  const sourceLineRegex = /^\s*Video source:\s*(https?:\/\/\S+)\s*$/im;
+  const match = content.match(sourceLineRegex);
+  const videoUrl = match?.[1] ?? null;
+  const cleanedContent = content.replace(sourceLineRegex, "").replace(/\n{3,}/g, "\n\n").trim();
+  return { videoUrl, cleanedContent };
+}
+
 export default async function TutorialDetailPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
   const tutorial = await getTutorialBySlug(decodeURIComponent(slug)).catch(() => null);
@@ -135,6 +143,7 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
     excerpt: String(item.excerpt),
     difficulty: item.difficulty ? String(item.difficulty) : undefined,
   }));
+  const { videoUrl: inlineVideoUrl, cleanedContent } = extractInlineVideoSource(t.content);
 
   const sidebarTutorials = plainSemanticRecommendations.map((item) => ({
     slug: item.slug,
@@ -206,6 +215,19 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
             <TutorialProgressCard slug={decodeURIComponent(slug)} />
           </div>
 
+          {/* Inline video for video tutorials uploaded via admin */}
+          {t.content_type === "video" && inlineVideoUrl && (
+            <div className="mb-6 overflow-hidden rounded-xl border border-app bg-surface">
+              <video
+                src={inlineVideoUrl}
+                controls
+                playsInline
+                preload="metadata"
+                className="w-full"
+              />
+            </div>
+          )}
+
           {/* Content */}
           <article className="prose prose-slate max-w-none prose-img:rounded-lg prose-img:w-full">
             <ReactMarkdown
@@ -229,7 +251,7 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
                 },
               }}
             >
-              {t.content}
+              {cleanedContent}
             </ReactMarkdown>
           </article>
 

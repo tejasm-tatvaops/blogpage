@@ -18,6 +18,7 @@ type Tutorial = {
   slug: string;
   title: string;
   excerpt: string;
+  content?: string;
   difficulty: string;
   estimated_minutes: number;
   tags: string[];
@@ -32,6 +33,12 @@ type LearningPath = {
   description: string;
   estimated_total_minutes: number;
 };
+
+function extractVideoSource(content?: string): string | null {
+  if (!content) return null;
+  const match = content.match(/^\s*Video source:\s*(https?:\/\/\S+)\s*$/im);
+  return match?.[1] ?? null;
+}
 
 export default async function TutorialsPage({
   searchParams,
@@ -51,6 +58,7 @@ export default async function TutorialsPage({
       query,
       learningPathSlug: path,
       limit: 30,
+      includeContent: true,
     }),
     getLearningPaths(),
   ]);
@@ -58,14 +66,16 @@ export default async function TutorialsPage({
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       {/* Header */}
-      <div className="mb-10 text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-app sm:text-4xl">
-          Tutorials & Guides
-        </h1>
-        <p className="mx-auto mt-3 max-w-2xl text-slate-500">
-          Learn to use TatvaOps effectively — from quick onboarding to advanced construction
-          estimation techniques.
-        </p>
+      <div className="mb-10 flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-app sm:text-4xl">
+            Tutorials & Guides
+          </h1>
+          <p className="mx-auto mt-3 max-w-2xl text-slate-500 sm:mx-0">
+            Learn to use TatvaOps effectively — from quick onboarding to advanced construction
+            estimation techniques.
+          </p>
+        </div>
       </div>
 
       {/* Learning Paths */}
@@ -125,6 +135,17 @@ export default async function TutorialsPage({
               href={`/tutorials/${t.slug}`}
               className="group flex flex-col rounded-xl border border-app bg-surface p-5 shadow-sm transition hover:border-sky-200 hover:shadow"
             >
+              {t.content_type === "video" && extractVideoSource(t.content) && (
+                <div className="mb-3 overflow-hidden rounded-lg border border-app bg-black">
+                  <video
+                    src={extractVideoSource(t.content) ?? undefined}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    className="h-40 w-full object-cover"
+                  />
+                </div>
+              )}
               <div className="mb-3 flex items-center gap-2">
                 <span
                   className={`rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${
@@ -150,8 +171,17 @@ export default async function TutorialsPage({
               </h3>
               <p className="mt-2 text-sm text-slate-500 line-clamp-2">{t.excerpt}</p>
 
+              {t.content_type === "video" && (
+                <div className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M8 5.14v14l11-7-11-7z" />
+                  </svg>
+                  Watch tutorial
+                </div>
+              )}
+
               <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
-                <span>{t.estimated_minutes} min read</span>
+                <span>{t.estimated_minutes} min {t.content_type === "video" ? "watch" : "read"}</span>
                 {t.tags[0] && (
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">
                     {t.tags[0]}

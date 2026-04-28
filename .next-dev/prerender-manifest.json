@@ -1,1 +1,11 @@
-{"version":4,"routes":{"/blog/house-construction-cost-in-miyapur-hyderabad-2026":{},"/blog/construction-cost-per-sq-ft-in-pune":{},"/blog/cost-to-build-a-house-in-bangalore":{},"/blog/exploring-fluent-player-pro-a-comprehensive-walkthrough":{},"/blog/transform-your-home-with-tatvaops-a-revolutionary-approach-to-construction-and-renovation":{},"/blog/new-construction-materials-trends-innovations":{},"/blog/interior-design-trends-2026":{},"/blog/bangalore-boq-construction-efficiency":{},"/blog/house-construction-cost-in-baner-pune-2026":{},"/blog/construction-cost-per-sq-ft-in-kukatpally-hyderabad":{},"/blog/cost-to-build-a-house-in-kharadi-pune":{},"/blog/house-construction-cost-gachibowli-hyderabad-2026":{},"/blog/construction-cost-per-sq-ft-kharadi-pune":{},"/blog/cost-to-build-house-electronic-city-bangalore":{},"/blog/house-construction-cost-tambaram-chennai-2026":{},"/blog/construction-cost-hinjewadi-pune":{},"/blog/house-construction-cost-bangalore-2026":{},"/blog/cost-to-build-house-velachery-chennai":{},"/blog/construction-cost-sarjapur-road-bangalore":{},"/blog/construction-cost-per-sq-ft-baner-pune":{},"/blog/construction-cost-per-sq-ft-tambaram-chennai":{},"/blog/house-construction-cost-chennai-2026":{},"/blog/construction-cost-per-sq-ft-electronic-city-bangalore":{},"/blog/cost-to-build-house-miyapur-hyderabad":{},"/blog/boq-explained-for-beginners-drawings-to-reliable-costs":{},"/blog/construction-cost-per-sq-ft-in-hyderabad-local-factors":{},"/blog/cost-to-build-house-in-bangalore-2026-practical-guide":{}},"dynamicRoutes":{"/blog/[slug]":{"dataRoute":null,"dataRouteRegex":null,"fallback":null,"fallbackRevalidate":false,"fallbackSourceRoute":"/blog/[slug]","routeRegex":"^\\/blog\\/([^/]+?)(?:\\/)?$","allowHeader":[]}},"notFoundRoutes":[],"preview":{"previewModeId":"a8ef9adc78d8d703a9f7987f5c8f28c4","previewModeSigningKey":"dee26eb6941fa34bb1c634322fa1241e9dbf2f55481fd06f11174f0011203a4f","previewModeEncryptionKey":"4ade5b8cc914589beb564ab6ea6bd608910d82500c241fb9c1c6577836c91b14"}}
+{
+  "version": 4,
+  "routes": {},
+  "dynamicRoutes": {},
+  "notFoundRoutes": [],
+  "preview": {
+    "previewModeId": "f6a07d8d9a6936f1952daef668ee7c5f",
+    "previewModeSigningKey": "6e163b7d07081b9ce4e271dc00d31e8ec2a7d8d1fb859b4822eb4f043aad4062",
+    "previewModeEncryptionKey": "7d328c71c1aec1579f24f1aec0e5e5623be1c268ed856f8ada56ebc2f4266065"
+  }
+}
