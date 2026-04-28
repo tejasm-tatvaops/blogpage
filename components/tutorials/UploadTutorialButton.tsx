@@ -6,6 +6,7 @@ type Step = "select" | "details" | "success";
 
 const DIFFICULTY_OPTIONS = ["Beginner", "Intermediate", "Advanced"];
 const CONTENT_TAGS = ["Cement", "Concrete", "Steel", "Waterproofing", "Masonry", "RCC", "BOQ", "Site Management", "Quality Control", "Safety"];
+const VERCEL_BODY_LIMIT_MB = 4.5;
 
 function UploadModal({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState<Step>("select");
@@ -78,6 +79,11 @@ function UploadModal({ onClose }: { onClose: () => void }) {
       let videoSourceUrl = source || "";
 
       if (!videoSourceUrl && selectedFile) {
+        if (selectedFile.size > VERCEL_BODY_LIMIT_MB * 1024 * 1024) {
+          throw new Error(
+            `This file is too large for direct dashboard upload on Vercel (${VERCEL_BODY_LIMIT_MB} MB limit). Compress the video or use a YouTube link.`,
+          );
+        }
         const uploadForm = new FormData();
         uploadForm.append("file", selectedFile);
         const uploadRes = await fetch("/api/admin/videos/upload", {
@@ -85,6 +91,11 @@ function UploadModal({ onClose }: { onClose: () => void }) {
           body: uploadForm,
         });
         if (!uploadRes.ok) {
+          if (uploadRes.status === 413) {
+            throw new Error(
+              `Video file is too large for the current upload endpoint (${VERCEL_BODY_LIMIT_MB} MB request limit on Vercel). Use a smaller file or YouTube link.`,
+            );
+          }
           const uploadData = await uploadRes.json().catch(() => null);
           throw new Error((uploadData && typeof uploadData.error === "string" && uploadData.error) || "Failed to upload video file.");
         }
