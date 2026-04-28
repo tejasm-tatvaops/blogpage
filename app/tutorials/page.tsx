@@ -139,6 +139,8 @@ export default async function TutorialsPage({
                 <div className="mb-3 overflow-hidden rounded-lg border border-app bg-black">
                   <video
                     src={extractVideoSource(t.content) ?? undefined}
+                    autoPlay
+                    loop
                     muted
                     playsInline
                     preload="metadata"
