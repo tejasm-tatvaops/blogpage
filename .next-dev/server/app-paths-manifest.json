@@ -1,15 +1,7 @@
 {
-  "/api/forums/[slug]/comments/route": "app/api/forums/[slug]/comments/route.js",
-  "/api/users/preferences/route": "app/api/users/preferences/route.js",
-  "/api/blog/[slug]/view/route": "app/api/blog/[slug]/view/route.js",
-  "/api/blog/[slug]/comments/route": "app/api/blog/[slug]/comments/route.js",
-  "/api/trending/route": "app/api/trending/route.js",
-  "/api/feed/events/route": "app/api/feed/events/route.js",
   "/api/me/route": "app/api/me/route.js",
-  "/api/forums/route": "app/api/forums/route.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/page": "app/page.js",
-  "/blog/page": "app/blog/page.js",
-  "/blog/[slug]/page": "app/blog/[slug]/page.js",
-  "/forums/page": "app/forums/page.js",
-  "/forums/[slug]/page": "app/forums/[slug]/page.js"
+  "/supplier/page": "app/supplier/page.js",
+  "/forums/page": "app/forums/page.js"
 }

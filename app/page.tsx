@@ -3,6 +3,8 @@ import { getAllPosts } from "@/lib/blogService";
 import { getForumPosts } from "@/lib/forumService";
 import { getTutorials } from "@/lib/tutorialService";
 import { getAllVideoTags } from "@/lib/videoService";
+import RecommendedCarousel from "@/components/home/RecommendedCarousel";
+import ContinueLearningCarousel from "@/components/home/ContinueLearningCarousel";
 
 export default async function HomePage() {
   const [latestBlogs, trendingForumsResult, tutorialsResult, videoTags] = await Promise.all([
@@ -12,16 +14,28 @@ export default async function HomePage() {
     getAllVideoTags().catch(() => []),
   ]);
 
-  const tutorials = tutorialsResult as (typeof tutorialsResult[0] & {
+  const tutorials = JSON.parse(JSON.stringify(tutorialsResult ?? [])) as Array<{
+    slug?: unknown;
+    title?: unknown;
+    excerpt?: unknown;
+    cover_image?: unknown;
+    difficulty?: unknown;
+    estimated_minutes?: unknown;
     interactive_blocks?: unknown[];
-    difficulty?: string;
-    estimated_minutes?: number;
-  })[];
+  }>;
 
-  const featuredTutorial = tutorials[0];
-  const moreTutorials = tutorials.slice(1, 3);
-  const featuredBlog = latestBlogs[0];
-  const moreBlogsForYou = latestBlogs.slice(1, 3);
+  const carouselTutorials = tutorials.slice(0, 6).map((tutorial) => ({
+    slug: String(tutorial.slug ?? ""),
+    title: String(tutorial.title ?? ""),
+    excerpt: tutorial.excerpt == null ? null : String(tutorial.excerpt),
+    cover_image: tutorial.cover_image == null ? null : String(tutorial.cover_image),
+    difficulty: tutorial.difficulty == null ? undefined : String(tutorial.difficulty),
+    estimated_minutes: typeof tutorial.estimated_minutes === "number" ? tutorial.estimated_minutes : undefined,
+    interactive_blocks: Array.isArray(tutorial.interactive_blocks)
+      ? new Array(tutorial.interactive_blocks.length).fill(null)
+      : [],
+  }));
+  const carouselBlogs = latestBlogs.slice(0, 6);
   const recentlyUpdated = latestBlogs.slice(3, 6);
   const trendingDiscussions = trendingForumsResult.slice(0, 4);
   const popularDiscussions = trendingForumsResult.slice(0, 4);
@@ -149,145 +163,13 @@ export default async function HomePage() {
           {/* Continue Learning */}
           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-700/40 dark:bg-slate-800/40">
             <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Continue Learning</h3>
-
-            {featuredTutorial ? (
-              <>
-                {/* Featured tutorial */}
-                <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/60">
-                  <div className="flex items-center gap-2">
-                    {featuredTutorial.difficulty && (
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                        featuredTutorial.difficulty === "beginner"
-                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                          : featuredTutorial.difficulty === "intermediate"
-                          ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                          : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                      }`}>
-                        {featuredTutorial.difficulty}
-                      </span>
-                    )}
-                    {featuredTutorial.estimated_minutes && (
-                      <span className="text-[11px] text-slate-400">~{featuredTutorial.estimated_minutes} min</span>
-                    )}
-                  </div>
-                  <p className="mt-2 line-clamp-2 text-sm font-semibold leading-snug text-slate-900 dark:text-white">
-                    {featuredTutorial.title}
-                  </p>
-                  {featuredTutorial.excerpt && (
-                    <p className="mt-1.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
-                      {featuredTutorial.excerpt}
-                    </p>
-                  )}
-                  <div className="mt-3">
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                      <div className="h-full w-[4%] rounded-full bg-sky-500" />
-                    </div>
-                    <div className="mt-1.5 flex items-center justify-between">
-                      <p className="text-[11px] text-slate-400">
-                        1 of {featuredTutorial.interactive_blocks?.length ?? "—"} steps completed
-                      </p>
-                      <Link href={`/tutorials/${featuredTutorial.slug}`} className="text-xs font-semibold text-sky-600 hover:text-sky-500 dark:text-sky-400">
-                        Continue →
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-
-                {/* More tutorials */}
-                {moreTutorials.length > 0 && (
-                  <ul className="mt-3 space-y-2">
-                    {moreTutorials.map((t) => (
-                      <li key={t.slug}>
-                        <Link href={`/tutorials/${t.slug}`} className="group flex items-start gap-2 rounded-lg p-2 transition hover:bg-slate-100 dark:hover:bg-slate-700/40">
-                          <span className="mt-0.5 h-4 w-4 flex-shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
-                          <div className="min-w-0">
-                            <p className="line-clamp-1 text-xs font-semibold text-slate-700 group-hover:text-sky-600 dark:text-slate-300">
-                              {t.title}
-                            </p>
-                            <p className="text-[10px] text-slate-400">
-                              {(t as typeof t & { difficulty?: string }).difficulty} · {(t as typeof t & { estimated_minutes?: number }).estimated_minutes ?? 5} min
-                            </p>
-                          </div>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            ) : (
-              <div className="mt-3 rounded-lg border border-dashed border-slate-200 p-4 text-center dark:border-slate-700">
-                <p className="text-sm text-slate-400">No tutorials yet</p>
-                <Link href="/tutorials" className="mt-1 block text-xs font-semibold text-sky-600">Browse all →</Link>
-              </div>
-            )}
+            <ContinueLearningCarousel tutorials={carouselTutorials} />
           </div>
 
           {/* Recommended For You */}
           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-700/40 dark:bg-slate-800/40">
             <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Recommended For You</h3>
-
-            {featuredBlog ? (
-              <>
-                {/* Featured blog */}
-                <Link href={`/blog/${featuredBlog.slug}`} className="group mt-3 block rounded-lg border border-slate-200 bg-white p-3 transition hover:border-sky-200 hover:shadow-sm dark:border-slate-700 dark:bg-slate-900/60 dark:hover:border-sky-700/40">
-                  {/* Tags */}
-                  {featuredBlog.tags && featuredBlog.tags.length > 0 && (
-                    <div className="mb-2 flex flex-wrap gap-1">
-                      {featuredBlog.tags.slice(0, 3).map((tag) => (
-                        <span key={tag} className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-900/30 dark:text-sky-400">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <p className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 group-hover:text-sky-700 dark:text-white dark:group-hover:text-sky-400">
-                    {featuredBlog.title}
-                  </p>
-                  {featuredBlog.excerpt && (
-                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                      {featuredBlog.excerpt}
-                    </p>
-                  )}
-                  <div className="mt-2.5 flex items-center gap-3 border-t border-slate-100 pt-2 dark:border-slate-700">
-                    <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                      {featuredBlog.view_count ?? 0}
-                    </span>
-                    <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" /><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" /></svg>
-                      {featuredBlog.upvote_count ?? 0}
-                    </span>
-                    <span className="ml-auto text-[11px] text-slate-400">{featuredBlog.author}</span>
-                  </div>
-                </Link>
-
-                {/* More blogs */}
-                {moreBlogsForYou.length > 0 && (
-                  <ul className="mt-3 space-y-1.5">
-                    {moreBlogsForYou.map((blog) => (
-                      <li key={blog.slug}>
-                        <Link href={`/blog/${blog.slug}`} className="group flex items-start gap-2 rounded-lg p-2 transition hover:bg-slate-100 dark:hover:bg-slate-700/40">
-                          <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-sky-400" />
-                          <div className="min-w-0">
-                            <p className="line-clamp-1 text-xs font-semibold text-slate-700 group-hover:text-sky-600 dark:text-slate-300">
-                              {blog.title}
-                            </p>
-                            <p className="text-[10px] text-slate-400">
-                              {blog.view_count ?? 0} views · {blog.upvote_count ?? 0} likes
-                            </p>
-                          </div>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            ) : (
-              <div className="mt-3 rounded-lg border border-dashed border-slate-200 p-4 text-center dark:border-slate-700">
-                <p className="text-sm text-slate-400">No posts yet</p>
-                <Link href="/blog" className="mt-1 block text-xs font-semibold text-sky-600">Browse all →</Link>
-              </div>
-            )}
+            <RecommendedCarousel blogs={carouselBlogs} />
           </div>
 
           {/* Trending Discussions */}
