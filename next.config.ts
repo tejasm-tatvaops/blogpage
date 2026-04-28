@@ -21,7 +21,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https:",
       "font-src 'self'",
-      "connect-src 'self'",
+      "connect-src 'self' https://vercel.com/api/blob https://blob.vercel-storage.com https://*.blob.vercel-storage.com",
       // Required: without frame-src, default-src blocks third-party iframes (e.g. YouTube shorts embeds).
       "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
       "frame-ancestors 'none'",

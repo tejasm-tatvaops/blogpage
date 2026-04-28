@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { upload } from "@vercel/blob/client";
 
 type Step = "select" | "details" | "success";
 
 const DIFFICULTY_OPTIONS = ["Beginner", "Intermediate", "Advanced"];
 const CONTENT_TAGS = ["Cement", "Concrete", "Steel", "Waterproofing", "Masonry", "RCC", "BOQ", "Site Management", "Quality Control", "Safety"];
-const VERCEL_BODY_LIMIT_MB = 4.5;
 
 function UploadModal({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState<Step>("select");
@@ -79,29 +79,35 @@ function UploadModal({ onClose }: { onClose: () => void }) {
       let videoSourceUrl = source || "";
 
       if (!videoSourceUrl && selectedFile) {
-        if (selectedFile.size > VERCEL_BODY_LIMIT_MB * 1024 * 1024) {
-          throw new Error(
-            `This file is too large for direct dashboard upload on Vercel (${VERCEL_BODY_LIMIT_MB} MB limit). Compress the video or use a YouTube link.`,
-          );
-        }
-        const uploadForm = new FormData();
-        uploadForm.append("file", selectedFile);
-        const uploadRes = await fetch("/api/admin/videos/upload", {
-          method: "POST",
-          body: uploadForm,
-        });
-        if (!uploadRes.ok) {
-          if (uploadRes.status === 413) {
-            throw new Error(
-              `Video file is too large for the current upload endpoint (${VERCEL_BODY_LIMIT_MB} MB request limit on Vercel). Use a smaller file or YouTube link.`,
-            );
+        try {
+          const blob = await upload(selectedFile.name, selectedFile, {
+            access: "public",
+            handleUploadUrl: "/api/admin/videos/client-upload",
+            contentType: selectedFile.type || "video/mp4",
+            multipart: true,
+          });
+          videoSourceUrl = blob.url;
+        } catch {
+          // Local/dev fallback path when client uploads are unavailable.
+          const uploadForm = new FormData();
+          uploadForm.append("file", selectedFile);
+          const uploadRes = await fetch("/api/admin/videos/upload", {
+            method: "POST",
+            body: uploadForm,
+          });
+          if (!uploadRes.ok) {
+            if (uploadRes.status === 413) {
+              throw new Error(
+                "Video file is too large for this upload path. Use a smaller file or YouTube link.",
+              );
+            }
+            const uploadData = await uploadRes.json().catch(() => null);
+            throw new Error((uploadData && typeof uploadData.error === "string" && uploadData.error) || "Failed to upload video file.");
           }
-          const uploadData = await uploadRes.json().catch(() => null);
-          throw new Error((uploadData && typeof uploadData.error === "string" && uploadData.error) || "Failed to upload video file.");
+          const uploadData = await uploadRes.json().catch(() => null) as { videoUrl?: string } | null;
+          if (!uploadData?.videoUrl) throw new Error("Upload succeeded but no video URL returned.");
+          videoSourceUrl = uploadData.videoUrl;
         }
-        const uploadData = await uploadRes.json().catch(() => null) as { videoUrl?: string } | null;
-        if (!uploadData?.videoUrl) throw new Error("Upload succeeded but no video URL returned.");
-        videoSourceUrl = uploadData.videoUrl;
       }
 
       const excerpt =
