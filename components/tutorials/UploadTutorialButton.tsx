@@ -9,6 +9,63 @@ type Step = "select" | "details" | "success";
 const DIFFICULTY_OPTIONS = ["Beginner", "Intermediate", "Advanced"];
 const CONTENT_TAGS = ["Cement", "Concrete", "Steel", "Waterproofing", "Masonry", "RCC", "BOQ", "Site Management", "Quality Control", "Safety"];
 
+type YoutubePreview = {
+  videoId: string;
+  thumbnail: string;
+  title: string;
+};
+
+type IngestCreateResponse = {
+  job_id: string;
+};
+
+type IngestJobResponse = {
+  job?: {
+    status?: string;
+    ai_title?: string;
+    ai_excerpt?: string;
+    ai_content?: string;
+    ai_tags?: string[];
+    edited_title?: string;
+    edited_excerpt?: string;
+    edited_content?: string;
+    edited_tags?: string[];
+    edited_difficulty?: "beginner" | "intermediate" | "advanced" | null;
+    error_message?: string;
+  };
+};
+
+function parseYoutubePreview(url: string): YoutubePreview | null {
+  const value = url.trim();
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    const host = parsed.hostname.toLowerCase();
+    let videoId = "";
+    if (host === "youtu.be") {
+      videoId = parsed.pathname.replace(/^\/+/, "").split("/")[0] ?? "";
+    } else if (host.includes("youtube.com")) {
+      if (parsed.pathname === "/watch") {
+        videoId = parsed.searchParams.get("v") ?? "";
+      } else {
+        const parts = parsed.pathname.split("/").filter(Boolean);
+        const markerIndex = parts.findIndex((segment) => ["shorts", "embed", "live", "v"].includes(segment));
+        if (markerIndex >= 0 && parts[markerIndex + 1]) {
+          videoId = parts[markerIndex + 1];
+        }
+      }
+    }
+    if (!videoId) return null;
+    return {
+      videoId,
+      thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+      title: `YouTube Tutorial (${videoId.slice(0, 6).toUpperCase()})`,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function UploadModal({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("select");
@@ -17,10 +74,15 @@ function UploadModal({ onClose }: { onClose: () => void }) {
   const [fileName, setFileName] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [youtubePreview, setYoutubePreview] = useState<YoutubePreview | null>(null);
   const [prefetchedToken, setPrefetchedToken] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingFromLink, setIsGeneratingFromLink] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationStatus, setGenerationStatus] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [generatedContent, setGeneratedContent] = useState("");
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -80,6 +142,72 @@ function UploadModal({ onClose }: { onClose: () => void }) {
     }));
 
   const isValid = form.title.trim().length >= 3 && form.difficulty !== "";
+
+  const pollIngestionJob = async (jobId: string) => {
+    const maxAttempts = 30;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 1600 : 2600));
+      const response = await fetch(`/api/ingest/${jobId}`, { cache: "no-store" });
+      const data = (await response.json().catch(() => null)) as IngestJobResponse | null;
+      const job = data?.job;
+      if (!job) continue;
+      if (job.status === "ready") return job;
+      if (job.status === "failed") {
+        throw new Error(job.error_message || "AI generation failed for this link.");
+      }
+    }
+    throw new Error("AI generation timed out. Please try again.");
+  };
+
+  const generateFromLink = async () => {
+    const ytUrl = youtubeUrl.trim();
+    if (!ytUrl || isGeneratingFromLink) return;
+    setGenerationError(null);
+    setGenerationStatus("Sending link to AI...");
+    setIsGeneratingFromLink(true);
+    try {
+      const createRes = await fetch("/api/ingest/url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: ytUrl, output_type: "tutorial", source_type: "youtube" }),
+      });
+      if (!createRes.ok) {
+        const data = (await createRes.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error || "Could not start AI generation.");
+      }
+      const createData = (await createRes.json()) as IngestCreateResponse;
+      setGenerationStatus("Reading link and generating draft...");
+      const job = await pollIngestionJob(createData.job_id);
+
+      const aiTitle = (job.edited_title || job.ai_title || "").trim();
+      const aiExcerpt = (job.edited_excerpt || job.ai_excerpt || "").trim();
+      const aiContent = (job.edited_content || job.ai_content || "").trim();
+      const aiTags = (job.edited_tags || job.ai_tags || []).filter(Boolean);
+
+      const tagMap = new Map(CONTENT_TAGS.map((tag) => [tag.toLowerCase(), tag]));
+      const mappedTags = aiTags
+        .map((tag) => tagMap.get(String(tag).toLowerCase()) || String(tag))
+        .slice(0, 5);
+
+      setForm((prev) => ({
+        ...prev,
+        title: aiTitle || prev.title,
+        description: aiExcerpt || prev.description,
+        difficulty: job.edited_difficulty || prev.difficulty || "beginner",
+        tags: mappedTags.length > 0 ? mappedTags : prev.tags,
+      }));
+      setGeneratedContent(aiContent);
+      setSelectedFile(null);
+      setFileName("AI generated from link");
+      setStep("details");
+      setGenerationStatus("Draft generated. Review details and publish.");
+    } catch (error) {
+      setGenerationError(error instanceof Error ? error.message : "Generation failed.");
+      setGenerationStatus(null);
+    } finally {
+      setIsGeneratingFromLink(false);
+    }
+  };
 
   const publishTutorial = async () => {
     if (!isValid || isSubmitting) return;
@@ -142,13 +270,14 @@ function UploadModal({ onClose }: { onClose: () => void }) {
         form.description.trim().length >= 10
           ? form.description.trim()
           : `Video tutorial on ${form.title.trim()}`;
-      const content = [
+      const fallbackContent = [
         `## ${form.title.trim()}`,
         "",
         form.description.trim() || "Video tutorial uploaded via admin.",
         "",
         `Video source: ${videoSourceUrl}`,
       ].join("\n");
+      const content = generatedContent.trim().length >= 50 ? generatedContent : fallbackContent;
 
       const tutorialRes = await fetch("/api/admin/tutorials", {
         method: "POST",
@@ -285,20 +414,59 @@ function UploadModal({ onClose }: { onClose: () => void }) {
                     type="url"
                     placeholder="https://youtube.com/watch?v=..."
                     value={youtubeUrl}
-                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                    onChange={(e) => {
+                      const url = e.target.value;
+                      setYoutubeUrl(url);
+                      setYoutubePreview(parseYoutubePreview(url));
+                    }}
                     className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:ring-sky-900/40"
                   />
                   <button
+                    disabled={!youtubePreview}
                     onClick={() => {
                       setSelectedFile(null);
                       setFileName("YouTube link");
                       setStep("details");
                     }}
-                    className="shrink-0 rounded-lg bg-red-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-red-400"
+                    className="shrink-0 rounded-lg bg-red-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Use Link
                   </button>
+                  <button
+                    disabled={!youtubePreview || isGeneratingFromLink}
+                    onClick={generateFromLink}
+                    className="shrink-0 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isGeneratingFromLink ? "Generating..." : "Generate AI"}
+                  </button>
                 </div>
+                {youtubePreview && (
+                  <div className="mt-3 rounded-lg border border-red-100 bg-red-50/40 p-3">
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-red-500">Preview</p>
+                    <div className="flex items-center gap-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={youtubePreview.thumbnail}
+                        alt={youtubePreview.title}
+                        className="h-14 w-24 rounded-md border border-red-100 object-cover"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-semibold text-slate-700">{youtubePreview.title}</p>
+                        <p className="text-[11px] text-slate-500">Video ID: {youtubePreview.videoId}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {generationStatus && (
+                  <p className="mt-2 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-700">
+                    {generationStatus}
+                  </p>
+                )}
+                {generationError && (
+                  <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                    {generationError}
+                  </p>
+                )}
               </div>
             </div>
           )}

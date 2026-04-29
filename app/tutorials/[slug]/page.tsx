@@ -16,6 +16,7 @@ import { getForumPosts } from "@/lib/forumService";
 import { getVideosByTags } from "@/lib/videoService";
 import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
 import { extractInlineVideoSource, getTutorialVideoSource } from "@/lib/tutorialVideo";
+import { LearningExperience } from "@/components/tutorial/LearningExperience";
 
 type Params = { slug: string };
 
@@ -60,6 +61,7 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
     cover_image: string | null;
     linked_video_slug: string | null;
     linked_blog_slug:  string | null;
+    transcript?: Array<{ time: number; text: string }>;
     interactive_blocks?: Array<{
       block_id: string;
       type: "quiz" | "exercise" | "challenge";
@@ -208,62 +210,75 @@ export default async function TutorialDetailPage({ params }: { params: Promise<P
             <TutorialProgressCard slug={decodeURIComponent(slug)} />
           </div>
 
-          {/* Inline video for video tutorials uploaded via admin */}
-          {t.content_type === "video" && inlineVideoUrl && (
-            <div className="mb-6 overflow-hidden rounded-xl border border-app bg-surface">
-              {(() => {
-                const videoSource = getTutorialVideoSource(inlineVideoUrl);
-                if (videoSource.kind === "youtube") {
-                  return (
-                    <iframe
-                      src={videoSource.url}
-                      title={`${t.title} video`}
-                      loading="lazy"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="aspect-video w-full"
-                    />
-                  );
-                }
-                return (
-                  <video
-                    src={videoSource.url}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    className="w-full"
-                  />
-                );
-              })()}
-            </div>
-          )}
+          {t.content_type === "video" && inlineVideoUrl ? (
+            <LearningExperience
+              slug={decodeURIComponent(slug)}
+              title={t.title}
+              videoUrl={inlineVideoUrl}
+              markdown={cleanedContent}
+              storedTranscript={Array.isArray(t.transcript) && t.transcript.length > 0 ? t.transcript : undefined}
+              description={t.excerpt}
+            />
+          ) : (
+            <>
+              {/* Inline video for tutorials with embedded media */}
+              {inlineVideoUrl && (
+                <div className="mb-6 overflow-hidden rounded-xl border border-app bg-surface">
+                  {(() => {
+                    const videoSource = getTutorialVideoSource(inlineVideoUrl);
+                    if (videoSource.kind === "youtube") {
+                      return (
+                        <iframe
+                          src={videoSource.url}
+                          title={`${t.title} video`}
+                          loading="lazy"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          className="aspect-video w-full"
+                        />
+                      );
+                    }
+                    return (
+                      <video
+                        src={videoSource.url}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full"
+                      />
+                    );
+                  })()}
+                </div>
+              )}
 
-          {/* Content */}
-          <article className="prose prose-slate max-w-none prose-img:rounded-lg prose-img:w-full">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
-              components={{
-                img({ src, alt, title }) {
-                  if (!src) return null;
-                  return (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={src}
-                      alt={alt ?? ""}
-                      title={title}
-                      loading="lazy"
-                      decoding="async"
-                      className="my-4 w-full rounded-lg object-cover"
-                      style={{ maxHeight: "560px" }}
-                    />
-                  );
-                },
-              }}
-            >
-              {cleanedContent}
-            </ReactMarkdown>
-          </article>
+              {/* Content */}
+              <article className="prose prose-slate max-w-none prose-img:rounded-lg prose-img:w-full">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
+                  components={{
+                    img({ src, alt, title }) {
+                      if (!src) return null;
+                      return (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={src}
+                          alt={alt ?? ""}
+                          title={title}
+                          loading="lazy"
+                          decoding="async"
+                          className="my-4 w-full rounded-lg object-cover"
+                          style={{ maxHeight: "560px" }}
+                        />
+                      );
+                    },
+                  }}
+                >
+                  {cleanedContent}
+                </ReactMarkdown>
+              </article>
+            </>
+          )}
 
           {interactiveBlocksEnabled && plainInteractiveBlocks.length > 0 && (
             <InteractiveBlocks slug={decodeURIComponent(slug)} blocks={plainInteractiveBlocks} />

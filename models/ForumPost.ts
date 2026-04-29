@@ -29,6 +29,10 @@ const forumPostSchema = new mongoose.Schema(
     best_comment_id: { type: String, default: null },
     // Blog ↔ Forum integration
     linked_blog_slug: { type: String, default: null, index: true },
+    // Product ↔ Forum integration
+    linked_product_id:    { type: String, default: null, trim: true, index: true },
+    linked_product_name:  { type: String, default: null, trim: true, maxlength: 200 },
+    linked_product_brand: { type: String, default: null, trim: true, maxlength: 100 },
     // Lightweight identity: fingerprint of creator for best-answer auth
     creator_fingerprint: { type: String, default: null },
     deleted_at: { type: Date, default: null },

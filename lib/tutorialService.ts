@@ -131,6 +131,7 @@ export type CreateTutorialInput = {
     answerIndex?: number | null;
     explanation?: string | null;
   }>;
+  transcript?: Array<{ time: number; text: string }>;
   published?: boolean;
   isTestData?: boolean;
 };
@@ -165,6 +166,7 @@ export async function createTutorial(input: CreateTutorialInput) {
       answer_index: block.answerIndex ?? null,
       explanation: block.explanation ?? null,
     })),
+    transcript: input.transcript ?? [],
     published: input.published ?? false,
     is_test_data: input.isTestData ?? false,
   });

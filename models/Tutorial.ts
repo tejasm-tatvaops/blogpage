@@ -68,6 +68,17 @@ const tutorialSchema = new mongoose.Schema(
     // Lower value = higher position. Default 0 so existing docs sort to top.
     sort_order: { type: Number, default: 0, index: true },
 
+    // Auto-generated transcript (stored as timed segments)
+    transcript: {
+      type: [
+        {
+          time: { type: Number, required: true, min: 0 },
+          text: { type: String, required: true, trim: true, maxlength: 2000 },
+        },
+      ],
+      default: [],
+    },
+
     // Engagement
     view_count: { type: Number, default: 0, min: 0 },
     like_count: { type: Number, default: 0, min: 0 },

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { requireAdminApiAccess } from "@/lib/adminAuth";
 import { adminApiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { createTutorial, getTutorials } from "@/lib/tutorialService";
+import { fetchYouTubeTranscript } from "@/lib/youtubeTranscript";
+import { extractVideoSource, getTutorialVideoSource } from "@/lib/tutorialVideo";
 
 const createSchema = z.object({
   title:      z.string().trim().min(3).max(200),
@@ -61,6 +63,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
   }
 
+  // Auto-fetch YouTube transcript if the content contains a YouTube video URL
+  let autoTranscript: Array<{ time: number; text: string }> = [];
+  const rawVideoUrl = extractVideoSource(parsed.data.content);
+  if (rawVideoUrl) {
+    const videoSource = getTutorialVideoSource(rawVideoUrl);
+    if (videoSource.kind === "youtube") {
+      const ytIdMatch = videoSource.url.match(/embed\/([^?]+)/);
+      if (ytIdMatch?.[1]) {
+        autoTranscript = await fetchYouTubeTranscript(ytIdMatch[1]);
+      }
+    }
+  }
+
   const tutorial = await createTutorial({
     title:    parsed.data.title,
     excerpt:  parsed.data.excerpt,
@@ -85,6 +100,7 @@ export async function POST(request: Request) {
       answerIndex: block.answer_index ?? null,
       explanation: block.explanation ?? null,
     })),
+    transcript: autoTranscript,
     published: parsed.data.published,
   });
 
