@@ -78,7 +78,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
 
   const [comments, topicUsers, relatedBlogs, relatedTutorials, relatedShorts] = await Promise.all([
     getComments(post.id),
-    getActiveUsersByTopic([...post.tags, post.title], 8).catch(() => []),
+    getActiveUsersByTopic([...post.tags, post.title], 5).catch(() => []),
     primaryTag ? getPostsByTag(primaryTag, 4).catch(() => []) : Promise.resolve([]),
     getTutorials({ tag: primaryTag || null, limit: 4, includeUnpublished: false }).then((result) => result.tutorials).catch(() => []),
     getVideosByTags(post.tags, 4).catch(() => []),
