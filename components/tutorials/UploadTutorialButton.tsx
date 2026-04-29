@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { upload } from "@vercel/blob/client";
+import { upload, put } from "@vercel/blob/client";
 
 type Step = "select" | "details" | "success";
 
@@ -17,6 +17,7 @@ function UploadModal({ onClose }: { onClose: () => void }) {
   const [fileName, setFileName] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [prefetchedToken, setPrefetchedToken] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -44,7 +45,20 @@ function UploadModal({ onClose }: { onClose: () => void }) {
     setSelectedFile(file);
     setFileName(file.name);
     setPreviewUrl(URL.createObjectURL(file));
+    setPrefetchedToken(null);
     setStep("details");
+    // Pre-fetch blob token while user fills the form — saves ~700ms on publish
+    fetch("/api/admin/videos/client-upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "blob.generate-client-token",
+        payload: { pathname: file.name, clientPayload: null, multipart: false },
+      }),
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d.clientToken) setPrefetchedToken(d.clientToken); })
+      .catch(() => {});
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -81,14 +95,45 @@ function UploadModal({ onClose }: { onClose: () => void }) {
       if (ytUrl) {
         videoSourceUrl = ytUrl;
       } else if (selectedFile) {
-        const blob = await upload(selectedFile.name, selectedFile, {
-          access: "public",
-          handleUploadUrl: "/api/admin/videos/client-upload",
-          contentType: selectedFile.type || "video/mp4",
-          multipart: true,
-          onUploadProgress: ({ percentage }) => setUploadProgress(Math.round(percentage)),
-        });
-        videoSourceUrl = blob.url;
+        try {
+          const abortCtrl = new AbortController();
+          let progressStarted = false;
+          const uploadOpts = {
+            access: "public" as const,
+            contentType: selectedFile.type || "video/mp4",
+            multipart: selectedFile.size > 50 * 1024 * 1024,
+            onUploadProgress: ({ percentage }: { percentage: number }) => {
+              progressStarted = true;
+              setUploadProgress(Math.round(percentage));
+            },
+            abortSignal: abortCtrl.signal,
+          };
+          const blobUpload = prefetchedToken
+            ? put(selectedFile.name, selectedFile, { ...uploadOpts, token: prefetchedToken })
+            : upload(selectedFile.name, selectedFile, { ...uploadOpts, handleUploadUrl: "/api/admin/videos/client-upload" });
+          const timeout = new Promise<never>((_, reject) =>
+            setTimeout(() => {
+              if (!progressStarted) { abortCtrl.abort(); reject(new Error("timeout")); }
+            }, 4000)
+          );
+          const blob = await Promise.race([blobUpload, timeout]);
+          videoSourceUrl = blob.url;
+        } catch {
+          setUploadProgress(0);
+          const fd = new FormData();
+          fd.append("file", selectedFile);
+          const up = await fetch("/api/admin/videos/upload", { method: "POST", body: fd });
+          if (!up.ok) {
+            if (up.status === 413) throw new Error("File too large. Use a YouTube link instead.");
+            const d = await up.json().catch(() => null);
+            throw new Error(d?.error ?? "Failed to upload video.");
+          }
+          const d = await up.json();
+          if (!d?.videoUrl) throw new Error("Upload succeeded but no URL returned.");
+          videoSourceUrl = d.videoUrl.startsWith("http")
+            ? d.videoUrl
+            : `${window.location.origin}${d.videoUrl}`;
+        }
       } else {
         throw new Error("Please upload a video file or paste a video link.");
       }
