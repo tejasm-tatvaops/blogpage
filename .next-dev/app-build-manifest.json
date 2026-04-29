@@ -31,105 +31,45 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/auth/[...nextauth]/route.js"
     ],
-    "/admin/layout": [
+    "/forums/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/layout.js"
+      "static/chunks/app/forums/layout.js"
     ],
-    "/admin/login/page": [
+    "/forums/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/login/page.js"
+      "static/chunks/app/forums/page.js"
     ],
-    "/api/admin/login/route": [
+    "/api/forums/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/login/route.js"
+      "static/chunks/app/api/forums/route.js"
     ],
-    "/admin/(dashboard)/layout": [
+    "/forums/new/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/(dashboard)/layout.js"
+      "static/chunks/app/forums/new/page.js"
     ],
-    "/admin/(dashboard)/blog/page": [
+    "/forums/[slug]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/(dashboard)/blog/page.js"
+      "static/chunks/app/forums/[slug]/page.js"
     ],
-    "/api/admin/activity/toggle/route": [
+    "/api/forums/[slug]/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/activity/toggle/route.js"
+      "static/chunks/app/api/forums/[slug]/route.js"
     ],
-    "/admin/(dashboard)/tutorials/drafts/page": [
+    "/api/forums/[slug]/comments/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/(dashboard)/tutorials/drafts/page.js"
-    ],
-    "/api/admin/tutorials/drafts/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/tutorials/drafts/route.js"
-    ],
-    "/admin/(dashboard)/tutorials/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/(dashboard)/tutorials/page.js"
-    ],
-    "/api/admin/semantic/reindex/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/semantic/reindex/route.js"
-    ],
-    "/api/admin/system/toggles/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/system/toggles/route.js"
-    ],
-    "/api/admin/jobs/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/jobs/route.js"
-    ],
-    "/api/admin/videos/client-upload/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/videos/client-upload/route.js"
-    ],
-    "/supplier/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/supplier/page.js"
+      "static/chunks/app/api/forums/[slug]/comments/route.js"
     ],
     "/tutorials/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/tutorials/page.js"
-    ],
-    "/api/admin/tutorials/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/tutorials/route.js"
-    ],
-    "/inshorts/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/inshorts/page.js"
-    ],
-    "/tutorials/[slug]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/tutorials/[slug]/page.js"
-    ],
-    "/api/feed/events/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/feed/events/route.js"
-    ],
-    "/api/tutorials/[slug]/progress/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/tutorials/[slug]/progress/route.js"
     ]
   }
 }

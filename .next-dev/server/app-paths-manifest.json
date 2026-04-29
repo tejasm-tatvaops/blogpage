@@ -1,13 +1,6 @@
 {
-  "/api/me/route": "app/api/me/route.js",
-  "/api/admin/tutorials/route": "app/api/admin/tutorials/route.js",
-  "/api/feed/events/route": "app/api/feed/events/route.js",
-  "/api/tutorials/[slug]/progress/route": "app/api/tutorials/[slug]/progress/route.js",
-  "/supplier/page": "app/supplier/page.js",
-  "/tutorials/page": "app/tutorials/page.js",
-  "/inshorts/page": "app/inshorts/page.js",
-  "/tutorials/[slug]/page": "app/tutorials/[slug]/page.js",
-  "/admin/login/page": "app/admin/login/page.js",
-  "/admin/(dashboard)/tutorials/page": "app/admin/(dashboard)/tutorials/page.js",
-  "/admin/(dashboard)/blog/page": "app/admin/(dashboard)/blog/page.js"
+  "/api/forums/[slug]/comments/route": "app/api/forums/[slug]/comments/route.js",
+  "/forums/page": "app/forums/page.js",
+  "/forums/new/page": "app/forums/new/page.js",
+  "/forums/[slug]/page": "app/forums/[slug]/page.js"
 }

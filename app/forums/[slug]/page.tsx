@@ -13,6 +13,7 @@ import { getPostsByTag } from "@/lib/blogService";
 import { getComments } from "@/lib/services/comment.service";
 import { getActiveUsersByTopic } from "@/lib/userProfileService";
 import { ForumActiveUsersStrip } from "@/components/users/ForumActiveUsersStrip";
+import { ForumLinkedProductCard } from "@/components/forums/ForumLinkedProductCard";
 import { buildForumPostJsonLd, buildForumBreadcrumbJsonLd } from "@/lib/forumSeo";
 import { generateSEO } from "@/lib/seo";
 import { getTutorials } from "@/lib/tutorialService";
@@ -281,6 +282,13 @@ export default async function ForumThreadPage({ params }: PageProps) {
           </div>
 
           <aside className="hidden lg:flex flex-col gap-6">
+            {post.linked_product_id && post.linked_product_name && post.linked_product_brand && (
+              <ForumLinkedProductCard
+                productId={post.linked_product_id}
+                productName={post.linked_product_name}
+                productBrand={post.linked_product_brand}
+              />
+            )}
             <ForumActiveUsersStrip title="People active in similar threads" users={topicUsers} />
             <KnowledgeEcosystemPanel
               topicLabel={primaryTag || "this discussion"}
