@@ -454,3 +454,66 @@ main { width: 100%; }
   background: var(--color-surface);
   border-color: var(--color-border);
 }
+
+/* ─── Glass morphism utilities ────────────────────────────────────────────── */
+
+/* Light-first base — dark override via [data-theme="dark"] */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+}
+[data-theme="dark"] .glass-nav {
+  background: rgba(19, 22, 35, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.glass-sidebar {
+  background: rgba(250, 251, 253, 0.97);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07);
+}
+[data-theme="dark"] .glass-sidebar {
+  background: rgba(15, 18, 28, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+}
+
+.glass-widget {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+[data-theme="dark"] .glass-widget {
+  background: rgba(19, 22, 35, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ─── Orange active sidebar glow ──────────────────────────────────────────── */
+.sidebar-active-glow {
+  box-shadow: 0 0 10px 2px rgba(251, 146, 60, 0.4);
+}
+
+/* ─── Forum thread card — theme-aware ────────────────────────────────────── */
+.forum-card-bg {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+[data-theme="dark"] .forum-card-bg {
+  background: rgba(19, 22, 35, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.forum-card-tail {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .forum-card-tail {
+  background: rgba(19, 22, 35, 0.65);
+  border-color: rgba(255, 255, 255, 0.07);
+}
