@@ -98,19 +98,20 @@ export default function ForumsPage() {
   };
 
   return (
-    <main className="min-h-screen w-full px-4 py-6 md:px-6">
+    <main className="min-h-screen w-full pl-[110px]">
+      <div className="max-w-[1100px] mx-auto px-4 py-6">
 
       {/* ── Page header ──────────────────────────────────────────── */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-heading">Forums</h1>
-          <p className="mt-0.5 text-sm text-muted">
+          <h1 className="text-2xl font-semibold text-black dark:text-white">Forums</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-white/50">
             Discuss construction, share insights, ask questions.
           </p>
         </div>
         <Link
           href="/forums/new"
-          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-orange-600 to-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_16px_rgba(234,88,12,0.35)] transition hover:from-orange-500 hover:to-orange-400 hover:shadow-[0_0_20px_rgba(234,88,12,0.5)]"
+          className="bg-orange-500 text-white px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition inline-flex items-center gap-1.5 text-sm font-semibold"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -120,11 +121,11 @@ export default function ForumsPage() {
       </div>
 
       {/* ── Filter bar ───────────────────────────────────────────── */}
-      <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl glass-widget px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 mb-6">
         {/* Filter icon button */}
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded-lg border border-app px-3 py-1.5 text-sm font-medium text-muted transition hover:text-app hover:bg-subtle"
+          className="px-3 py-1 rounded-full text-gray-500 hover:text-orange-500 transition text-sm flex items-center gap-1.5"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
@@ -138,12 +139,9 @@ export default function ForumsPage() {
             key={value}
             type="button"
             onClick={() => setSort(value)}
-            className={[
-              "rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all duration-200",
-              sort === value
-                ? "bg-orange-500/15 text-orange-400 ring-1 ring-orange-500/30 shadow-[0_0_10px_rgba(234,88,12,0.2)]"
-                : "text-muted hover:text-app hover:bg-subtle",
-            ].join(" ")}
+            className={sort === value
+              ? "px-3 py-1 rounded-full bg-orange-500 text-white text-sm font-medium"
+              : "px-3 py-1 rounded-full text-gray-500 hover:text-orange-500 transition text-sm"}
           >
             {label}
           </button>
@@ -154,7 +152,7 @@ export default function ForumsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search threads…"
-          className="ml-auto w-full min-w-[200px] rounded-lg border border-app bg-subtle px-3 py-1.5 text-sm text-app placeholder:text-faint outline-none transition focus:border-orange-500/40 focus:ring-1 focus:ring-orange-500/20 sm:w-64"
+          className="ml-auto w-full min-w-[200px] rounded-xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-[rgba(20,25,45,0.7)] px-3 py-1.5 text-sm text-black dark:text-white placeholder:text-gray-400 outline-none transition focus:border-orange-400 sm:w-64"
         />
 
         {/* Active tag chip */}
@@ -173,7 +171,7 @@ export default function ForumsPage() {
       </div>
 
       {/* ── Content grid ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
 
         {/* Thread feed */}
         <section>
@@ -181,25 +179,6 @@ export default function ForumsPage() {
             <ForumListSkeleton count={PAGE_SIZE} />
           ) : (
             <>
-              {trendingPosts.length > 0 && (
-                <section className="mb-5 rounded-2xl border border-orange-500/15 bg-orange-500/5 p-4">
-                  <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-orange-400">
-                    🔥 Trending now
-                  </h3>
-                  <div className="space-y-1.5">
-                    {trendingPosts.map((post) => (
-                      <Link
-                        key={post.id}
-                        href={`/forums/${post.slug}`}
-                        className="block rounded-lg px-3 py-2 text-sm font-medium text-muted transition hover:bg-orange-500/8 hover:text-app"
-                      >
-                        {post.title}
-                      </Link>
-                    ))}
-                  </div>
-                </section>
-              )}
-
               <ForumList posts={displayPosts} />
 
               {page < totalPages && (
@@ -222,7 +201,7 @@ export default function ForumsPage() {
         <aside className="space-y-4 lg:sticky lg:top-[80px] lg:self-start">
 
           {/* Trending tags */}
-          <div className="rounded-2xl glass-widget p-4">
+          <div className="rounded-2xl p-4 bg-white/70 dark:bg-[rgba(20,25,45,0.7)] backdrop-blur-xl border border-black/5 dark:border-white/10 shadow-sm">
             <h3 className="flex items-center gap-1.5 text-sm font-semibold text-heading">
               Trending tags
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-400" aria-hidden>
@@ -240,10 +219,10 @@ export default function ForumsPage() {
                     type="button"
                     onClick={() => handleTagClick(tag)}
                     className={[
-                      "rounded-full border px-2.5 py-0.5 text-xs font-medium transition",
+                      "px-2 py-1 text-xs rounded-full transition",
                       activeTag === tag
-                        ? "border-orange-500/40 bg-orange-500/15 text-orange-400"
-                        : "border-app bg-subtle text-muted hover:bg-card hover:text-app",
+                        ? "bg-orange-500 text-white"
+                        : "bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-white/60",
                     ].join(" ")}
                   >
                     #{tag}
@@ -254,12 +233,12 @@ export default function ForumsPage() {
           </div>
 
           {/* Quick actions */}
-          <div className="rounded-2xl glass-widget p-4">
+          <div className="rounded-2xl p-4 bg-white/70 dark:bg-[rgba(20,25,45,0.7)] backdrop-blur-xl border border-black/5 dark:border-white/10 shadow-sm">
             <h3 className="text-sm font-semibold text-heading">Quick actions</h3>
             <div className="mt-3 space-y-2">
               <Link
                 href="/forums/new"
-                className="flex items-center justify-between rounded-xl border border-app bg-subtle px-3 py-2.5 text-sm text-muted transition hover:bg-card hover:text-app"
+                className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm text-gray-500 dark:text-white/70 transition hover:bg-black/5 dark:hover:bg-white/5"
               >
                 <span className="flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-full border border-orange-500/30 bg-orange-500/10 text-orange-400">
@@ -275,7 +254,7 @@ export default function ForumsPage() {
               </Link>
               <Link
                 href="/blog"
-                className="flex items-center justify-between rounded-xl border border-app bg-subtle px-3 py-2.5 text-sm text-muted transition hover:bg-card hover:text-app"
+                className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm text-gray-500 dark:text-white/70 transition hover:bg-black/5 dark:hover:bg-white/5"
               >
                 <span className="flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-full border border-app bg-subtle text-muted">
@@ -294,7 +273,7 @@ export default function ForumsPage() {
 
           {/* Featured insight card */}
           {featuredInsight && (
-            <div className="rounded-2xl glass-widget p-4">
+            <div className="rounded-2xl p-4 bg-white/70 dark:bg-[rgba(20,25,45,0.7)] backdrop-blur-xl border border-black/5 dark:border-white/10 shadow-sm">
               <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-orange-500">
                 Featured Insight
               </p>
@@ -311,6 +290,15 @@ export default function ForumsPage() {
           )}
 
         </aside>
+      </div>
+
+      <button
+        type="button"
+        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition"
+        aria-label="Quick action"
+      >
+        ★
+      </button>
       </div>
     </main>
   );

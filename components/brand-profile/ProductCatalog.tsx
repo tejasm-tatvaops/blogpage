@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import type { BrandProduct, StockStatus } from "@/data/brandProfileMock";
 import { brandProductLines, productReviews } from "@/data/brandProfileMock";
@@ -37,6 +38,17 @@ function getWeightTag(product: BrandProduct): string {
   const weightMatch = product.unit.match(/(\d+)\s*kg/i);
   if (weightMatch?.[1]) return `Weighs ${weightMatch[1]}kg`;
   return "Site-grade material";
+}
+
+function getDiscussionTopic(product: BrandProduct): string {
+  const normalized = `${product.name} ${product.description}`.toLowerCase();
+  if (normalized.includes("aac")) return "aac-blocks";
+  if (normalized.includes("putty")) return "wall-putty";
+  if (normalized.includes("waterproof")) return "waterproofing";
+  if (normalized.includes("cement")) return "cement";
+  if (normalized.includes("rmc") || normalized.includes("ready mix")) return "ready-mix-concrete";
+  if (product.category === "building") return "building-products";
+  return product.category;
 }
 
 function StarRow({ value }: { value: number }) {
@@ -736,6 +748,13 @@ export default function ProductCatalog({ products }: Props) {
                 >
                   View Feedback
                 </button>
+
+                <Link
+                  href={`/hubs/${encodeURIComponent(getDiscussionTopic(product))}`}
+                  className="mt-2 block w-full rounded-lg border border-slate-200 bg-white py-2 text-center text-xs font-semibold text-slate-600 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 dark:border-slate-700 dark:bg-transparent dark:text-slate-300 dark:hover:border-sky-700/40 dark:hover:text-sky-400"
+                >
+                  View Discussion
+                </Link>
               </div>
             </div>
           ))}

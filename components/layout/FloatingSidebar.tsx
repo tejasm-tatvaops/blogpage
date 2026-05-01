@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import type { ReactNode } from "react";
 
 // DO NOT MODIFY INTERNAL LOGIC OR JSX STRUCTURE
 // ONLY APPLY STYLING OR WRAPPING
@@ -74,6 +75,37 @@ const NAV_ITEMS = [
   },
 ];
 
+function SidebarItem({
+  href,
+  label,
+  icon,
+  active,
+}: {
+  href: string;
+  label: string;
+  icon: ReactNode;
+  active?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      title={label}
+      className={[
+        "relative flex w-full flex-col items-center py-[14px] gap-[6px] rounded-xl transition-all duration-200",
+        active
+          ? "text-orange-500 bg-white/40 dark:bg-white/[0.03]"
+          : "text-[#5A5E80] dark:text-[rgba(255,255,255,0.32)] hover:text-orange-500 dark:hover:text-orange-400 hover:bg-white/40 dark:hover:bg-white/5",
+      ].join(" ")}
+    >
+      {active && (
+        <div className="absolute left-0 top-[20px] h-7 w-[3px] bg-gradient-to-b from-orange-500 to-orange-600 rounded-r-md" />
+      )}
+      <div className="flex items-center justify-center w-[22px] h-[22px]">{icon}</div>
+      <div className="text-[9.5px] font-medium tracking-[0.38px] leading-none">{label}</div>
+    </Link>
+  );
+}
+
 export function FloatingSidebar() {
   const pathname = usePathname();
 
@@ -81,48 +113,45 @@ export function FloatingSidebar() {
   if (pathname.startsWith("/admin")) return null;
 
   return (
-    <aside className="fixed left-2 top-20 z-40 flex w-[88px] flex-col items-center gap-1 rounded-2xl glass-sidebar py-4">
-      {/* 2×2 brand mark (matches reference design) */}
-      <div className="mb-4 grid grid-cols-2 gap-[5px] px-5">
-        <span className="h-[18px] w-[18px] rounded-[4px] bg-orange-500" />
-        <span className="h-[18px] w-[18px] rounded-[4px] bg-orange-500" />
-        <span className="h-[18px] w-[18px] rounded-[4px] bg-orange-500" />
-        <span className="h-[18px] w-[18px] rounded-[4px] bg-orange-500" />
+    <aside className="fixed left-[14px] top-1/2 z-[150] -translate-y-1/2 w-[76px] h-[min(657px,calc(100vh-130px))] rounded-[28px] overflow-hidden">
+      <div
+        className="absolute inset-0 flex flex-col items-center py-7 px-0 rounded-[28px]
+          bg-[rgba(236,238,248,0.82)] dark:bg-[rgba(8,11,28,0.82)]
+          backdrop-blur-xl
+          shadow-[0px_8px_40px_rgba(80,90,160,0.14),inset_0px_1px_0px_rgba(255,255,255,0.9)]
+          dark:shadow-[0_16px_56px_rgba(4,6,18,0.65),inset_0_1px_0_rgba(255,255,255,0.05)]
+          border border-orange-200/20 dark:border-white/10"
+      >
+      {/* Brand strip */}
+      <div className="flex flex-col gap-[4px] pb-7">
+        <div className="w-9 h-2 bg-orange-500 rounded" />
+        <div className="w-9 h-2 bg-orange-500/80 rounded" />
+        <div className="w-9 h-2 bg-orange-500/80 rounded" />
+        <div className="w-9 h-2 bg-orange-400/50 rounded" />
       </div>
 
       {/* Nav items */}
-      <div className="flex w-full flex-col items-center gap-0.5 px-2">
+      <div className="flex w-full flex-1 flex-col items-center">
         {NAV_ITEMS.map(({ href, label, icon }) => {
           const isActive =
             href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
-            <Link
+            <SidebarItem
               key={href}
               href={href}
-              title={label}
-              className={[
-                "relative flex w-full flex-col items-center gap-[5px] rounded-xl py-[10px] text-[9px] font-bold tracking-widest transition-all duration-200",
-                isActive
-                  ? "text-orange-400 bg-orange-500/10"
-                  : "text-faint hover:text-app hover:bg-subtle",
-              ].join(" ")}
-            >
-              {isActive && (
-                <span
-                  className="sidebar-active-glow absolute left-0 top-[20%] h-[60%] w-[2.5px] rounded-r-full bg-gradient-to-b from-orange-400 to-orange-600"
-                />
-              )}
-              {icon}
-              <span className="leading-none">{label}</span>
-            </Link>
+              label={label}
+              icon={icon}
+              active={isActive}
+            />
           );
         })}
       </div>
 
       {/* Dark / Light toggle at bottom */}
-      <div className="mt-auto flex w-full flex-col items-center gap-1.5 px-2 pt-4">
-        <span className="text-[9px] font-bold tracking-widest text-faint">DARK</span>
+      <div className="mt-auto flex w-full flex-col items-center gap-1.5 pt-4 border-t border-black/10 dark:border-white/10">
+        <span className="text-[9px] font-bold tracking-widest text-[#5A5E80] dark:text-white/45">DARK</span>
         <ThemeToggle />
+      </div>
       </div>
     </aside>
   );
