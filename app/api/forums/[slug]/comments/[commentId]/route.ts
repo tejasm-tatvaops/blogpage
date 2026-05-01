@@ -39,17 +39,15 @@ export async function DELETE(
       const post = await getForumPostBySlug(decodeURIComponent(slug));
       if (post) {
         const actorKey = await getIdentityKeyFromSessionOrRequest(request);
-        enqueueRecoveryTask({
+        await enqueueRecoveryTask({
           id: `recover:forum-delete:${actorKey}:${post.slug}:${commentId}`,
           flow: "comment_delete_forum",
-          run: async () => {
-            await deleteCommentWithReversal({
-              postId: post.id,
-              postSlug: post.slug,
-              postType: "forum",
-              identityKey: actorKey,
-              commentId,
-            });
+          payload: {
+            postId: post.id,
+            postSlug: post.slug,
+            postType: "forum",
+            identityKey: actorKey,
+            commentId,
           },
         });
       }

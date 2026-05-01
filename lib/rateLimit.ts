@@ -1,5 +1,6 @@
 import { LRUCache } from "lru-cache";
 import { NextRequest, NextResponse } from "next/server";
+import { getRedisClient } from "@/lib/redis";
 
 type RateLimiterOptions = {
   /** Maximum number of requests allowed within the window. */
@@ -36,6 +37,37 @@ export const createRateLimiter = ({ limit, windowMs }: RateLimiterOptions): Limi
       limit,
       resetMs,
     };
+  };
+};
+
+export const checkRedisRateLimit = async (
+  key: string,
+  { limit, windowMs }: RateLimiterOptions,
+  options?: { failClosed?: boolean },
+): Promise<RateLimitResult | null> => {
+  const redis = getRedisClient();
+  if (!redis || redis.status !== "ready") {
+    if (!options?.failClosed) return null;
+    return {
+      allowed: false,
+      remaining: 0,
+      limit,
+      resetMs: Date.now() + windowMs,
+    };
+  }
+
+  const bucketKey = `ratelimit:${key}:${Math.floor(Date.now() / windowMs)}`;
+  const count = await redis.incr(bucketKey);
+  if (count === 1) {
+    await redis.pexpire(bucketKey, windowMs);
+  }
+
+  const ttlMs = Math.max(0, Number(await redis.pttl(bucketKey)));
+  return {
+    allowed: count <= limit,
+    remaining: Math.max(0, limit - count),
+    limit,
+    resetMs: Date.now() + ttlMs,
   };
 };
 

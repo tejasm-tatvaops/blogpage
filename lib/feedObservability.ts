@@ -120,8 +120,8 @@ export const getFeedMetrics = async (windowHours = 24): Promise<{
   };
 };
 
-export const getFeedObservabilityHealth = (): {
-  queue: ReturnType<typeof getFeedEventQueueHealth>;
-} => ({
-  queue: getFeedEventQueueHealth(),
+export const getFeedObservabilityHealth = async (): Promise<{
+  queue: Awaited<ReturnType<typeof getFeedEventQueueHealth>>;
+}> => ({
+  queue: await getFeedEventQueueHealth(),
 });

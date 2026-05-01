@@ -40,17 +40,15 @@ export async function DELETE(
       if (post) {
         const actorKey = await getIdentityKeyFromSessionOrRequest(request);
         const taskId = `recover:blog-delete:${actorKey}:${post.slug}:${commentId}`;
-        enqueueRecoveryTask({
+        await enqueueRecoveryTask({
           id: taskId,
           flow: "comment_delete_blog",
-          run: async () => {
-            await deleteCommentWithReversal({
-              postId: post.id,
-              postSlug: post.slug,
-              postType: "blog",
-              identityKey: actorKey,
-              commentId,
-            });
+          payload: {
+            postId: post.id,
+            postSlug: post.slug,
+            postType: "blog",
+            identityKey: actorKey,
+            commentId,
           },
         });
       }

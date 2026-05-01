@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { incrementDownvote } from "@/lib/blogService";
-import { downvoteLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
+import {
+  checkRedisRateLimit,
+  downvoteLimiter,
+  getRateLimitKey,
+  rateLimitResponse,
+} from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { BlogLikeModel } from "@/models/BlogLike";
 import { connectToDatabase } from "@/lib/db/mongodb";
@@ -11,14 +16,19 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const ip = getRateLimitKey(request);
-  const rl = downvoteLimiter(ip);
-  if (!rl.allowed) return rateLimitResponse(rl);
+  const identityKey = await getIdentityKeyFromSessionOrRequest(request).catch(() => "anonymous");
+  const rl = await checkRedisRateLimit(
+    `blog_downvote:${ip}:${identityKey}`,
+    { limit: 10, windowMs: 60_000 },
+    { failClosed: true },
+  );
+  const localFallback = downvoteLimiter(ip);
+  const effectiveLimit = rl ?? localFallback;
+  if (!effectiveLimit.allowed) return rateLimitResponse(effectiveLimit);
 
   try {
     const { slug } = await params;
     const decodedSlug = decodeURIComponent(slug);
-
-    const identityKey = await getIdentityKeyFromSessionOrRequest(request);
 
     await connectToDatabase();
 

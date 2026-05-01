@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { getPostBySlug } from "@/lib/blogService";
 import { commentInputSchema, getComments } from "@/lib/services/comment.service";
-import { commentLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
+import {
+  checkRedisRateLimit,
+  commentLimiter,
+  getRateLimitKey,
+  rateLimitResponse,
+} from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 import { recordUserActivity } from "@/lib/userProfileService";
 import { getIdentityKeyFromSessionOrRequest } from "@/lib/auth/identity";
@@ -30,8 +35,15 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const ip = getRateLimitKey(request);
-  const rl = commentLimiter(ip);
-  if (!rl.allowed) return rateLimitResponse(rl);
+  const identityHint = await getIdentityKeyFromSessionOrRequest(request).catch(() => "anonymous");
+  const rl = await checkRedisRateLimit(
+    `blog_comments:${ip}:${identityHint}`,
+    { limit: 3, windowMs: 60_000 },
+    { failClosed: true },
+  );
+  const localFallback = commentLimiter(ip);
+  const effectiveLimit = rl ?? localFallback;
+  if (!effectiveLimit.allowed) return rateLimitResponse(effectiveLimit);
 
   try {
     const { slug } = await params;
