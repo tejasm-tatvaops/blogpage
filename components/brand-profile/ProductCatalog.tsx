@@ -66,6 +66,8 @@ type ReviewReply = {
   author: string;
   text: string;
   date: string;
+  upvotes: number;
+  downvotes: number;
 };
 
 type ReviewComment = {
@@ -73,6 +75,8 @@ type ReviewComment = {
   author: string;
   text: string;
   date: string;
+  upvotes: number;
+  downvotes: number;
   replies: ReviewReply[];
 };
 
@@ -83,12 +87,16 @@ const initialDiscussionThreads: Record<string, ReviewComment[]> = {
       author: "Suresh Pillai",
       text: "Did you use PPC for raft foundations only or for columns too?",
       date: "2 days ago",
+      upvotes: 5,
+      downvotes: 0,
       replies: [
         {
           id: "cr1",
           author: "Kiran Mehta",
           text: "Mainly for raft and retaining wall pours. We used OPC for some fast-cycle column work.",
           date: "1 day ago",
+          upvotes: 2,
+          downvotes: 0,
         },
       ],
     },
@@ -101,6 +109,9 @@ function ReviewsModal({ product, onClose }: { product: BrandProduct; onClose: ()
   const [threads, setThreads] = useState<Record<string, ReviewComment[]>>(() => initialDiscussionThreads);
   const [commentDraft, setCommentDraft] = useState("");
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [activeReplyFor, setActiveReplyFor] = useState<string | null>(null);
+  const [discussionSortMode, setDiscussionSortMode] = useState<"top" | "newest">("top");
+  const [shareOpenFor, setShareOpenFor] = useState<string | null>(null);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -120,11 +131,19 @@ function ReviewsModal({ product, onClose }: { product: BrandProduct; onClose: ()
   const discussionKey = activeDiscussionReviewId ? `${product.id}:${activeDiscussionReviewId}` : "";
   const activeThread = activeDiscussionReviewId ? threads[discussionKey] ?? [] : [];
 
-  const shareReview = async (review: (typeof reviews)[number]) => {
-    const content = `${review.author} (${review.role}) rated ${product.name} ${review.rating}/5: "${review.text}"`;
+  const buildShareText = (review: (typeof reviews)[number]) =>
+    `${review.author} (${review.role}) rated ${product.name} ${review.rating}/5: "${review.text}"`;
+
+  const openShareWindow = (url: string) => {
+    if (typeof window === "undefined") return;
+    window.open(url, "_blank", "noopener,noreferrer,width=720,height=760");
+  };
+
+  const shareReviewNative = async (review: (typeof reviews)[number]) => {
+    const content = buildShareText(review);
     try {
       if (navigator.share) {
-        await navigator.share({ title: `${product.name} review`, text: content });
+        await navigator.share({ title: `${product.name} review`, text: content, url: window.location.href });
       } else {
         await navigator.clipboard.writeText(content);
       }
@@ -133,6 +152,65 @@ function ReviewsModal({ product, onClose }: { product: BrandProduct; onClose: ()
       setShareMessage("Share cancelled.");
     }
     setTimeout(() => setShareMessage(null), 1800);
+  };
+
+  const shareReviewTo = async (
+    review: (typeof reviews)[number],
+    channel: "whatsapp" | "threads" | "instagram" | "twitter" | "linkedin" | "copy",
+  ) => {
+    const text = buildShareText(review);
+    const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+    const shareText = `${text}\n\n${pageUrl}`;
+    try {
+      if (channel === "whatsapp") openShareWindow(`https://wa.me/?text=${encodeURIComponent(shareText)}`);
+      if (channel === "threads") openShareWindow(`https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`);
+      if (channel === "twitter") openShareWindow(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`);
+      if (channel === "linkedin") openShareWindow(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(pageUrl)}`);
+      if (channel === "instagram") {
+        const usedNative = typeof navigator !== "undefined" && navigator.share;
+        if (usedNative) {
+          await navigator.share({ title: `${product.name} review`, text, url: pageUrl });
+        } else {
+          await navigator.clipboard.writeText(shareText);
+          openShareWindow("https://www.instagram.com/");
+        }
+      }
+      if (channel === "copy") await navigator.clipboard.writeText(shareText);
+      setShareMessage("Shared successfully.");
+    } catch {
+      setShareMessage("Share cancelled.");
+    }
+    setShareOpenFor(null);
+    setTimeout(() => setShareMessage(null), 1800);
+  };
+
+  const voteComment = (commentId: string, direction: "up" | "down") => {
+    if (!activeDiscussionReviewId) return;
+    setThreads((prev) => {
+      const key = `${product.id}:${activeDiscussionReviewId}`;
+      const nextComments = (prev[key] ?? []).map((comment) => {
+        if (comment.id === commentId) {
+          return {
+            ...comment,
+            upvotes: direction === "up" ? comment.upvotes + 1 : comment.upvotes,
+            downvotes: direction === "down" ? comment.downvotes + 1 : comment.downvotes,
+          };
+        }
+        return {
+          ...comment,
+          replies: comment.replies.map((reply) =>
+            reply.id === commentId
+              ? {
+                  ...reply,
+                  upvotes: direction === "up" ? reply.upvotes + 1 : reply.upvotes,
+                  downvotes: direction === "down" ? reply.downvotes + 1 : reply.downvotes,
+                }
+              : reply,
+          ),
+        };
+      });
+      return { ...prev, [key]: nextComments };
+    });
   };
 
   const addComment = () => {
@@ -151,6 +229,8 @@ function ReviewsModal({ product, onClose }: { product: BrandProduct; onClose: ()
             author: "You",
             text: trimmed,
             date: "Just now",
+            upvotes: 0,
+            downvotes: 0,
             replies: [],
           },
         ],
@@ -171,7 +251,14 @@ function ReviewsModal({ product, onClose }: { product: BrandProduct; onClose: ()
               ...comment,
               replies: [
                 ...comment.replies,
-                { id: `r-${Date.now()}`, author: "You", text: draft, date: "Just now" },
+                {
+                  id: `r-${Date.now()}`,
+                  author: "You",
+                  text: draft,
+                  date: "Just now",
+                  upvotes: 0,
+                  downvotes: 0,
+                },
               ],
             }
           : comment,
@@ -180,6 +267,14 @@ function ReviewsModal({ product, onClose }: { product: BrandProduct; onClose: ()
     });
     setReplyDrafts((prev) => ({ ...prev, [commentId]: "" }));
   };
+
+  const sortedActiveThread = [...activeThread].sort((a, b) => {
+    if (discussionSortMode === "newest") return b.id.localeCompare(a.id);
+    const scoreA = a.upvotes - a.downvotes;
+    const scoreB = b.upvotes - b.downvotes;
+    if (scoreA !== scoreB) return scoreB - scoreA;
+    return b.id.localeCompare(a.id);
+  });
 
   return (
     <div
@@ -265,46 +360,125 @@ function ReviewsModal({ product, onClose }: { product: BrandProduct; onClose: ()
                 <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Discussion thread
                 </h4>
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDiscussionSortMode("top")}
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                      discussionSortMode === "top"
+                        ? "bg-slate-900 text-white"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    Top
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDiscussionSortMode("newest")}
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                      discussionSortMode === "newest"
+                        ? "bg-slate-900 text-white"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    Newest
+                  </button>
+                </div>
                 <div className="mt-3 space-y-3">
-                  {activeThread.length === 0 ? (
+                  {sortedActiveThread.length === 0 ? (
                     <p className="text-xs text-slate-400">No comments yet. Start this discussion.</p>
                   ) : (
-                    activeThread.map((comment) => (
-                      <div key={comment.id} className="rounded-lg border border-slate-100 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/30">
-                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">{comment.author}</p>
-                        <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{comment.text}</p>
-                        <p className="mt-1 text-[10px] text-slate-400">{comment.date}</p>
+                    sortedActiveThread.map((comment) => (
+                      <div key={comment.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                        <div className="flex items-start gap-2.5">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                            {comment.author.charAt(0)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">{comment.author}</p>
+                              <p className="text-[10px] text-slate-400">{comment.date}</p>
+                            </div>
+                            <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">{comment.text}</p>
+                            <div className="mt-2 flex items-center gap-2 text-[11px]">
+                              <button
+                                type="button"
+                                onClick={() => voteComment(comment.id, "up")}
+                                className="rounded border border-slate-200 px-1.5 py-0.5 text-slate-500 hover:bg-slate-50"
+                              >
+                                ▲ {comment.upvotes}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => voteComment(comment.id, "down")}
+                                className="rounded border border-slate-200 px-1.5 py-0.5 text-slate-500 hover:bg-slate-50"
+                              >
+                                ▼ {comment.downvotes}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setActiveReplyFor((prev) => (prev === comment.id ? null : comment.id))}
+                                className="rounded border border-slate-200 px-1.5 py-0.5 text-slate-500 hover:bg-slate-50"
+                              >
+                                Reply
+                              </button>
+                            </div>
+                          </div>
+                        </div>
 
                         {comment.replies.length > 0 && (
-                          <div className="mt-3 space-y-2 border-l border-slate-200 pl-3 dark:border-slate-700">
+                          <div className="mt-3 space-y-2 border-l-2 border-slate-100 pl-3 dark:border-slate-700">
                             {comment.replies.map((reply) => (
-                              <div key={reply.id}>
-                                <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{reply.author}</p>
-                                <p className="text-[11px] text-slate-600 dark:text-slate-400">{reply.text}</p>
-                                <p className="text-[10px] text-slate-400">{reply.date}</p>
+                              <div key={reply.id} className="rounded-lg bg-slate-50 px-2.5 py-2 dark:bg-slate-800/60">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{reply.author}</p>
+                                  <p className="text-[10px] text-slate-400">{reply.date}</p>
+                                </div>
+                                <p className="mt-0.5 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">{reply.text}</p>
+                                <div className="mt-1.5 flex items-center gap-2 text-[10px]">
+                                  <button
+                                    type="button"
+                                    onClick={() => voteComment(reply.id, "up")}
+                                    className="rounded border border-slate-200 px-1.5 py-0.5 text-slate-500 hover:bg-slate-50"
+                                  >
+                                    ▲ {reply.upvotes}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => voteComment(reply.id, "down")}
+                                    className="rounded border border-slate-200 px-1.5 py-0.5 text-slate-500 hover:bg-slate-50"
+                                  >
+                                    ▼ {reply.downvotes}
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
                         )}
 
-                        <div className="mt-3 flex gap-2">
-                          <input
-                            type="text"
-                            value={replyDrafts[comment.id] ?? ""}
-                            onChange={(event) =>
-                              setReplyDrafts((prev) => ({ ...prev, [comment.id]: event.target.value }))
-                            }
-                            placeholder="Write a reply"
-                            className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs outline-none transition focus:border-sky-400 dark:border-slate-700 dark:bg-slate-900"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => addReply(comment.id)}
-                            className="rounded-md bg-sky-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-sky-400"
-                          >
-                            Reply
-                          </button>
-                        </div>
+                        {activeReplyFor === comment.id && (
+                          <div className="mt-3 flex gap-2">
+                            <input
+                              type="text"
+                              value={replyDrafts[comment.id] ?? ""}
+                              onChange={(event) =>
+                                setReplyDrafts((prev) => ({ ...prev, [comment.id]: event.target.value }))
+                              }
+                              placeholder="Write a reply"
+                              className="w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs outline-none transition focus:border-sky-400 dark:border-slate-700 dark:bg-slate-900"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                addReply(comment.id);
+                                setActiveReplyFor(null);
+                              }}
+                              className="rounded-md bg-sky-500 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-sky-400"
+                            >
+                              Reply
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
@@ -375,12 +549,23 @@ function ReviewsModal({ product, onClose }: { product: BrandProduct; onClose: ()
                       </button>
                       <button
                         type="button"
-                        onClick={() => void shareReview(review)}
+                        onClick={() => setShareOpenFor((prev) => (prev === review.id ? null : review.id))}
                         className="rounded-md border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                       >
                         Share review
                       </button>
                     </div>
+                    {shareOpenFor === review.id && (
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <button type="button" onClick={() => void shareReviewTo(review, "whatsapp")} className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50">WhatsApp</button>
+                        <button type="button" onClick={() => void shareReviewTo(review, "instagram")} className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50">Instagram</button>
+                        <button type="button" onClick={() => void shareReviewTo(review, "threads")} className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50">Threads</button>
+                        <button type="button" onClick={() => void shareReviewTo(review, "twitter")} className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50">X</button>
+                        <button type="button" onClick={() => void shareReviewTo(review, "linkedin")} className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50">LinkedIn</button>
+                        <button type="button" onClick={() => void shareReviewTo(review, "copy")} className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50">Copy link</button>
+                        <button type="button" onClick={() => void shareReviewNative(review)} className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50">Native share</button>
+                      </div>
+                    )}
                   </li>
                 );
               })}
@@ -475,6 +660,7 @@ export default function ProductCatalog({ products }: Props) {
                   <p className="line-clamp-2 text-lg font-extrabold leading-tight tracking-tight text-slate-900 dark:text-white">
                     {product.name}
                   </p>
+                  <p className="mt-0.5 text-[11px] font-medium text-sky-600 dark:text-sky-400">{product.brand}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <span className="rounded-full bg-sky-500 px-2.5 py-0.5 text-[10px] font-semibold text-white">
                       {categoryLabel[product.category] ?? "Product"}

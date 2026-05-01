@@ -1,15 +1,21 @@
 import { brandProfile } from "@/data/brandProfileMock";
 
 export default function BrandHeader() {
-  const { name, tagline, category, verified, foundedYear, marketPresence, website, description, logoInitials, logoColor } = brandProfile;
+  const { name, tagline, category, verified, foundedYear, marketPresence, website, description } = brandProfile;
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
 
         {/* Logo */}
-        <div className={`flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${logoColor} shadow-md`}>
-          <span className="text-2xl font-black tracking-tight text-white">{logoInitials}</span>
+        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white p-1 shadow-md">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/ultratech-logo.png"
+            alt={`${name} logo`}
+            className="h-full w-full rounded-xl object-contain"
+            loading="lazy"
+          />
         </div>
 
         {/* Brand info */}
