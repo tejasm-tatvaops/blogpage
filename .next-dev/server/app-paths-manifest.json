@@ -1,6 +1,0 @@
-{
-  "/api/forums/[slug]/comments/route": "app/api/forums/[slug]/comments/route.js",
-  "/forums/page": "app/forums/page.js",
-  "/forums/new/page": "app/forums/new/page.js",
-  "/forums/[slug]/page": "app/forums/[slug]/page.js"
-}
