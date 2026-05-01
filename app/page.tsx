@@ -37,7 +37,6 @@ export default async function HomePage() {
   }));
   const carouselBlogs = latestBlogs.slice(0, 6);
   const recentlyUpdated = latestBlogs.slice(3, 6);
-  const trendingDiscussions = trendingForumsResult.slice(0, 4);
   const popularDiscussions = trendingForumsResult.slice(0, 4);
 
   const topicHubs = Array.from(
@@ -190,7 +189,23 @@ export default async function HomePage() {
                 {popularDiscussions.map((forum) => (
                   <li key={forum.slug} className="flex justify-between items-start py-2 border-b border-black/5 dark:border-white/5">
                     <div className="flex w-8 flex-shrink-0 flex-col items-center">
-                      <span className="text-sm leading-none text-orange-500">#</span>
+                      <span className="text-sm leading-none text-orange-500" aria-hidden>
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="m9 3-3 18" />
+                          <path d="m15 3-3 18" />
+                          <path d="M4 9h14" />
+                          <path d="M3 15h14" />
+                        </svg>
+                      </span>
                       <span className="mt-0.5 text-xs font-bold text-orange-500">{forum.upvote_count}</span>
                     </div>
                     <div className="min-w-0">
@@ -290,7 +305,7 @@ export default async function HomePage() {
           <p className="mt-2 text-sm text-white/90">Access practical construction guides and join thousands of professionals in active technical discussions.</p>
         </div>
         <div className="mt-4 flex flex-wrap gap-3 md:mt-0">
-          <Link href="/blog" className="inline-flex min-w-[140px] items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-orange-600 transition hover:bg-white/90">
+          <Link href="/blog" className="inline-flex min-w-[140px] items-center justify-center rounded-lg border border-white/80 bg-white px-4 py-2.5 text-sm font-semibold !text-orange-600 transition hover:bg-white/90">
             Go to Blog
           </Link>
           <Link href="/forums" className="inline-flex min-w-[140px] items-center justify-center rounded-lg border border-white/80 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">
@@ -304,7 +319,19 @@ export default async function HomePage() {
         className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition"
         aria-label="Quick action"
       >
-        ☆
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="m12 2 2.45 4.97L20 7.8l-4 3.9.94 5.5L12 14.9l-4.94 2.6.94-5.5-4-3.9 5.55-.83L12 2Z" />
+        </svg>
       </button>
     </section>
   );
