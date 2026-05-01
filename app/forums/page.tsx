@@ -98,8 +98,8 @@ export default function ForumsPage() {
   };
 
   return (
-    <main className="min-h-screen w-full pl-[110px]">
-      <div className="max-w-[1100px] mx-auto px-4 py-6">
+    <main className="min-h-screen w-full pl-[92px]">
+      <div className="max-w-[1100px] mr-auto px-4 py-6">
 
       {/* ── Page header ──────────────────────────────────────────── */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">

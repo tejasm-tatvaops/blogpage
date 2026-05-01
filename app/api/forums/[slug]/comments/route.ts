@@ -38,7 +38,7 @@ export async function POST(
   const identityHint = await getIdentityKeyFromSessionOrRequest(request).catch(() => "anonymous");
   const rl = await checkRedisRateLimit(
     `forum_comments:${ip}:${identityHint}`,
-    { limit: 5, windowMs: 60_000 },
+    { limit: 8, windowMs: 60_000 },
     { failClosed: true },
   );
   const localFallback = forumCommentLimiter(ip);

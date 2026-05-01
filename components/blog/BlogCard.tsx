@@ -88,15 +88,15 @@ export function BlogCard({
       : null;
   const toneClass =
     variantTone === "emerald"
-      ? "from-emerald-600/35 via-emerald-900/30 to-black/65"
+      ? "from-emerald-600/35 via-emerald-900/30 to-black/85"
       : variantTone === "amber"
-      ? "from-amber-600/35 via-amber-900/30 to-black/65"
-      : "from-indigo-600/35 via-indigo-900/30 to-black/65";
+      ? "from-amber-600/35 via-amber-900/30 to-black/85"
+      : "from-indigo-600/35 via-indigo-900/30 to-black/85";
 
   return (
-    <article className="group relative h-full min-h-[26rem] overflow-hidden bg-black">
+    <article className="group relative overflow-hidden rounded-[14px] border border-black/10 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-[#080f26] dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.45)]">
       <Link href={`/blog/${post.slug}`} className="block h-full">
-        <div className="absolute inset-0 overflow-hidden bg-slate-100">
+        <div className="relative min-h-[250px] overflow-hidden bg-slate-100">
           <CoverImage
             src={imageResolution.primary}
             slug={post.slug}
@@ -108,31 +108,33 @@ export function BlogCard({
             sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
             priority={false}
           />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/35 to-black/85" />
         </div>
-        <div className={`absolute inset-0 bg-gradient-to-t ${toneClass}`} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3 p-5 text-white">
-          {(reasonLabel || showPopular || showActive) && (
-            <div className="flex flex-wrap items-center gap-1.5">
+        <div className={`pointer-events-none absolute inset-0 bg-gradient-to-t ${toneClass}`} />
+
+        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-4 text-white">
+          {(showPopular || reasonLabel || showActive) && (
+            <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
+              {showPopular && (
+                <span className="rounded-full bg-orange-500/95 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-white">
+                  Popular
+                </span>
+              )}
               {reasonLabel && (
-                <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white border border-white/20">
+                <span className="max-w-[78%] truncate rounded-full border border-white/20 bg-black/60 px-2 py-0.5 text-[9px] font-semibold text-white/95">
                   {reasonLabel}
                 </span>
               )}
-              {showPopular && (
-                <span className="rounded-full bg-orange-500/90 px-2 py-0.5 text-[10px] font-bold text-white">
-                  🔥 Popular
-                </span>
-              )}
               {showActive && (
-                <span className="rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-bold text-white">
-                  💬 Active
+                <span className="rounded-full bg-emerald-500/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-white">
+                  Active
                 </span>
               )}
             </div>
           )}
-          <div className="flex items-center gap-2 text-xs font-medium text-white/80">
+
+          <div className="flex items-center gap-1.5 text-[10px] font-medium text-white/80">
             <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
             <span aria-hidden>•</span>
             <span>{post.author}</span>
@@ -144,26 +146,25 @@ export function BlogCard({
             <span>{post.upvote_count.toLocaleString()} likes</span>
           </div>
 
-          <h2 className="line-clamp-2 text-2xl font-extrabold leading-tight text-white sm:text-[1.75rem]">
+          <h2 className="line-clamp-2 text-[20px] font-semibold leading-[1.1] text-white sm:text-[22px]">
             {post.title}
           </h2>
 
-          <p className="line-clamp-3 text-sm leading-6 text-white/80">{post.excerpt}</p>
-
-          <div className="mt-auto flex flex-wrap gap-2 pt-1">
+          <p className="line-clamp-2 text-[11px] leading-4 text-white/80">{post.excerpt}</p>
+        </div>
+        <div className="flex min-h-[36px] flex-wrap items-center gap-1.5 border-t border-black/5 bg-white px-3 py-1.5 dark:border-white/10 dark:bg-white/5">
             {post.tags.slice(0, 3).map((tag) => (
               <span
                 key={`${post.id}-${tag}`}
-                className={`rounded-full px-2.5 py-1 text-xs font-medium border transition ${
+                className={`rounded-md px-2 py-0.5 text-[9px] font-medium border transition ${
                   normalizedHighlights.includes(tag.toLowerCase())
-                    ? "bg-white text-slate-900 border-white/80"
-                    : "bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700"
+                    ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/15 dark:text-orange-300 dark:border-orange-500/30"
+                    : "bg-slate-50 text-slate-500 border-slate-200 dark:bg-white/5 dark:text-white/50 dark:border-white/10"
                 }`}
               >
                 #{tag}
               </span>
             ))}
-          </div>
         </div>
       </Link>
     </article>

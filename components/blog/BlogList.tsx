@@ -273,49 +273,50 @@ export function BlogList({
   const resolvedImageMap = resolveCardImages(fallbackPosts);
 
   return (
-    <section className="mx-auto w-full max-w-[1500px] px-6 py-12">
-      <header className="mb-10 flex flex-col gap-6">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight text-app sm:text-5xl">TatvaOps Blog</h1>
-          <p className="mt-3 max-w-3xl text-base leading-8 text-slate-600">
+    <section className="mx-auto w-full max-w-[1500px] px-6 py-7">
+      <header className="mb-8 flex flex-col gap-5">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-semibold tracking-tight text-app">TatvaOps Blog</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 dark:text-white/55">
             Tactical insights on BOQ workflows, construction estimation, procurement strategy, and
             vendor decisions to help teams execute with confidence.
-          </p>
-        </div>
-
-        <form method="GET" action="/blog" className="flex flex-wrap items-center gap-3">
-          {activeCategory ? <input type="hidden" name="category" value={activeCategory} /> : null}
-          <input
-            type="search"
-            name="q"
-            defaultValue={query ?? ""}
-            placeholder="Search by title, excerpt, or tag"
-            className="min-w-[220px] flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 outline-none ring-sky-500 transition focus:ring-2"
-          />
-          <select
-            name="sort"
-            defaultValue={sort}
-            className="rounded-lg border border-slate-300 bg-surface px-3 py-2 text-sm text-slate-700 outline-none ring-sky-500 transition focus:ring-2"
-          >
-            <option value="latest">Latest</option>
-            <option value="most_viewed">Most viewed</option>
-            <option value="personalized">For You</option>
-          </select>
-          <button
-            type="submit"
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-slate-700"
-          >
-            Search
-          </button>
-          {canCreatePost ? (
-            <Link
-              href="/admin/blog/new"
-              className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-sky-400"
+            </p>
+          </div>
+          <form method="GET" action="/blog" className="flex flex-wrap items-center gap-2">
+            {activeCategory ? <input type="hidden" name="category" value={activeCategory} /> : null}
+            <input
+              type="search"
+              name="q"
+              defaultValue={query ?? ""}
+              placeholder="Search articles..."
+              className="h-10 min-w-[180px] rounded-xl border border-black/10 bg-white/85 px-3 text-sm text-slate-800 outline-none ring-orange-500 transition focus:ring-2 dark:border-white/10 dark:bg-white/5 dark:text-white"
+            />
+            <select
+              name="sort"
+              defaultValue={sort}
+              className="h-10 rounded-xl border border-black/10 bg-white/85 px-3 text-sm text-slate-700 outline-none ring-orange-500 transition focus:ring-2 dark:border-white/10 dark:bg-white/5 dark:text-white/80"
             >
-              New post
-            </Link>
-          ) : null}
-        </form>
+              <option value="latest">Latest</option>
+              <option value="most_viewed">Most viewed</option>
+              <option value="personalized">For You</option>
+            </select>
+            <button
+              type="submit"
+              className="h-10 rounded-xl bg-orange-500 px-4 text-sm font-semibold !text-white transition hover:bg-orange-400"
+            >
+              Search
+            </button>
+            {canCreatePost ? (
+              <Link
+                href="/admin/blog/new"
+                className="h-10 rounded-xl border border-white/20 bg-[#0b1026] px-4 text-sm font-semibold !text-white transition hover:bg-[#131a3b] dark:border-white/10"
+              >
+                <span className="inline-flex h-full items-center">+ New post</span>
+              </Link>
+            ) : null}
+          </form>
+        </div>
 
         {sort === "personalized" && (
           <div className="space-y-3">
@@ -361,12 +362,12 @@ export function BlogList({
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-3 border-b border-app pb-6">
+        <div className="flex flex-wrap items-center gap-2.5 border-b border-black/10 pb-5 dark:border-white/10">
           <div className="flex flex-wrap gap-2.5">
             <Link
               href={buildBlogHref({ query, sort })}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                !activeCategory ? "bg-slate-900 !text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                !activeCategory ? "bg-orange-500 !text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/15"
               }`}
             >
               All
@@ -375,10 +376,10 @@ export function BlogList({
               <Link
                 key={category}
                 href={buildBlogHref({ category, query, sort })}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                   activeCategory === category
-                    ? "bg-slate-900 !text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    ? "bg-orange-500 !text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/15"
                 }`}
               >
                 {category}
@@ -388,7 +389,7 @@ export function BlogList({
           <button
             type="button"
             onClick={() => setShowPersonalizationModal(true)}
-            className="ml-auto flex items-center gap-1.5 rounded-full border border-app bg-surface px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-subtle hover:text-app"
+            className="ml-auto flex items-center gap-1.5 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-app dark:border-white/10 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
           >
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
               <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
@@ -400,7 +401,7 @@ export function BlogList({
       </header>
 
       {personalizedLoading ? (
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-72 animate-pulse rounded-2xl bg-slate-100" />
           ))}
@@ -412,7 +413,7 @@ export function BlogList({
             : `No published articles found${activeCategory ? ` in "${activeCategory}"` : ""}${query ? ` matching "${query}"` : ""}.`}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {fallbackPosts.map((post, index) => (
             <BlogCard
               key={post.id}

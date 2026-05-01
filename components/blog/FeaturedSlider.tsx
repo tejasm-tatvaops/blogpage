@@ -56,9 +56,9 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
   if (total === 0) return null;
 
   return (
-    <section className="mx-auto w-full max-w-[1500px] px-6 pt-10">
+    <section className="mx-auto w-full max-w-[1500px] px-6 pt-8">
       <div
-        className="relative overflow-hidden rounded-3xl border border-app bg-slate-950 shadow-xl"
+        className="relative overflow-hidden rounded-[22px] border border-black/10 bg-[#060b1f] shadow-[0_16px_46px_rgba(4,10,30,0.38)] dark:border-white/10"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onTouchStart={(e) => {
@@ -81,7 +81,7 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
           {slides.map((blog, idx) => (
             <article key={blog.id} className="relative min-w-full">
               <Link href={`/blog/${blog.slug}`} className="block">
-                <div className="relative aspect-[16/9] w-full">
+                <div className="relative h-[270px] w-full md:h-[310px]">
                   <CoverImage
                     src={sanitizeFeaturedImageSource(blog.cover_image)}
                     slug={blog.slug}
@@ -92,17 +92,20 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
                     sizes="(max-width: 1280px) 100vw, 1200px"
                     priority={idx === 0}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
-                    <p className="mb-2 inline-flex rounded-full bg-surface/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-white backdrop-blur">
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-black/20" />
+                  <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
+                    <p className="mb-2 inline-flex rounded-md bg-orange-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.13em] text-white">
                       Featured
                     </p>
-                    <h2 className="max-w-3xl text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">
+                    <h2 className="max-w-[620px] text-3xl font-semibold leading-tight tracking-tight text-white">
                       {blog.title}
                     </h2>
-                    <p className="mt-3 line-clamp-2 max-w-2xl text-sm text-white/85 sm:text-base">
+                    <p className="mt-2 line-clamp-2 max-w-[560px] text-sm text-white/75">
                       {blog.excerpt}
                     </p>
+                    <span className="mt-4 inline-flex rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur">
+                      Read Story {"->"}
+                    </span>
                   </div>
                 </div>
               </Link>
@@ -116,7 +119,7 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
               type="button"
               onClick={goPrev}
               aria-label="Previous featured post"
-              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/45 p-2.5 text-white shadow-lg shadow-black/50 backdrop-blur transition hover:bg-black/65 hover:shadow-xl hover:shadow-black/60"
+              className="absolute right-14 top-1/2 -translate-y-1/2 rounded-full border border-white/25 bg-black/35 p-2.5 text-white backdrop-blur transition hover:bg-black/60"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6" />
@@ -126,14 +129,14 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
               type="button"
               onClick={goNext}
               aria-label="Next featured post"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/45 p-2.5 text-white shadow-lg shadow-black/50 backdrop-blur transition hover:bg-black/65 hover:shadow-xl hover:shadow-black/60"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/25 bg-black/35 p-2.5 text-white backdrop-blur transition hover:bg-black/60"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
             </button>
 
-            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2">
+            <div className="absolute bottom-3 left-1/2 hidden -translate-x-1/2 items-center gap-2 sm:flex">
               {slides.map((blog, idx) => (
                 <button
                   key={blog.id}

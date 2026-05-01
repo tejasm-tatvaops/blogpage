@@ -54,18 +54,19 @@ export default async function HomePage() {
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div
         className="relative rounded-[28px] overflow-hidden min-h-[420px] flex items-center border border-black/5 dark:border-white/10"
-        style={{ backgroundImage: "url('/images/construction/site-hero-2.png')", backgroundSize: "cover", backgroundPosition: "center" }}
+        style={{ backgroundImage: "url('/images/construction/site-team-3.png')", backgroundSize: "cover", backgroundPosition: "center" }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/70 to-white/10 dark:from-black/70 dark:via-black/50 dark:to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#040818]/92 via-[#09122a]/72 to-[#0b142e]/32" />
+        <div className="absolute inset-0 bg-[radial-gradient(95%_100%_at_88%_18%,rgba(255,255,255,0.08),transparent_60%)]" />
         <div className="relative z-10 max-w-[520px] px-10 py-12">
-        <p className="mb-4 inline-flex rounded-full border border-orange-200/50 bg-orange-50/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-orange-600 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-400">
+        <p className="mb-4 inline-flex rounded-full border border-orange-300/35 bg-orange-500/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-orange-300">
           TatvaOps Platform
         </p>
-            <h1 className="text-[42px] leading-tight font-semibold text-black dark:text-white">
+            <h1 className="text-[42px] leading-tight font-semibold text-white">
               AI-Powered Construction Content,{" "}
               <span className="text-orange-500">Community</span>, and Decision Support
             </h1>
-            <p className="text-sm text-gray-600 dark:text-white/60 mt-4">
+            <p className="mt-4 text-sm text-white/78">
               TatvaOps combines a smart blog engine, practical city-wise cost guides, and a live
               forums community so builders, estimators, and teams can plan, discuss, and execute
               with confidence.
@@ -74,7 +75,7 @@ export default async function HomePage() {
               <Link href="/blog" className="bg-orange-500 text-white px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 ease-out inline-flex items-center justify-center text-sm font-semibold">
                 Explore Blogs
               </Link>
-              <Link href="/forums" className="border border-black/20 dark:border-white/20 px-5 py-2.5 rounded-xl text-sm font-semibold text-black dark:text-white">
+              <Link href="/forums" className="border border-white/25 bg-white/5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white">
                 Join Forums
               </Link>
             </div>
@@ -87,10 +88,10 @@ export default async function HomePage() {
               <Link
                 key={card.title}
                 href={card.href}
-                className="flex-1 p-4 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-md border border-black/5 dark:border-white/10"
+                className="flex-1 rounded-xl border border-white/15 bg-white/5 p-4 backdrop-blur-md"
               >
-                <p className="text-sm font-semibold text-black dark:text-white">{card.title}</p>
-                <p className="text-xs text-gray-500 dark:text-white/60 mt-1">{card.body}</p>
+                <p className="text-sm font-semibold text-white">{card.title}</p>
+                <p className="mt-1 text-xs text-white/65">{card.body}</p>
               </Link>
             ))}
             </div>

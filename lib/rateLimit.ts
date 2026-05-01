@@ -76,6 +76,7 @@ export const generateBlogLimiter = createRateLimiter({ limit: 10, windowMs: 60_0
 export const bulkGenerateLimiter = createRateLimiter({ limit: 2, windowMs: 60_000 });
 export const adminApiLimiter = createRateLimiter({ limit: 60, windowMs: 60_000 });
 export const commentLimiter = createRateLimiter({ limit: 3, windowMs: 60_000 });
+export const blogCommentLimiter = createRateLimiter({ limit: 6, windowMs: 60_000 });
 export const upvoteLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 export const downvoteLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 // Anti-gaming: hard cap on total likes per identity per minute across all posts
@@ -84,7 +85,7 @@ export const likeAntiGamingLimiter = createRateLimiter({ limit: 20, windowMs: 60
 // Forum-specific limiters
 export const forumPostLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
 export const forumVoteLimiter = createRateLimiter({ limit: 20, windowMs: 60_000 });
-export const forumCommentLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
+export const forumCommentLimiter = createRateLimiter({ limit: 8, windowMs: 60_000 });
 
 /**
  * Returns the best available identifier for rate-limiting a request.
