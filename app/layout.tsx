@@ -53,7 +53,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
         <UnhandledRejectionGuard />
         <AuthProvider>
-          <div className="min-h-screen bg-app text-app">
+          <div className="min-h-screen overflow-x-hidden bg-app text-app">
             <FloatingSidebar />
             <LayoutShell>
               <Navbar />

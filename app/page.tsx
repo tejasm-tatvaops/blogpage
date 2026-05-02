@@ -49,7 +49,7 @@ export default async function HomePage() {
 
 
   return (
-    <section className="mx-auto max-w-[1200px] space-y-6 px-3 py-4 pl-[84px] sm:space-y-8 sm:px-4 sm:py-6 sm:pl-[98px] lg:space-y-10 lg:px-6 lg:py-8 lg:pl-[110px]">
+    <section className="mx-auto max-w-[1200px] space-y-6 px-3 py-4 sm:space-y-8 sm:px-4 sm:py-6 lg:space-y-10 lg:px-6 lg:py-8">
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div
@@ -62,7 +62,7 @@ export default async function HomePage() {
         <p className="mb-3 inline-flex rounded-full border border-orange-300/35 bg-orange-500/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-orange-300 sm:mb-4 sm:px-3 sm:text-xs sm:tracking-[0.14em]">
           TatvaOps Platform
         </p>
-            <h1 className="text-[38px] leading-tight font-semibold text-white sm:text-[42px]">
+            <h1 className="break-words text-[clamp(1.65rem,5.2vw,2.625rem)] leading-tight font-semibold text-white sm:text-[42px]">
               AI-Powered Construction Content,{" "}
               <span className="text-orange-500">Community</span>, and Decision Support
             </h1>

@@ -98,7 +98,7 @@ export default function ForumsPage() {
   };
 
   return (
-    <main className="min-h-screen w-full pl-[84px] sm:pl-[92px]">
+    <main className="min-h-screen w-full">
       <div className="mr-auto max-w-[1100px] px-3 py-5 sm:px-4 sm:py-6">
 
       {/* ── Page header ──────────────────────────────────────────── */}

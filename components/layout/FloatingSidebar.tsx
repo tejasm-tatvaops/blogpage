@@ -113,7 +113,7 @@ export function FloatingSidebar() {
   if (pathname.startsWith("/admin")) return null;
 
   return (
-    <aside className="fixed left-[14px] top-1/2 z-[150] -translate-y-1/2 w-[76px] h-[min(657px,calc(100vh-130px))] rounded-[28px] overflow-hidden">
+    <aside className="hidden fixed left-[14px] top-1/2 z-[150] -translate-y-1/2 w-[76px] h-[min(657px,calc(100vh-130px))] rounded-[28px] overflow-hidden md:block">
       <div
         className="absolute inset-0 flex flex-col items-center py-7 px-0 rounded-[28px]
           bg-[rgba(236,238,248,0.82)] dark:bg-[rgba(8,11,28,0.82)]
