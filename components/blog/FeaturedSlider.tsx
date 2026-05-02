@@ -56,7 +56,7 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
   if (total === 0) return null;
 
   return (
-    <section className="mx-auto w-full max-w-[1500px] px-6 pt-8">
+    <section className="mx-auto w-full max-w-[1500px] px-3 pt-5 sm:px-4 sm:pt-6 lg:px-6 lg:pt-8">
       <div
         className="relative overflow-hidden rounded-[22px] border border-black/10 bg-[#060b1f] shadow-[0_16px_46px_rgba(4,10,30,0.38)] dark:border-white/10"
         onMouseEnter={() => setIsHovered(true)}
@@ -81,7 +81,7 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
           {slides.map((blog, idx) => (
             <article key={blog.id} className="relative min-w-full">
               <Link href={`/blog/${blog.slug}`} className="block">
-                <div className="relative h-[270px] w-full md:h-[310px]">
+                <div className="relative h-[220px] w-full sm:h-[250px] md:h-[310px]">
                   <CoverImage
                     src={sanitizeFeaturedImageSource(blog.cover_image)}
                     slug={blog.slug}
@@ -93,17 +93,17 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
                     priority={idx === 0}
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-black/20" />
-                  <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
+                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 md:p-7">
                     <p className="mb-2 inline-flex rounded-md bg-orange-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.13em] text-white">
                       Featured
                     </p>
-                    <h2 className="max-w-[620px] text-3xl font-semibold leading-tight tracking-tight text-white">
+                    <h2 className="max-w-[620px] text-2xl font-semibold leading-tight tracking-tight text-white sm:text-3xl">
                       {blog.title}
                     </h2>
                     <p className="mt-2 line-clamp-2 max-w-[560px] text-sm text-white/75">
                       {blog.excerpt}
                     </p>
-                    <span className="mt-4 inline-flex rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur">
+                    <span className="mt-3 inline-flex rounded-lg border border-white/30 bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur sm:mt-4 sm:px-4 sm:py-2 sm:text-sm">
                       Read Story {"->"}
                     </span>
                   </div>
@@ -119,7 +119,7 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
               type="button"
               onClick={goPrev}
               aria-label="Previous featured post"
-              className="absolute right-14 top-1/2 -translate-y-1/2 rounded-full border border-white/25 bg-black/35 p-2.5 text-white backdrop-blur transition hover:bg-black/60"
+              className="absolute right-14 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/25 bg-black/35 p-2.5 text-white backdrop-blur transition hover:bg-black/60 sm:block"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6" />
@@ -129,7 +129,7 @@ export function FeaturedSlider({ blogs, autoSlideMs = 4500 }: FeaturedSliderProp
               type="button"
               onClick={goNext}
               aria-label="Next featured post"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/25 bg-black/35 p-2.5 text-white backdrop-blur transition hover:bg-black/60"
+              className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/25 bg-black/35 p-2.5 text-white backdrop-blur transition hover:bg-black/60 sm:block"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6" />

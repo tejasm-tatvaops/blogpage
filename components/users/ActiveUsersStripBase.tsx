@@ -105,9 +105,11 @@ export function ActiveUsersStripBase({ title, users }: TopicActiveUsersStripProp
               </div>
 
               {/* About */}
-              <p className="line-clamp-2 text-xs leading-relaxed text-slate-600">
-                {user.about || "Active in this discussion"}
-              </p>
+              {!isLegacy && user.about && !user.about.toLowerCase().startsWith("legacy") && (
+                <p className="line-clamp-2 text-xs leading-relaxed text-slate-600">
+                  {user.about}
+                </p>
+              )}
 
               {/* Bottom: only meaningful stat */}
               {engagement > 0 && (

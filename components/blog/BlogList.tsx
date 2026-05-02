@@ -273,29 +273,29 @@ export function BlogList({
   const resolvedImageMap = resolveCardImages(fallbackPosts);
 
   return (
-    <section className="mx-auto w-full max-w-[1500px] px-6 py-7">
+    <section className="mx-auto w-full max-w-[1500px] px-3 py-5 sm:px-4 sm:py-6 lg:px-6 lg:py-7">
       <header className="mb-8 flex flex-col gap-5">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-4xl font-semibold tracking-tight text-app">TatvaOps Blog</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-app sm:text-4xl">TatvaOps Blog</h1>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 dark:text-white/55">
             Tactical insights on BOQ workflows, construction estimation, procurement strategy, and
             vendor decisions to help teams execute with confidence.
             </p>
           </div>
-          <form method="GET" action="/blog" className="flex flex-wrap items-center gap-2">
+          <form method="GET" action="/blog" className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
             {activeCategory ? <input type="hidden" name="category" value={activeCategory} /> : null}
             <input
               type="search"
               name="q"
               defaultValue={query ?? ""}
               placeholder="Search articles..."
-              className="h-10 min-w-[180px] rounded-xl border border-black/10 bg-white/85 px-3 text-sm text-slate-800 outline-none ring-orange-500 transition focus:ring-2 dark:border-white/10 dark:bg-white/5 dark:text-white"
+              className="h-10 w-full rounded-xl border border-black/10 bg-white/85 px-3 text-sm text-slate-800 outline-none ring-orange-500 transition focus:ring-2 dark:border-white/10 dark:bg-white/5 dark:text-white sm:min-w-[200px]"
             />
             <select
               name="sort"
               defaultValue={sort}
-              className="h-10 rounded-xl border border-black/10 bg-white/85 px-3 text-sm text-slate-700 outline-none ring-orange-500 transition focus:ring-2 dark:border-white/10 dark:bg-white/5 dark:text-white/80"
+              className="h-10 w-full rounded-xl border border-black/10 bg-white/85 px-3 text-sm text-slate-700 outline-none ring-orange-500 transition focus:ring-2 dark:border-white/10 dark:bg-white/5 dark:text-white/80 sm:w-auto"
             >
               <option value="latest">Latest</option>
               <option value="most_viewed">Most viewed</option>
@@ -303,14 +303,14 @@ export function BlogList({
             </select>
             <button
               type="submit"
-              className="h-10 rounded-xl bg-orange-500 px-4 text-sm font-semibold !text-white transition hover:bg-orange-400"
+              className="h-10 rounded-xl bg-orange-500 px-4 text-sm font-semibold !text-white transition hover:bg-orange-400 sm:w-auto"
             >
               Search
             </button>
             {canCreatePost ? (
               <Link
                 href="/admin/blog/new"
-                className="h-10 rounded-xl border border-white/20 bg-[#0b1026] px-4 text-sm font-semibold !text-white transition hover:bg-[#131a3b] dark:border-white/10"
+                className="h-10 rounded-xl border border-white/20 bg-[#0b1026] px-4 text-sm font-semibold !text-white transition hover:bg-[#131a3b] dark:border-white/10 sm:w-auto"
               >
                 <span className="inline-flex h-full items-center">+ New post</span>
               </Link>
@@ -389,7 +389,7 @@ export function BlogList({
           <button
             type="button"
             onClick={() => setShowPersonalizationModal(true)}
-            className="ml-auto flex items-center gap-1.5 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-app dark:border-white/10 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
+            className="mt-2 flex items-center gap-1.5 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-app dark:border-white/10 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white sm:ml-auto sm:mt-0"
           >
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
               <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />

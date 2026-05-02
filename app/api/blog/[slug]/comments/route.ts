@@ -39,7 +39,7 @@ export async function POST(
   const rl = await checkRedisRateLimit(
     `blog_comments:${ip}:${identityHint}`,
     { limit: 6, windowMs: 60_000 },
-    { failClosed: true },
+    { failClosed: false },
   );
   const localFallback = blogCommentLimiter(ip);
   const effectiveLimit = rl ?? localFallback;

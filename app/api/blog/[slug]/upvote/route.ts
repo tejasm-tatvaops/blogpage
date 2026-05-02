@@ -25,7 +25,7 @@ export async function POST(
   const rl = await checkRedisRateLimit(
     `blog_upvote:${ip}:${identityKey}`,
     { limit: 10, windowMs: 60_000 },
-    { failClosed: true },
+    { failClosed: false },
   );
   const localFallback = upvoteLimiter(ip);
   const effectiveLimit = rl ?? localFallback;
@@ -43,7 +43,7 @@ export async function POST(
         limit: 20,
         windowMs: 60_000,
       },
-      { failClosed: true },
+      { failClosed: false },
     );
     const antiGamingFallback = likeAntiGamingLimiter(identityKey);
     const effectiveAntiGaming = antiGaming ?? antiGamingFallback;

@@ -20,7 +20,7 @@ export async function POST(
   const rl = await checkRedisRateLimit(
     `blog_downvote:${ip}:${identityKey}`,
     { limit: 10, windowMs: 60_000 },
-    { failClosed: true },
+    { failClosed: false },
   );
   const localFallback = downvoteLimiter(ip);
   const effectiveLimit = rl ?? localFallback;

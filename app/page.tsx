@@ -49,20 +49,20 @@ export default async function HomePage() {
 
 
   return (
-    <section className="max-w-[1200px] mx-auto px-6 pl-[110px] space-y-10 py-8">
+    <section className="mx-auto max-w-[1200px] space-y-6 px-3 py-4 pl-[84px] sm:space-y-8 sm:px-4 sm:py-6 sm:pl-[98px] lg:space-y-10 lg:px-6 lg:py-8 lg:pl-[110px]">
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div
-        className="relative rounded-[28px] overflow-hidden min-h-[420px] flex items-center border border-black/5 dark:border-white/10"
+        className="relative flex min-h-[360px] items-center overflow-hidden rounded-[22px] border border-black/5 dark:border-white/10 sm:min-h-[420px] sm:rounded-[28px]"
         style={{ backgroundImage: "url('/images/construction/site-team-3.png')", backgroundSize: "cover", backgroundPosition: "center" }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-[#040818]/92 via-[#09122a]/72 to-[#0b142e]/32" />
         <div className="absolute inset-0 bg-[radial-gradient(95%_100%_at_88%_18%,rgba(255,255,255,0.08),transparent_60%)]" />
-        <div className="relative z-10 max-w-[520px] px-10 py-12">
-        <p className="mb-4 inline-flex rounded-full border border-orange-300/35 bg-orange-500/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-orange-300">
+        <div className="relative z-10 max-w-[520px] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+        <p className="mb-3 inline-flex rounded-full border border-orange-300/35 bg-orange-500/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-orange-300 sm:mb-4 sm:px-3 sm:text-xs sm:tracking-[0.14em]">
           TatvaOps Platform
         </p>
-            <h1 className="text-[42px] leading-tight font-semibold text-white">
+            <h1 className="text-[38px] leading-tight font-semibold text-white sm:text-[42px]">
               AI-Powered Construction Content,{" "}
               <span className="text-orange-500">Community</span>, and Decision Support
             </h1>
@@ -71,15 +71,15 @@ export default async function HomePage() {
               forums community so builders, estimators, and teams can plan, discuss, and execute
               with confidence.
             </p>
-            <div className="flex gap-3 mt-6">
-              <Link href="/blog" className="bg-orange-500 text-white px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 ease-out inline-flex items-center justify-center text-sm font-semibold">
+            <div className="mt-6 flex flex-wrap gap-2.5 sm:gap-3">
+              <Link href="/blog" className="inline-flex items-center justify-center rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-300 ease-out hover:shadow-lg sm:px-5">
                 Explore Blogs
               </Link>
-              <Link href="/forums" className="border border-white/25 bg-white/5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white">
+              <Link href="/forums" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white sm:px-5">
                 Join Forums
               </Link>
             </div>
-            <div className="flex gap-4 mt-6">
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
             {[
               { title: "Blogs",  body: "AI-generated, SEO-structured, editable content.", href: "/blog" },
               { title: "Forums", body: "Q&A, opinions, voting, and practical discussion.", href: "/forums" },
@@ -88,7 +88,7 @@ export default async function HomePage() {
               <Link
                 key={card.title}
                 href={card.href}
-                className="flex-1 rounded-xl border border-white/15 bg-white/5 p-4 backdrop-blur-md"
+                className="rounded-xl border border-white/15 bg-white/5 p-3.5 backdrop-blur-md sm:p-4"
               >
                 <p className="text-sm font-semibold text-white">{card.title}</p>
                 <p className="mt-1 text-xs text-white/65">{card.body}</p>
@@ -99,9 +99,9 @@ export default async function HomePage() {
       </div>
 
       {/* ── Platform Intelligence ─────────────────────────────────────────── */}
-      <section className="rounded-[28px] p-10 bg-[#f6e7d8] dark:bg-[rgba(20,25,45,0.6)] border border-black/5 dark:border-white/10">
+      <section className="rounded-[22px] border border-black/5 bg-[#f6e7d8] p-5 dark:bg-[rgba(20,25,45,0.6)] dark:border-white/10 sm:rounded-[28px] sm:p-8 lg:p-10">
         <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-400">Platform Intelligence</p>
-        <h2 className="text-3xl font-semibold text-center text-black dark:text-white mt-2">A complete construction content platform</h2>
+        <h2 className="mt-2 text-center text-2xl font-semibold text-black dark:text-white sm:text-3xl">A complete construction content platform</h2>
         <p className="text-sm text-gray-500 dark:text-white/60 text-center mt-2">
           Built to attract high-intent traffic, answer practical site questions, and streamline your publishing workflow with architectural precision.
         </p>
@@ -152,13 +152,13 @@ export default async function HomePage() {
       </section>
 
       {/* ── Smart Discovery Hub ───────────────────────────────────────────── */}
-      <section className="rounded-2xl p-4 bg-white/70 dark:bg-[rgba(20,25,45,0.7)] backdrop-blur-xl border border-black/5 dark:border-white/10 shadow-md transition-all duration-300 ease-out">
+      <section className="rounded-2xl border border-black/5 bg-white/70 p-4 shadow-md backdrop-blur-xl transition-all duration-300 ease-out dark:border-white/10 dark:bg-[rgba(20,25,45,0.7)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-400">Smart Discovery Hub</p>
-            <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Your connected knowledge workspace</h2>
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">Your connected knowledge workspace</h2>
           </div>
-          <Link href="/ask" className="inline-flex items-center rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 ease-out hover:shadow-lg">
+          <Link href="/ask" className="inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 ease-out hover:shadow-lg sm:w-auto">
             Ask AI anything on TatvaOps
           </Link>
         </div>
@@ -271,8 +271,8 @@ export default async function HomePage() {
       </section>
 
       {/* ── What TatvaOps includes ────────────────────────────────────────── */}
-      <div className="rounded-[28px] p-10 bg-[#f6e7d8] dark:bg-[rgba(20,25,45,0.6)] border border-black/5 dark:border-white/10">
-        <h2 className="text-3xl font-semibold text-center text-black dark:text-white">A complete construction content platform</h2>
+      <div className="rounded-[22px] border border-black/5 bg-[#f6e7d8] p-5 dark:bg-[rgba(20,25,45,0.6)] dark:border-white/10 sm:rounded-[28px] sm:p-8 lg:p-10">
+        <h2 className="text-center text-2xl font-semibold text-black dark:text-white sm:text-3xl">A complete construction content platform</h2>
         <p className="text-sm text-gray-500 dark:text-white/60 text-center mt-2">
           Built to attract high-intent traffic, answer practical site questions, and streamline your publishing workflow with architectural precision.
         </p>
@@ -300,12 +300,12 @@ export default async function HomePage() {
       </div>
 
       {/* ── Bottom CTA ───────────────────────────────────────────────────── */}
-      <div className="rounded-[28px] p-10 bg-gradient-to-r from-orange-500 to-orange-600 text-white flex justify-between items-center">
+      <div className="flex flex-col gap-4 rounded-[22px] bg-gradient-to-r from-orange-500 to-orange-600 p-5 text-white sm:rounded-[28px] sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:p-10">
         <div>
-          <h3 className="text-3xl font-semibold">Start with what you need now</h3>
+          <h3 className="text-2xl font-semibold sm:text-3xl">Start with what you need now</h3>
           <p className="mt-2 text-sm text-white/90">Access practical construction guides and join thousands of professionals in active technical discussions.</p>
         </div>
-        <div className="mt-4 flex flex-wrap gap-3 md:mt-0">
+        <div className="mt-1 flex w-full flex-wrap gap-3 sm:w-auto md:mt-0">
           <Link href="/blog" className="inline-flex min-w-[140px] items-center justify-center rounded-lg border border-white/80 bg-white px-4 py-2.5 text-sm font-semibold !text-orange-600 transition hover:bg-white/90">
             Go to Blog
           </Link>
@@ -315,10 +315,11 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <button
-        type="button"
-        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition"
-        aria-label="Quick action"
+      <Link
+        href="/ask"
+        title="Ask AI"
+        aria-label="Ask AI"
+        className="fixed bottom-4 right-4 z-[100] flex h-11 w-11 items-center justify-center rounded-full bg-orange-500 text-white shadow-lg transition hover:scale-105 sm:bottom-6 sm:right-6 sm:h-12 sm:w-12"
       >
         <svg
           width="18"
@@ -333,7 +334,7 @@ export default async function HomePage() {
         >
           <path d="m12 2 2.45 4.97L20 7.8l-4 3.9.94 5.5L12 14.9l-4.94 2.6.94-5.5-4-3.9 5.55-.83L12 2Z" />
         </svg>
-      </button>
+      </Link>
     </section>
   );
 }

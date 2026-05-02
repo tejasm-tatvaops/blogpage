@@ -98,11 +98,11 @@ export default function ForumsPage() {
   };
 
   return (
-    <main className="min-h-screen w-full pl-[92px]">
-      <div className="max-w-[1100px] mr-auto px-4 py-6">
+    <main className="min-h-screen w-full pl-[84px] sm:pl-[92px]">
+      <div className="mr-auto max-w-[1100px] px-3 py-5 sm:px-4 sm:py-6">
 
       {/* ── Page header ──────────────────────────────────────────── */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-black dark:text-white">Forums</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-white/50">
@@ -111,7 +111,7 @@ export default function ForumsPage() {
         </div>
         <Link
           href="/forums/new"
-          className="bg-orange-500 text-white px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition inline-flex items-center gap-1.5 text-sm font-semibold"
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:shadow-lg sm:w-auto"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -121,7 +121,7 @@ export default function ForumsPage() {
       </div>
 
       {/* ── Filter bar ───────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2 mb-6">
+      <div className="mb-6 flex flex-wrap items-center gap-2">
         {/* Filter icon button */}
         <button
           type="button"
@@ -152,7 +152,7 @@ export default function ForumsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search threads…"
-          className="ml-auto w-full min-w-[200px] rounded-xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-[rgba(20,25,45,0.7)] px-3 py-1.5 text-sm text-black dark:text-white placeholder:text-gray-400 outline-none transition focus:border-orange-400 sm:w-64"
+          className="w-full rounded-xl border border-black/10 bg-white/70 px-3 py-1.5 text-sm text-black placeholder:text-gray-400 outline-none transition focus:border-orange-400 dark:border-white/10 dark:bg-[rgba(20,25,45,0.7)] dark:text-white sm:ml-auto sm:w-64"
         />
 
         {/* Active tag chip */}
@@ -171,7 +171,7 @@ export default function ForumsPage() {
       </div>
 
       {/* ── Content grid ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[1fr_320px]">
 
         {/* Thread feed */}
         <section>
@@ -294,7 +294,7 @@ export default function ForumsPage() {
 
       <button
         type="button"
-        className="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-lg hover:scale-105 transition"
+        className="fixed bottom-4 right-4 flex h-11 w-11 items-center justify-center rounded-full bg-orange-500 text-white shadow-lg transition hover:scale-105 sm:bottom-6 sm:right-6 sm:h-12 sm:w-12"
         aria-label="Quick action"
       >
         ★
