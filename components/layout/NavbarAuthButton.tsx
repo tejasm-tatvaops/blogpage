@@ -15,7 +15,7 @@ export function NavbarAuthButton({ pillClass }: Props) {
 
   if (isLoading) {
     return (
-      <span className={`${pillClass} w-20 animate-pulse !bg-slate-200 dark:!bg-slate-700`} />
+      <span className={`${pillClass} h-8 w-20 animate-pulse !bg-slate-200 dark:!bg-slate-700`} />
     );
   }
 
@@ -25,19 +25,19 @@ export function NavbarAuthButton({ pillClass }: Props) {
       <div className="relative group">
         <button
           type="button"
-          className={`${pillClass} gap-2 !px-2`}
+          className={`${pillClass} gap-1.5 !px-2`}
           aria-label="Account menu"
         >
           {session.user.image ? (
             <Image
               src={session.user.image}
               alt={session.user.name ?? "User"}
-              width={24}
-              height={24}
-              className="h-6 w-6 rounded-full object-cover"
+              width={28}
+              height={28}
+              className="h-7 w-7 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-xs font-bold text-white">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[11px] font-bold text-white">
               {(session.user.name ?? "U")[0].toUpperCase()}
             </span>
           )}

@@ -40,7 +40,7 @@ export function NotificationBell() {
           if (next && unread > 0) void markAllRead();
         }}
         aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ""}`}
-        className="relative rounded-xl border border-app bg-surface p-2 text-muted shadow-sm transition hover:bg-subtle hover:text-app"
+        className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-app bg-surface p-0 text-muted shadow-sm transition hover:bg-subtle hover:text-app"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />

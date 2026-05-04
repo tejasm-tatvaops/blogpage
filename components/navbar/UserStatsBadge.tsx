@@ -14,13 +14,11 @@ export default function UserStatsBadge() {
 
   return (
     <div
-      className="flex items-center gap-2 rounded-full border border-app bg-surface px-3 py-1 transition hover:bg-subtle"
+      className="h-credits flex items-center gap-[5px] rounded-[20px] border border-app bg-surface py-1 pl-[7px] pr-2.5 font-medium leading-none transition hover:bg-subtle"
       title="Your reputation points and level"
     >
-      <span className="flex items-center gap-1 text-sm font-medium text-muted">
-        ⭐ {isLoading ? "..." : points}
-      </span>
-      <span className={`rounded px-2 py-0.5 text-xs ${levelMeta.color}`}>
+      <span className="h-credits-val text-[0.68rem] text-muted">⭐ {isLoading ? "..." : points}</span>
+      <span className={`h-credits-lbl rounded-md px-1.5 py-0.5 text-[0.54rem] ${levelMeta.color}`}>
         {levelMeta.icon} {levelMeta.label}
       </span>
     </div>
