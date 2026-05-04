@@ -6,6 +6,7 @@ import { getAllVideoTags } from "@/lib/videoService";
 import RecommendedCarousel from "@/components/home/RecommendedCarousel";
 import ContinueLearningCarousel from "@/components/home/ContinueLearningCarousel";
 import { HeroSection } from "@/components/home/HeroSection";
+import { ProductHub } from "@/components/home/ProductHub";
 
 export default async function HomePage() {
   const [latestBlogs, trendingForumsResult, tutorialsResult, videoTags] = await Promise.all([
@@ -225,6 +226,9 @@ export default async function HomePage() {
             )}
           </div>
         </div>
+
+        {/* ── Product Hub ───────────────────────────────────────────────── */}
+        <ProductHub />
       </section>
 
       {/* ── What TatvaOps includes ────────────────────────────────────────── */}
