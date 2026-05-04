@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { getTutorials, getLearningPaths } from "@/lib/tutorialService";
-import { extractVideoSource, getTutorialVideoSource } from "@/lib/tutorialVideo";
+import { extractVideoSource, getTutorialVideoSource, getYoutubeThumbnailUrlFromSourceUrl } from "@/lib/tutorialVideo";
 
 export const metadata: Metadata = {
   title: "Tutorials",
@@ -25,6 +26,7 @@ type Tutorial = {
   tags: string[];
   content_type: string;
   created_at: Date;
+  cover_image?: string | null;
 };
 
 type LearningPath = {
@@ -135,26 +137,60 @@ export default async function TutorialsPage({
               const sourceUrl = extractVideoSource(t.content);
               if (!sourceUrl) return null;
               const videoSource = getTutorialVideoSource(sourceUrl);
+              const cover = t.cover_image?.trim() || null;
+
+              const posterShell = (inner: ReactNode) => (
+                <div className="relative isolate h-44 w-full bg-neutral-900">
+                  {inner}
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/50 via-black/10 to-transparent">
+                    <span
+                      className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white shadow-lg ring-2 ring-white/25 backdrop-blur-[2px]"
+                      aria-hidden
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
+                        <path d="M8 5.14v14l11-7-11-7z" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+              );
+
               if (videoSource.kind === "youtube") {
-                return (
-                  <iframe
-                    src={videoSource.url}
-                    title={`${t.title} video preview`}
+                const poster = getYoutubeThumbnailUrlFromSourceUrl(sourceUrl);
+                if (!poster) return null;
+                return posterShell(
+                  <img
+                    src={poster}
+                    alt=""
                     loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="h-44 w-full"
-                  />
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                  />,
                 );
               }
-              return (
+
+              /* Direct / uploaded file: never show native controls on listing — poster or muted first frame */
+              if (cover) {
+                return posterShell(
+                  <img
+                    src={cover}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                  />,
+                );
+              }
+              return posterShell(
                 <video
                   src={videoSource.url}
-                  controls
+                  muted
                   playsInline
                   preload="metadata"
-                  className="h-44 w-full object-cover"
-                />
+                  disablePictureInPicture
+                  className="h-full w-full object-cover pointer-events-none select-none"
+                  aria-hidden
+                />,
               );
             })();
 

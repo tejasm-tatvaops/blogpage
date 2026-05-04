@@ -32,13 +32,8 @@ function getYoutubeVideoId(sourceUrl: string): string | null {
   return null;
 }
 
-export function getTutorialVideoSource(sourceUrl: string): {
-  kind: "youtube" | "direct";
-  url: string;
-} {
+function normalizeTutorialVideoSourceUrl(sourceUrl: string): string {
   let normalizedSourceUrl = sourceUrl.trim();
-
-  // Normalize previously saved absolute local URLs to a portable relative path.
   try {
     const parsed = new URL(normalizedSourceUrl);
     if (parsed.pathname.startsWith("/uploads/videos/")) {
@@ -47,6 +42,24 @@ export function getTutorialVideoSource(sourceUrl: string): {
   } catch {
     // Non-URL values (already relative paths) are fine as-is.
   }
+  return normalizedSourceUrl;
+}
+
+/**
+ * YouTube poster image for a stored tutorial video URL (listing cards, etc.).
+ * Uses `hqdefault` for broad availability; `maxresdefault` often 404s on short/legacy uploads.
+ */
+export function getYoutubeThumbnailUrlFromSourceUrl(sourceUrl: string): string | null {
+  const id = getYoutubeVideoId(normalizeTutorialVideoSourceUrl(sourceUrl));
+  if (!id) return null;
+  return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+}
+
+export function getTutorialVideoSource(sourceUrl: string): {
+  kind: "youtube" | "direct";
+  url: string;
+} {
+  const normalizedSourceUrl = normalizeTutorialVideoSourceUrl(sourceUrl);
 
   const youtubeId = getYoutubeVideoId(normalizedSourceUrl);
   if (youtubeId) {
