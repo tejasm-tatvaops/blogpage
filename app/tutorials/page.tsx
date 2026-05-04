@@ -59,9 +59,9 @@ export default async function TutorialsPage({
   ]);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
+    <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 lg:px-10">
       {/* ── Page Header ──────────────────────────────────────────────────────── */}
-      <div className="mb-10">
+      <div className="mb-12">
         <h1 className="text-[28px] font-bold tracking-tight text-app sm:text-[32px]">
           Tutorials &amp; Guides
         </h1>
@@ -96,7 +96,7 @@ export default async function TutorialsPage({
       )}
 
       {/* ── Difficulty filter bar ─────────────────────────────────────────── */}
-      <div className="mb-7 flex flex-wrap items-center gap-2">
+      <div className="mb-8 flex flex-wrap items-center gap-2.5">
         {["all", "beginner", "intermediate", "advanced"].map((d) => {
           const active = (d === "all" && !difficulty) || d === difficulty;
           const href = d === "all" ? "/tutorials" : `/tutorials?difficulty=${d}`;
@@ -126,7 +126,7 @@ export default async function TutorialsPage({
           No tutorials found.
         </div>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
           {(tutorials as unknown as Tutorial[]).map((t) => {
             const diffStyle = DIFFICULTY_STYLES[t.difficulty] ?? { pill: "bg-white/10 text-white/60", label: t.difficulty.toUpperCase() };
 
@@ -190,7 +190,7 @@ export default async function TutorialsPage({
                 )}
 
                 {/* Body */}
-                <div className="flex flex-1 flex-col px-4 pb-4 pt-3.5">
+                <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
                   {/* Badges when no media */}
                   {!hasMedia && (
                     <div className="mb-3 flex flex-wrap items-center gap-1.5">
