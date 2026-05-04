@@ -25,13 +25,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const canonicalUrl = `${SITE_URL}/products/${encodeURIComponent(productSlug)}/hub`;
 
   return {
-    title: `${name} — Product Hub | TatvaOps`,
-    description: `Community discussions and articles about ${name} on TatvaOps — real-world insights from builders, engineers, and contractors.`,
+    title: `Product Topic Hub | TatvaOps`,
+    description: `${name} — community discussions and articles on TatvaOps.`,
     alternates: { canonical: canonicalUrl },
     openGraph: {
       type: "website",
       url: canonicalUrl,
-      title: `${name} | TatvaOps Product Hub`,
+      title: `Product Topic Hub | TatvaOps`,
       description: `Community insights and articles for ${name}.`,
       siteName: "TatvaOps",
     },
@@ -89,7 +89,9 @@ export default async function ProductHubPage({ params }: PageProps) {
         </div>
       ) : (
         <div className="mb-10 flex items-center justify-center rounded-2xl border border-dashed border-app p-8 text-center">
-          <p className="text-sm text-faint">Product details unavailable for &ldquo;{productSlug}&rdquo;.</p>
+          <p className="font-sans text-[0.78rem] font-normal leading-[1.5] text-faint">
+            Product details unavailable for &ldquo;{productSlug}&rdquo;.
+          </p>
         </div>
       )}
 

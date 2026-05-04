@@ -82,7 +82,7 @@ export function BlogCard({
   void variantTone;
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-[14px] border border-black/10 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)] dark:border-white/10 dark:bg-[#080f26] dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.45)]">
+    <article className="group flex flex-col overflow-hidden rounded-[14px] border border-black/10 bg-white shadow-sm transition-all duration-[250ms] ease-out hover:-translate-y-0.5 hover:border-orange-300/40 hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)] dark:border-[#1e2440] dark:bg-[#0d1128] dark:hover:border-orange-500/20 dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.55),0_0_0_1px_rgba(249,115,22,0.1)]">
       <Link href={`/blog/${post.slug}`} className="flex flex-1 flex-col">
 
         {/* ── Image section ── */}
@@ -138,18 +138,18 @@ export function BlogCard({
         </div>
 
         {/* ── Excerpt + tags ── */}
-        <div className="flex flex-1 flex-col justify-between gap-3 bg-white px-3.5 py-3 dark:bg-white/5">
-          <p className="line-clamp-2 text-[11px] leading-[1.55] text-slate-500 dark:text-white/55">
+        <div className="flex flex-1 flex-col justify-between gap-3 bg-white px-3.5 py-3 dark:bg-[#0d1128]">
+          <p className="line-clamp-2 text-[11px] leading-[1.55] text-slate-500 dark:text-[#8b92a8]">
             {post.excerpt}
           </p>
           <div className="flex flex-wrap items-center gap-1.5">
             {post.tags.slice(0, 3).map((tag) => (
               <span
                 key={`${post.id}-${tag}`}
-                className={`rounded-md border px-2 py-0.5 text-[9px] font-medium transition ${
+                className={`rounded-md border px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.06em] transition ${
                   normalizedHighlights.includes(tag.toLowerCase())
-                    ? "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-300"
-                    : "border-slate-200 bg-slate-50 text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-white/50"
+                    ? "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-500/25 dark:bg-orange-500/10 dark:text-orange-400"
+                    : "border-slate-200 bg-slate-50 text-slate-500 dark:border-[#1e2440] dark:bg-[#141830] dark:text-[#8b92a8]"
                 }`}
               >
                 #{tag}

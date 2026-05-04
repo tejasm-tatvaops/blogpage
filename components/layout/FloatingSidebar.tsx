@@ -101,7 +101,7 @@ function SidebarItem({
         <div className="absolute left-0 top-[20px] h-7 w-[3px] bg-gradient-to-b from-orange-500 to-orange-600 rounded-r-md" />
       )}
       <div className="flex items-center justify-center w-[22px] h-[22px]">{icon}</div>
-      <div className="text-[9.5px] font-medium tracking-[0.38px] leading-none">{label}</div>
+      <div className="text-[0.6rem] font-medium tracking-[0.38px] leading-none">{label}</div>
     </Link>
   );
 }
@@ -149,7 +149,9 @@ export function FloatingSidebar() {
 
       {/* Dark / Light toggle at bottom */}
       <div className="mt-auto flex w-full flex-col items-center gap-1.5 pt-4 border-t border-black/10 dark:border-white/10">
-        <span className="text-[9px] font-bold tracking-widest text-[#5A5E80] dark:text-white/45">DARK</span>
+        <span className="text-[0.54rem] font-bold leading-none tracking-widest text-[#5A5E80] dark:text-white/45">
+          DARK
+        </span>
         <ThemeToggle />
       </div>
       </div>

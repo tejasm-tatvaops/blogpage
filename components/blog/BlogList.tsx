@@ -275,27 +275,31 @@ export function BlogList({
   return (
     <section className="mx-auto w-full max-w-[1500px] px-3 py-5 sm:px-4 sm:py-6 lg:px-6 lg:py-7">
       <header className="mb-8 flex flex-col gap-5">
-        <div className="flex flex-wrap items-end justify-between gap-3 sm:gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-app sm:text-4xl">TatvaOps Blog</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 dark:text-white/55">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-6 xl:gap-8">
+          <div className="min-w-0 max-w-xl shrink-0 xl:max-w-2xl">
+            <h1 className="text-[28px] font-semibold tracking-tight text-app sm:text-[32px]">TatvaOps Blog</h1>
+            <p className="mt-2 max-w-3xl text-[13.5px] leading-relaxed text-[#64748b] dark:text-[#8b92a8]">
             Tactical insights on BOQ workflows, construction estimation, procurement strategy, and
             vendor decisions to help teams execute with confidence.
             </p>
           </div>
-          <form method="GET" action="/blog" className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+          <form
+            method="GET"
+            action="/blog"
+            className="grid w-full max-w-full grid-cols-1 gap-2 sm:max-w-none sm:grid-cols-[minmax(0,1fr)_minmax(8.25rem,auto)_auto_auto] sm:items-center sm:gap-2 lg:min-w-0 lg:flex-1"
+          >
             {activeCategory ? <input type="hidden" name="category" value={activeCategory} /> : null}
             <input
               type="search"
               name="q"
               defaultValue={query ?? ""}
               placeholder="Search articles..."
-              className="h-10 w-full rounded-xl border border-black/10 bg-white/85 px-3 text-sm text-slate-800 outline-none ring-orange-500 transition focus:ring-2 dark:border-white/10 dark:bg-white/5 dark:text-white sm:min-w-[200px]"
+              className="h-10 min-h-10 w-full min-w-0 rounded-xl border border-black/10 bg-white/85 px-3 text-sm text-slate-800 outline-none ring-orange-500/60 transition focus:ring-2 dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.6)] dark:text-[#f0f2ff] dark:placeholder:text-[#4d5470]"
             />
             <select
               name="sort"
               defaultValue={sort}
-              className="h-10 w-full rounded-xl border border-black/10 bg-white/85 px-3 text-sm text-slate-700 outline-none ring-orange-500 transition focus:ring-2 dark:border-white/10 dark:bg-white/5 dark:text-white/80 sm:w-auto"
+              className="h-10 min-h-10 w-full rounded-xl border border-black/10 bg-white/85 px-3 text-sm text-slate-700 outline-none ring-orange-500/60 transition focus:ring-2 dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.6)] dark:text-[#8b92a8] sm:w-full"
             >
               <option value="latest">Latest</option>
               <option value="most_viewed">Most viewed</option>
@@ -303,14 +307,25 @@ export function BlogList({
             </select>
             <button
               type="submit"
-              className="h-10 rounded-xl bg-orange-500 px-4 text-sm font-semibold !text-white transition hover:bg-orange-400 sm:w-auto"
+              className="h-10 min-h-10 shrink-0 rounded-xl bg-orange-500 px-3 text-[11.5px] font-semibold uppercase tracking-[0.06em] !text-white shadow-[0_2px_12px_rgba(249,115,22,0.25)] transition hover:bg-orange-400 hover:shadow-[0_4px_16px_rgba(249,115,22,0.35)] sm:px-4"
             >
               Search
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowPersonalizationModal(true)}
+              className="inline-flex h-10 min-h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white/80 px-3 text-[11.5px] font-medium text-slate-600 transition hover:bg-slate-100 hover:text-app dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.4)] dark:text-[#8b92a8] dark:hover:bg-[rgba(13,17,40,0.7)] dark:hover:text-[#f0f2ff] sm:w-auto sm:shrink-0 sm:whitespace-nowrap"
+            >
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
+                <path d="M4.5 7h5M7 4.5v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+              Customize Feed
             </button>
             {canCreatePost ? (
               <Link
                 href="/admin/blog/new"
-                className="h-10 rounded-xl border border-white/20 bg-[#0b1026] px-4 text-sm font-semibold !text-white transition hover:bg-[#131a3b] dark:border-white/10 sm:w-auto"
+                className="h-10 rounded-xl border border-white/20 bg-[#0b1026] px-4 text-sm font-semibold !text-white transition hover:bg-[#131a3b] dark:border-white/10 sm:col-span-4 sm:w-full sm:justify-self-stretch"
               >
                 <span className="inline-flex h-full items-center">+ New post</span>
               </Link>
@@ -320,12 +335,12 @@ export function BlogList({
 
         {sort === "personalized" && (
           <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-              <span className="font-medium text-slate-700">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-[11.5px] font-medium text-slate-600 dark:text-[#8b92a8]">
                 Based on your interests:
               </span>
               {(topInterests.length > 0 ? topInterests : ["construction", "design", "planning"]).slice(0, 5).map((tag) => (
-                <span key={tag} className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700">
+                <span key={tag} className="rounded-full bg-orange-500/12 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.06em] text-orange-700 dark:bg-orange-500/15 dark:text-orange-400">
                   {tag}
                 </span>
               ))}
@@ -334,8 +349,10 @@ export function BlogList({
               <button
                 type="button"
                 onClick={() => setFeedTab("for_you")}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                  feedTab === "for_you" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] transition ${
+                  feedTab === "for_you"
+                    ? "bg-orange-500 !text-white shadow-[0_0_12px_rgba(234,88,12,0.3)]"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#1e2440] dark:text-[#8b92a8] dark:hover:bg-[#2d3460] dark:hover:text-[#f0f2ff]"
                 }`}
               >
                 For You
@@ -343,8 +360,10 @@ export function BlogList({
               <button
                 type="button"
                 onClick={() => setFeedTab("trending")}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                  feedTab === "trending" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] transition ${
+                  feedTab === "trending"
+                    ? "bg-orange-500 !text-white shadow-[0_0_12px_rgba(234,88,12,0.3)]"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#1e2440] dark:text-[#8b92a8] dark:hover:bg-[#2d3460] dark:hover:text-[#f0f2ff]"
                 }`}
               >
                 Trending
@@ -352,8 +371,10 @@ export function BlogList({
               <button
                 type="button"
                 onClick={() => setFeedTab("explore")}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                  feedTab === "explore" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] transition ${
+                  feedTab === "explore"
+                    ? "bg-orange-500 !text-white shadow-[0_0_12px_rgba(234,88,12,0.3)]"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#1e2440] dark:text-[#8b92a8] dark:hover:bg-[#2d3460] dark:hover:text-[#f0f2ff]"
                 }`}
               >
                 Explore
@@ -362,52 +383,41 @@ export function BlogList({
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-2.5 border-b border-black/10 pb-5 dark:border-white/10">
-          <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2 border-b border-black/10 pb-5 dark:border-[#1e2440]">
+          <Link
+            href={buildBlogHref({ query, sort })}
+            className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] transition ${
+              !activeCategory
+                ? "bg-orange-500 !text-white shadow-[0_0_10px_rgba(234,88,12,0.25)]"
+                : "border border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:text-orange-600 dark:border-[#1e2440] dark:bg-[#0d1128] dark:text-[#8b92a8] dark:hover:border-orange-500/30 dark:hover:text-orange-400"
+            }`}
+          >
+            All
+          </Link>
+          {categories.map((category) => (
             <Link
-              href={buildBlogHref({ query, sort })}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                !activeCategory ? "bg-orange-500 !text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/15"
+              key={category}
+              href={buildBlogHref({ category, query, sort })}
+              className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] transition ${
+                activeCategory === category
+                  ? "bg-orange-500 !text-white shadow-[0_0_10px_rgba(234,88,12,0.25)]"
+                  : "border border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:text-orange-600 dark:border-[#1e2440] dark:bg-[#0d1128] dark:text-[#8b92a8] dark:hover:border-orange-500/30 dark:hover:text-orange-400"
               }`}
             >
-              All
+              {category}
             </Link>
-            {categories.map((category) => (
-              <Link
-                key={category}
-                href={buildBlogHref({ category, query, sort })}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                  activeCategory === category
-                    ? "bg-orange-500 !text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/15"
-                }`}
-              >
-                {category}
-              </Link>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowPersonalizationModal(true)}
-            className="mt-2 flex items-center gap-1.5 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-app dark:border-white/10 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white sm:ml-auto sm:mt-0"
-          >
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
-              <path d="M4.5 7h5M7 4.5v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-            </svg>
-            Customize Feed
-          </button>
+          ))}
         </div>
       </header>
 
       {personalizedLoading ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-72 animate-pulse rounded-2xl bg-slate-100" />
+            <div key={i} className="h-72 animate-pulse rounded-[14px] bg-slate-100 dark:bg-[#0d1128]" />
           ))}
         </div>
       ) : fallbackPosts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-600">
+        <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-[13.5px] text-slate-500 dark:border-[#1e2440] dark:text-[#8b92a8]">
           {sort === "personalized"
             ? "Read and like a few articles and your personalised feed will appear here."
             : `No published articles found${activeCategory ? ` in "${activeCategory}"` : ""}${query ? ` matching "${query}"` : ""}.`}

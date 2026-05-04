@@ -19,6 +19,8 @@ export type AIInsightsCardProps = {
   earlyInsights?: string[];
   /** `topic` = category / knowledge hub copy ("Market Insights", etc.). */
   variant?: "product" | "topic";
+  /** Optional layout classes on the outer section (e.g. `mb-0` in grid rows). */
+  className?: string;
 };
 
 const FULL_THRESHOLD = 6;

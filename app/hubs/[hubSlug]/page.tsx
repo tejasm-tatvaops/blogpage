@@ -18,8 +18,8 @@ export async function generateMetadata({ params }: HubPageProps): Promise<Metada
   const canonical = `/hubs/${encodeURIComponent(decodeURIComponent(hubSlug).trim() || hubSlug)}`;
 
   return {
-    title: `${label} Knowledge Hub | TatvaOps`,
-    description: `Unified knowledge hub for ${label}: forum discussions and blog articles.`,
+    title: `Product Topic Hub | TatvaOps`,
+    description: `${label} — forum discussions and blog articles on TatvaOps.`,
     alternates: { canonical },
   };
 }

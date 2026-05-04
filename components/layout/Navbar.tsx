@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -60,63 +59,42 @@ export function Navbar() {
             : "md:left-[calc(50%+64px)] md:-translate-x-1/2",
         )}
       >
-        <div className="flex h-[50px] items-center gap-[10px] px-[14px] leading-none md:px-0">
-          <Link
-            href="/"
-            className="hdr-logo flex h-full min-w-0 shrink-0 items-center gap-2 text-[0.95rem] font-semibold leading-none tracking-tight text-app"
-            aria-label="TatvaOps home"
-            onClick={() => setMobileNavOpen(false)}
-          >
-            <Image
-              src="/tatvaops-logo.png"
-              alt="TatvaOps"
-              width={430}
-              height={108}
-              className="hdr-logo-icon h-9 w-auto shrink-0 rounded-md object-contain dark:hidden"
-              priority
-            />
-            <Image
-              src="/tatvaops-logo-transparent.png"
-              alt=""
-              width={430}
-              height={108}
-              className="hdr-logo-icon hidden h-9 w-auto shrink-0 rounded-md object-contain dark:block"
-              priority
-            />
-          </Link>
-
-          <nav
-            className="hidden min-w-0 flex-1 flex-wrap items-center justify-center gap-px md:flex"
-            aria-label="Main"
-          >
-            {NAV_LINKS.map(({ href, label, exact }) => (
-              <Link key={href} href={href} className={linkClass(href, exact)}>
-                {label}
-              </Link>
-            ))}
-
-            <Link
-              href="/saved"
-              aria-label="Saved articles"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-black/[0.05] hover:text-app dark:hover:bg-white/4"
+        <div className="flex h-[50px] w-full items-center gap-[10px] px-[14px] leading-none md:px-0">
+          <div className="flex min-w-0 flex-1 items-center justify-start gap-2">
+            {/* Logo (optional): place before <nav>, e.g. <Link href="/" className="hdr-logo shrink-0" aria-label="Home"><Image src="/tatvaops-logo-transparent.png" alt="" width={430} height={108} className="h-9 w-auto object-contain" priority /></Link> */}
+            <nav
+              className="hidden min-w-0 flex flex-wrap items-center justify-start gap-px md:flex"
+              aria-label="Main"
             >
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-              </svg>
-            </Link>
-          </nav>
+              {NAV_LINKS.map(({ href, label, exact }) => (
+                <Link key={href} href={href} className={linkClass(href, exact)}>
+                  {label}
+                </Link>
+              ))}
 
-          <div className="hdr-right ml-auto flex h-full shrink-0 items-center gap-1.5 md:ml-0">
+              <Link
+                href="/saved"
+                aria-label="Saved articles"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-black/[0.05] hover:text-app dark:hover:bg-white/4"
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                </svg>
+              </Link>
+            </nav>
+          </div>
+
+          <div className="hdr-right ml-auto flex h-full shrink-0 items-center gap-1.5">
             <UserStatsBadge />
             <NotificationBell />
             <NavbarAuthButton

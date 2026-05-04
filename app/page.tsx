@@ -57,13 +57,13 @@ export default async function HomePage() {
       <HeroSection />
 
       {/* ── Platform Intelligence ─────────────────────────────────────────── */}
-      <section className="rounded-[22px] border border-black/5 bg-[#f6e7d8] p-5 dark:bg-[rgba(20,25,45,0.6)] dark:border-white/10 sm:rounded-[28px] sm:p-8 lg:p-10">
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-400">Platform Intelligence</p>
-        <h2 className="mt-2 text-center text-2xl font-semibold text-black dark:text-white sm:text-3xl">A complete construction content platform</h2>
-        <p className="text-sm text-gray-500 dark:text-white/60 text-center mt-2">
+      <section className="rounded-[22px] border border-black/5 bg-slate-50/80 p-5 dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.6)] sm:rounded-[28px] sm:p-8 lg:p-10">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-orange-600 dark:text-orange-400">Platform Intelligence</p>
+        <h2 className="mt-2 text-center text-[26px] font-semibold text-black dark:text-white sm:text-[30px]">A complete construction content platform</h2>
+        <p className="mt-2 text-center text-[13.5px] leading-relaxed text-gray-500 dark:text-[#8b92a8]">
           Built to attract high-intent traffic, answer practical site questions, and streamline your publishing workflow with architectural precision.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
           {[
             {
               icon: (
@@ -73,7 +73,7 @@ export default async function HomePage() {
               ),
               title: "Personalized recommendations",
               body: "Content is ranked based on your reading history, engagement patterns, and topics you explore most.",
-              accent: "text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400",
+              accent: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/15 dark:text-indigo-400",
             },
             {
               icon: (
@@ -83,7 +83,7 @@ export default async function HomePage() {
               ),
               title: "Community-reviewed accuracy",
               body: "Expert contributors review and approve edits. Every article shows its verification status and revision history.",
-              accent: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400",
+              accent: "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15 dark:text-emerald-400",
             },
             {
               icon: (
@@ -93,16 +93,16 @@ export default async function HomePage() {
               ),
               title: "Intelligent content discovery",
               body: "Blogs, tutorials, forums, and short videos are connected by topic signals across all content types.",
-              accent: "text-sky-600 bg-sky-50 dark:bg-sky-900/30 dark:text-sky-400",
+              accent: "text-orange-600 bg-orange-50 dark:bg-orange-500/15 dark:text-orange-400",
             },
           ].map((item) => (
-            <div key={item.title} className="p-6 rounded-xl bg-white/60 dark:bg-white/5 border border-black/5 dark:border-white/10">
-              <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${item.accent}`}>
+            <div key={item.title} className="rounded-xl border border-black/5 bg-white/70 p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.5)] dark:hover:border-orange-500/15 dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+              <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${item.accent}`}>
                 {item.icon}
               </div>
               <div>
-                <p className="text-lg font-semibold text-black dark:text-white mt-3">{item.title}</p>
-                <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-white/60">{item.body}</p>
+                <p className="mt-3 text-[14px] font-semibold text-black dark:text-white">{item.title}</p>
+                <p className="mt-1.5 text-[12.5px] leading-relaxed text-gray-500 dark:text-[#8b92a8]">{item.body}</p>
               </div>
             </div>
           ))}
@@ -110,68 +110,56 @@ export default async function HomePage() {
       </section>
 
       {/* ── Smart Discovery Hub ───────────────────────────────────────────── */}
-      <section className="rounded-2xl border border-black/5 bg-white/70 p-4 shadow-md backdrop-blur-xl transition-all duration-300 ease-out dark:border-white/10 dark:bg-[rgba(20,25,45,0.7)]">
+      <section className="rounded-2xl border border-black/5 bg-white/70 p-4 shadow-sm backdrop-blur-xl transition-all duration-300 ease-out dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.7)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-400">Smart Discovery Hub</p>
-            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">Your connected knowledge workspace</h2>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-orange-600 dark:text-orange-400">Smart Discovery Hub</p>
+            <h2 className="mt-1 text-[22px] font-bold tracking-tight text-slate-900 dark:text-white sm:text-[26px]">Your connected knowledge workspace</h2>
           </div>
-          <Link href="/ask" className="inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 ease-out hover:shadow-lg sm:w-auto">
+          <Link href="/ask" className="inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-4 py-2 text-[11.5px] font-semibold uppercase tracking-[0.06em] text-white shadow-[0_2px_12px_rgba(249,115,22,0.25)] transition-all duration-200 hover:bg-orange-400 hover:shadow-[0_4px_16px_rgba(249,115,22,0.35)] sm:w-auto">
             Ask AI anything on TatvaOps
           </Link>
         </div>
 
         {/* Top row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
 
           {/* Continue Learning */}
-          <div className="relative rounded-2xl overflow-hidden min-h-[260px]">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Continue Learning</h3>
+          <div className="relative min-h-[260px] overflow-hidden rounded-2xl">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-[#4d5470]">Continue Learning</h3>
             <ContinueLearningCarousel tutorials={carouselTutorials} />
           </div>
 
           {/* Recommended For You */}
-          <div className="relative rounded-2xl overflow-hidden min-h-[260px]">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Recommended For You</h3>
+          <div className="relative min-h-[260px] overflow-hidden rounded-2xl">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-[#4d5470]">Recommended For You</h3>
             <RecommendedCarousel blogs={carouselBlogs} />
           </div>
         </div>
 
         {/* Bottom row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
 
           {/* Popular Discussions */}
-          <div className="rounded-2xl p-4 bg-white/70 dark:bg-[rgba(20,25,45,0.7)] backdrop-blur-xl border border-black/5 dark:border-white/10">
-            <h3 className="text-sm font-semibold mb-3 text-black dark:text-white">Popular Discussions</h3>
+          <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur-xl dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.5)]">
+            <h3 className="mb-3 text-[13.5px] font-semibold text-black dark:text-white">Popular Discussions</h3>
             {popularDiscussions.length > 0 ? (
               <ul className="mt-3 space-y-3">
                 {popularDiscussions.map((forum) => (
-                  <li key={forum.slug} className="flex justify-between items-start py-2 border-b border-black/5 dark:border-white/5">
-                    <div className="flex w-8 flex-shrink-0 flex-col items-center">
-                      <span className="text-sm leading-none text-orange-500" aria-hidden>
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="m9 3-3 18" />
-                          <path d="m15 3-3 18" />
-                          <path d="M4 9h14" />
-                          <path d="M3 15h14" />
+                  <li key={forum.slug} className="flex items-start justify-between border-b border-black/5 py-2 dark:border-[#1e2440]">
+                    <div className="flex w-8 shrink-0 flex-col items-center">
+                      <span className="leading-none text-orange-500" aria-hidden>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m9 3-3 18" /><path d="m15 3-3 18" /><path d="M4 9h14" /><path d="M3 15h14" />
                         </svg>
                       </span>
-                      <span className="mt-0.5 text-xs font-bold text-orange-500">{forum.upvote_count}</span>
+                      <span className="mt-0.5 text-[11px] font-bold text-orange-500">{forum.upvote_count}</span>
                     </div>
                     <div className="min-w-0">
-                      <Link href={`/forums/${forum.slug}`} className="line-clamp-1 block text-sm text-black dark:text-white">
+                      <Link href={`/forums/${forum.slug}`} className="line-clamp-1 block text-[13px] text-black transition hover:text-orange-600 dark:text-white dark:hover:text-orange-400">
                         {forum.title}
                       </Link>
-                      <p className="mt-0.5 text-[11px] text-gray-400">
+                      <p className="mt-0.5 text-[10px] text-[#8b92a8]">
                         {new Date(forum.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric" })} · {forum.author_name}
                       </p>
                     </div>
@@ -179,22 +167,22 @@ export default async function HomePage() {
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-sm text-slate-400">No discussions yet.</p>
+              <p className="mt-3 text-[12.5px] text-[#8b92a8]">No discussions yet.</p>
             )}
           </div>
 
           {/* Recently Updated */}
-          <div className="rounded-2xl p-4 bg-white/70 dark:bg-[rgba(20,25,45,0.7)] backdrop-blur-xl border border-black/5 dark:border-white/10">
-            <h3 className="text-sm font-semibold mb-3 text-black dark:text-white">Recently Updated</h3>
+          <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur-xl dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.5)]">
+            <h3 className="mb-3 text-[13.5px] font-semibold text-black dark:text-white">Recently Updated</h3>
             {recentlyUpdated.length > 0 ? (
               <ul className="mt-3 space-y-3">
                 {recentlyUpdated.map((blog) => (
-                  <li key={blog.slug} className="py-2 border-b border-black/5 dark:border-white/5">
+                  <li key={blog.slug} className="border-b border-black/5 py-2 dark:border-[#1e2440]">
                     <Link href={`/blog/${blog.slug}`} className="group block">
-                      <p className="line-clamp-1 text-sm text-black dark:text-white">
+                      <p className="line-clamp-1 text-[13px] text-black transition group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
                         {blog.title}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-gray-400">
+                      <p className="mt-0.5 text-[10px] text-[#8b92a8]">
                         {new Date(blog.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric" })} · {blog.author}
                       </p>
                     </Link>
@@ -202,27 +190,27 @@ export default async function HomePage() {
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-sm text-slate-400">Nothing recently updated.</p>
+              <p className="mt-3 text-[12.5px] text-[#8b92a8]">Nothing recently updated.</p>
             )}
           </div>
 
           {/* Topic Explorer */}
-          <div className="rounded-2xl p-4 bg-white/70 dark:bg-[rgba(20,25,45,0.7)] backdrop-blur-xl border border-black/5 dark:border-white/10">
-            <h3 className="text-sm font-semibold mb-3 text-black dark:text-white">Topic Explorer</h3>
+          <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur-xl dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.5)]">
+            <h3 className="mb-3 text-[13.5px] font-semibold text-black dark:text-white">Topic Explorer</h3>
             {topicHubs.length > 0 ? (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-1.5">
                 {topicHubs.map((tag) => (
                   <Link
                     key={tag}
                     href={`/tags/${encodeURIComponent(tag)}`}
-                    className="px-3 py-1 text-xs rounded-full bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-white/60 hover:bg-orange-500 hover:text-white transition"
+                    className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.06em] text-slate-600 transition hover:border-orange-400 hover:bg-orange-500 hover:text-white dark:border-[#1e2440] dark:bg-[#0d1128] dark:text-[#8b92a8] dark:hover:border-orange-500/40 dark:hover:bg-orange-500 dark:hover:text-white"
                   >
                     {tag}
                   </Link>
                 ))}
               </div>
             ) : (
-              <p className="mt-3 text-sm text-slate-400">No topics yet.</p>
+              <p className="mt-3 text-[12.5px] text-[#8b92a8]">No topics yet.</p>
             )}
           </div>
         </div>
@@ -232,45 +220,45 @@ export default async function HomePage() {
       </section>
 
       {/* ── What TatvaOps includes ────────────────────────────────────────── */}
-      <div className="rounded-[22px] border border-black/5 bg-[#f6e7d8] p-5 dark:bg-[rgba(20,25,45,0.6)] dark:border-white/10 sm:rounded-[28px] sm:p-8 lg:p-10">
-        <h2 className="text-center text-2xl font-semibold text-black dark:text-white sm:text-3xl">A complete construction content platform</h2>
-        <p className="text-sm text-gray-500 dark:text-white/60 text-center mt-2">
+      <div className="rounded-[22px] border border-black/5 bg-slate-50/80 p-5 dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.6)] sm:rounded-[28px] sm:p-8 lg:p-10">
+        <h2 className="text-center text-[26px] font-semibold text-black dark:text-white sm:text-[30px]">A complete construction content platform</h2>
+        <p className="mt-2 text-center text-[13.5px] leading-relaxed text-gray-500 dark:text-[#8b92a8]">
           Built to attract high-intent traffic, answer practical site questions, and streamline your publishing workflow with architectural precision.
         </p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        {[
-          {
-            title: "AI Blog Generation",
-            body: "Generate high-intent construction articles with references, clean structure, and local cost context. Publish directly through the CMS.",
-          },
-          {
-            title: "Forums + Engagement Layer",
-            body: "Run Reddit-style threads with comments, replies, votes, best answers, and trending signals to keep the platform active and useful.",
-          },
-          {
-            title: "Operations + Growth Controls",
-            body: "Use admin tools for autopopulate, moderation, analytics, newsletters, and activity simulation to scale content without losing quality.",
-          },
-        ].map((feature) => (
-          <article key={feature.title} className="p-6 rounded-xl bg-white/60 dark:bg-white/5 border border-black/5 dark:border-white/10">
-            <h3 className="text-lg font-semibold text-black dark:text-white">{feature.title}</h3>
-            <p className="mt-2 text-sm leading-7 text-gray-500 dark:text-white/60">{feature.body}</p>
-          </article>
-        ))}
-      </div>
+        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {[
+            {
+              title: "AI Blog Generation",
+              body: "Generate high-intent construction articles with references, clean structure, and local cost context. Publish directly through the CMS.",
+            },
+            {
+              title: "Forums + Engagement Layer",
+              body: "Run Reddit-style threads with comments, replies, votes, best answers, and trending signals to keep the platform active and useful.",
+            },
+            {
+              title: "Operations + Growth Controls",
+              body: "Use admin tools for autopopulate, moderation, analytics, newsletters, and activity simulation to scale content without losing quality.",
+            },
+          ].map((feature) => (
+            <article key={feature.title} className="rounded-xl border border-black/5 bg-white/70 p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.5)] dark:hover:border-orange-500/15 dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+              <h3 className="text-[14px] font-semibold text-black dark:text-white">{feature.title}</h3>
+              <p className="mt-2 text-[12.5px] leading-relaxed text-gray-500 dark:text-[#8b92a8]">{feature.body}</p>
+            </article>
+          ))}
+        </div>
       </div>
 
       {/* ── Bottom CTA ───────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 rounded-[22px] bg-gradient-to-r from-orange-500 to-orange-600 p-5 text-white sm:rounded-[28px] sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:p-10">
+      <div className="flex flex-col gap-4 rounded-[22px] bg-gradient-to-r from-[#ea580c] to-[#f97316] p-5 text-white shadow-[0_8px_32px_rgba(234,88,12,0.35)] sm:rounded-[28px] sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:p-10">
         <div>
-          <h3 className="text-2xl font-semibold sm:text-3xl">Start with what you need now</h3>
-          <p className="mt-2 text-sm text-white/90">Access practical construction guides and join thousands of professionals in active technical discussions.</p>
+          <h3 className="text-[24px] font-semibold sm:text-[28px]">Start with what you need now</h3>
+          <p className="mt-2 text-[13.5px] leading-relaxed text-white/85">Access practical construction guides and join thousands of professionals in active technical discussions.</p>
         </div>
         <div className="mt-1 flex w-full flex-wrap gap-3 sm:w-auto md:mt-0">
-          <Link href="/blog" className="inline-flex min-w-[140px] items-center justify-center rounded-lg border border-white/80 bg-white px-4 py-2.5 text-sm font-semibold !text-orange-600 transition hover:bg-white/90">
+          <Link href="/blog" className="inline-flex min-w-[140px] items-center justify-center rounded-xl border border-white/80 bg-white px-4 py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.06em] !text-orange-600 transition hover:bg-white/90">
             Go to Blog
           </Link>
-          <Link href="/forums" className="inline-flex min-w-[140px] items-center justify-center rounded-lg border border-white/80 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">
+          <Link href="/forums" className="inline-flex min-w-[140px] items-center justify-center rounded-xl border border-white/80 px-4 py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.06em] text-white transition hover:bg-white/12 hover:border-white">
             Go to Forums
           </Link>
         </div>

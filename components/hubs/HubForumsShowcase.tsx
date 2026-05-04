@@ -55,23 +55,25 @@ export function HubForumsShowcase({
       <div className="border-b border-black/[0.06] bg-white/60 px-5 py-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.04] sm:px-6 sm:py-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-700/90 dark:text-sky-300/90">
+            <p className="text-[0.54rem] font-bold uppercase leading-none tracking-[0.14em] text-sky-700/90 dark:text-sky-300/90">
               Community
             </p>
-            <h2 className="mt-1 text-xl font-bold tracking-tight text-app sm:text-2xl">Forum discussions</h2>
-            <p className="mt-1 max-w-xl text-sm text-muted dark:text-white/65">
+            <h2 className="mt-1 font-serif text-[1.4rem] font-medium leading-tight tracking-tight text-app">
+              Forum discussions
+            </h2>
+            <p className="mt-1 max-w-xl font-sans text-[0.78rem] font-normal leading-[1.5] text-muted dark:text-white/65">
               Threads builders and estimators are having about{" "}
               <span className="font-semibold text-app dark:text-white/90">{hubLabel}</span>—jump in or start a new
               conversation.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-black/10 bg-black/[0.04] px-3 py-1 text-xs font-semibold text-muted dark:border-white/15 dark:bg-white/10 dark:text-white/80">
+            <span className="rounded-full border border-black/10 bg-black/[0.04] px-3 py-1 font-sans text-[0.68rem] font-semibold leading-none text-muted dark:border-white/15 dark:bg-white/10 dark:text-white/80">
               {forums.length === 0 ? "No threads yet" : `${forums.length} thread${forums.length === 1 ? "" : "s"}`}
             </span>
             <Link
               href="/forums"
-              className="rounded-full border border-sky-500/35 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-800 transition hover:bg-sky-500/20 dark:border-sky-400/40 dark:bg-sky-500/15 dark:text-sky-100 dark:hover:bg-sky-500/25"
+              className="rounded-full border border-sky-500/35 bg-sky-500/10 px-3 py-1 font-sans text-[0.72rem] font-semibold leading-none text-sky-800 transition hover:bg-sky-500/20 dark:border-sky-400/40 dark:bg-sky-500/15 dark:text-sky-100 dark:hover:bg-sky-500/25"
             >
               Browse forums
             </Link>
@@ -82,18 +84,23 @@ export function HubForumsShowcase({
       <div className="p-4 sm:p-5 md:p-6">
         {visible.length === 0 ? (
           <div className="rounded-xl border border-dashed border-black/15 bg-black/[0.02] px-6 py-12 text-center dark:border-white/15 dark:bg-white/[0.03]">
-            <p className="text-base font-medium text-app dark:text-white/90">No forum threads for this topic yet</p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted dark:text-white/60">
+            <p className="font-sans text-[0.9rem] font-semibold leading-tight text-app dark:text-white/90">
+              No forum threads for this topic yet
+            </p>
+            <p className="mx-auto mt-2 max-w-md font-sans text-[0.78rem] font-normal leading-[1.5] text-muted dark:text-white/60">
               When discussions mention this hub, they will show up here with excerpts and engagement signals.
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Link
                 href="/forums/new"
-                className="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-500 dark:bg-sky-500 dark:hover:bg-sky-400"
+                className="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-2.5 font-sans text-[0.72rem] font-semibold leading-none text-white shadow-sm transition hover:bg-sky-500 dark:bg-sky-500 dark:hover:bg-sky-400"
               >
                 Start a thread
               </Link>
-              <Link href="/forums" className="text-sm font-semibold text-sky-700 underline-offset-2 hover:underline dark:text-sky-300">
+              <Link
+                href="/forums"
+                className="font-sans text-[0.72rem] font-semibold leading-none text-sky-700 underline-offset-2 hover:underline dark:text-sky-300"
+              >
                 Explore all forums
               </Link>
             </div>
@@ -115,26 +122,26 @@ export function HubForumsShowcase({
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       {post.is_featured ? (
-                        <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-900 dark:bg-amber-400/20 dark:text-amber-100">
+                        <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-[0.54rem] font-bold uppercase leading-none tracking-wide text-amber-900 dark:bg-amber-400/20 dark:text-amber-100">
                           Featured
                         </span>
                       ) : null}
                       {post.is_trending ? (
-                        <span className="rounded-md bg-orange-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-900 dark:bg-orange-400/20 dark:text-orange-100">
+                        <span className="rounded-md bg-orange-500/15 px-2 py-0.5 text-[0.54rem] font-bold uppercase leading-none tracking-wide text-orange-900 dark:bg-orange-400/20 dark:text-orange-100">
                           Trending
                         </span>
                       ) : null}
                       {post.tags?.slice(0, 2).map((tag) => (
                         <span
                           key={tag}
-                          className="rounded-md border border-black/10 bg-black/[0.03] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted dark:border-white/10 dark:bg-white/[0.06] dark:text-white/65"
+                          className="rounded-md border border-black/10 bg-black/[0.03] px-2 py-0.5 text-[0.6rem] font-semibold uppercase leading-none tracking-wide text-muted dark:border-white/10 dark:bg-white/[0.06] dark:text-white/65"
                         >
                           {tag}
                         </span>
                       ))}
                     </div>
                     <div className="flex items-start justify-between gap-3">
-                      <h3 className="min-w-0 flex-1 text-base font-semibold leading-snug text-app transition group-hover:text-sky-700 dark:group-hover:text-sky-300 sm:text-[1.05rem]">
+                      <h3 className="min-w-0 flex-1 font-sans text-[0.9rem] font-semibold leading-tight text-app transition group-hover:text-sky-700 dark:group-hover:text-sky-300">
                         {post.title}
                       </h3>
                       <span
@@ -147,12 +154,16 @@ export function HubForumsShowcase({
                       </span>
                     </div>
                     {preview ? (
-                      <p className="line-clamp-2 text-sm leading-relaxed text-muted dark:text-white/65">{preview}</p>
+                      <p className="line-clamp-2 font-sans text-[0.78rem] font-normal leading-[1.5] text-muted dark:text-white/65">
+                        {preview}
+                      </p>
                     ) : null}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-black/[0.05] pt-3 text-xs text-muted dark:border-white/10 dark:text-white/55">
-                      <span className="font-medium text-app/90 dark:text-white/75">{post.author_name || "Member"}</span>
-                      {when ? <span>{when}</span> : null}
-                      <span className="inline-flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-black/[0.05] pt-3 font-sans leading-none text-muted dark:border-white/10 dark:text-white/55">
+                      <span className="text-[0.62rem] font-medium text-app/90 dark:text-white/75">
+                        {post.author_name || "Member"}
+                      </span>
+                      {when ? <span className="text-[0.56rem] font-normal">{when}</span> : null}
+                      <span className="inline-flex items-center gap-1 text-[0.68rem] font-normal">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="opacity-70" aria-hidden>
                           <path
                             d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
@@ -163,7 +174,7 @@ export function HubForumsShowcase({
                         </svg>
                         {compactCount(post.comment_count ?? 0)} repl{post.comment_count === 1 ? "y" : "ies"}
                       </span>
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1 text-[0.68rem] font-normal">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="opacity-70" aria-hidden>
                           <path
                             d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"
@@ -176,7 +187,7 @@ export function HubForumsShowcase({
                         {compactCount(post.view_count ?? 0)} views
                       </span>
                       {(post.score ?? 0) !== 0 ? (
-                        <span className="inline-flex items-center gap-1 font-medium text-app/80 dark:text-white/70">
+                        <span className="inline-flex items-center gap-1 text-[0.68rem] font-medium text-app/80 dark:text-white/70">
                           Score {(post.score ?? 0) > 0 ? "+" : ""}
                           {post.score}
                         </span>

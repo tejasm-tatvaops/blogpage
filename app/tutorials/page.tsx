@@ -8,10 +8,10 @@ export const metadata: Metadata = {
   description: "Step-by-step tutorials, onboarding guides, and learning paths for TatvaOps users.",
 };
 
-const DIFFICULTY_COLORS: Record<string, string> = {
-  beginner:     "bg-emerald-50 text-emerald-700 border-emerald-200",
-  intermediate: "bg-amber-50 text-amber-700 border-amber-200",
-  advanced:     "bg-red-50 text-red-700 border-red-200",
+const DIFFICULTY_STYLES: Record<string, { pill: string; label: string }> = {
+  beginner:     { pill: "bg-orange-500 text-white",                                                label: "BEGINNER"     },
+  intermediate: { pill: "bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/30",                       label: "INTERMEDIATE" },
+  advanced:     { pill: "bg-red-500/20 text-red-400 ring-1 ring-red-500/30",                       label: "ADVANCED"     },
 };
 
 type Tutorial = {
@@ -60,35 +60,33 @@ export default async function TutorialsPage({
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      {/* Header */}
-      <div className="mb-10 flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-app sm:text-4xl">
-            Tutorials & Guides
-          </h1>
-          <p className="mx-auto mt-3 max-w-2xl text-slate-500 sm:mx-0">
-            Learn to use TatvaOps effectively — from quick onboarding to advanced construction
-            estimation techniques.
-          </p>
-        </div>
+      {/* ── Page Header ──────────────────────────────────────────────────────── */}
+      <div className="mb-10">
+        <h1 className="text-[28px] font-bold tracking-tight text-app sm:text-[32px]">
+          Tutorials &amp; Guides
+        </h1>
+        <p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-[#64748b] dark:text-[#8b92a8]">
+          Learn to use TatvaOps effectively — from quick onboarding to advanced construction
+          estimation techniques.
+        </p>
       </div>
 
-      {/* Learning Paths */}
+      {/* ── Learning Paths ───────────────────────────────────────────────────── */}
       {paths.length > 0 && (
         <section className="mb-12">
-          <h2 className="mb-4 text-lg font-semibold text-slate-800">Learning Paths</h2>
+          <h2 className="mb-4 text-[13.5px] font-semibold uppercase tracking-[0.08em] text-[#8b92a8]">Learning Paths</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {(paths as unknown as LearningPath[]).map((path) => (
               <Link
                 key={path._id.toString()}
                 href={`/tutorials?path=${path.slug}`}
-                className="group rounded-xl border border-app bg-surface p-5 shadow-sm transition hover:border-sky-200 hover:shadow"
+                className="group rounded-[12px] border border-black/10 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300/50 hover:shadow-[0_8px_20px_rgba(0,0,0,0.1)] dark:border-[#1e2440] dark:bg-[#0d1128] dark:hover:border-orange-500/20 dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]"
               >
-                <h3 className="font-semibold text-slate-800 group-hover:text-sky-700">
+                <h3 className="text-[14px] font-semibold text-slate-800 transition group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
                   {path.title}
                 </h3>
-                <p className="mt-1 text-sm text-slate-500 line-clamp-2">{path.description}</p>
-                <p className="mt-3 text-xs text-slate-400">
+                <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-slate-500 dark:text-[#8b92a8]">{path.description}</p>
+                <p className="mt-3 text-[10px] uppercase tracking-[0.06em] text-[#8b92a8]">
                   ~{path.estimated_total_minutes} min total
                 </p>
               </Link>
@@ -97,8 +95,8 @@ export default async function TutorialsPage({
         </section>
       )}
 
-      {/* Difficulty filter */}
-      <div className="mb-6 flex flex-wrap gap-2">
+      {/* ── Difficulty filter bar ─────────────────────────────────────────── */}
+      <div className="mb-7 flex flex-wrap items-center gap-2">
         {["all", "beginner", "intermediate", "advanced"].map((d) => {
           const active = (d === "all" && !difficulty) || d === difficulty;
           const href = d === "all" ? "/tutorials" : `/tutorials?difficulty=${d}`;
@@ -106,107 +104,143 @@ export default async function TutorialsPage({
             <Link
               key={d}
               href={href}
-              className={`rounded-full border px-4 py-1.5 text-sm font-medium capitalize transition ${
+              className={`rounded-full px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.07em] transition ${
                 active
-                  ? "border-sky-400 bg-sky-50 text-sky-700"
-                  : "border-app bg-surface text-slate-600 hover:border-slate-300"
+                  ? "bg-orange-500 !text-white shadow-[0_0_12px_rgba(234,88,12,0.25)]"
+                  : "border border-black/10 bg-white text-slate-600 hover:border-orange-300 hover:text-orange-600 dark:border-[#1e2440] dark:bg-[#0d1128] dark:text-[#8b92a8] dark:hover:border-orange-500/30 dark:hover:text-orange-400"
               }`}
             >
-              {d}
+              {d === "all" ? "All" : d}
             </Link>
           );
         })}
-        <span className="ml-auto text-sm text-slate-400 self-center">{total} tutorials</span>
+        <span className="ml-auto flex items-center gap-1.5 rounded-full border border-[#1e2440] bg-[#0d1128] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#8b92a8]">
+          <span className="h-1.5 w-1.5 rounded-full bg-orange-500" aria-hidden />
+          {total} Tutorials
+        </span>
       </div>
 
-      {/* Tutorial cards */}
+      {/* ── Tutorial cards ────────────────────────────────────────────────── */}
       {tutorials.length === 0 ? (
-        <div className="py-20 text-center text-slate-400">No tutorials found.</div>
+        <div className="rounded-2xl border border-dashed border-[#1e2440] py-20 text-center text-[13.5px] text-[#8b92a8]">
+          No tutorials found.
+        </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {(tutorials as unknown as Tutorial[]).map((t) => (
-            <Link
-              key={t._id.toString()}
-              href={`/tutorials/${t.slug}`}
-              className="group flex flex-col rounded-xl border border-app bg-surface p-5 shadow-sm transition hover:border-sky-200 hover:shadow"
-            >
-              {(() => {
-                if (t.content_type !== "video") return null;
-                const sourceUrl = extractVideoSource(t.content);
-                if (!sourceUrl) return null;
-                const videoSource = getTutorialVideoSource(sourceUrl);
+          {(tutorials as unknown as Tutorial[]).map((t) => {
+            const diffStyle = DIFFICULTY_STYLES[t.difficulty] ?? { pill: "bg-white/10 text-white/60", label: t.difficulty.toUpperCase() };
 
-                if (videoSource.kind === "youtube") {
-                  return (
-                    <div className="mb-3 overflow-hidden rounded-lg border border-app bg-black">
-                      <iframe
-                        src={videoSource.url}
-                        title={`${t.title} video preview`}
-                        loading="lazy"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="h-40 w-full"
-                      />
-                    </div>
-                  );
-                }
-
+            const mediaEl = (() => {
+              if (t.content_type !== "video") return null;
+              const sourceUrl = extractVideoSource(t.content);
+              if (!sourceUrl) return null;
+              const videoSource = getTutorialVideoSource(sourceUrl);
+              if (videoSource.kind === "youtube") {
                 return (
-                  <div className="mb-3 overflow-hidden rounded-lg border border-app bg-black">
-                    <video
-                      src={videoSource.url}
-                      controls
-                      playsInline
-                      preload="metadata"
-                      className="h-40 w-full object-cover"
-                    />
-                  </div>
+                  <iframe
+                    src={videoSource.url}
+                    title={`${t.title} video preview`}
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="h-44 w-full"
+                  />
                 );
-              })()}
-              <div className="mb-3 flex items-center gap-2">
-                <span
-                  className={`rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${
-                    DIFFICULTY_COLORS[t.difficulty] ?? "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {t.difficulty}
-                </span>
-                {t.content_type === "video" && (
-                  <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700">
-                    Video
-                  </span>
-                )}
-                {t.content_type === "hybrid" && (
-                  <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700">
-                    Hybrid
-                  </span>
-                )}
-              </div>
+              }
+              return (
+                <video
+                  src={videoSource.url}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="h-44 w-full object-cover"
+                />
+              );
+            })();
 
-              <h3 className="flex-1 font-semibold text-slate-800 group-hover:text-sky-700 line-clamp-2">
-                {t.title}
-              </h3>
-              <p className="mt-2 text-sm text-slate-500 line-clamp-2">{t.excerpt}</p>
+            const hasMedia = Boolean(mediaEl);
 
-              {t.content_type === "video" && (
-                <div className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                    <path d="M8 5.14v14l11-7-11-7z" />
-                  </svg>
-                  Watch tutorial
+            return (
+              <Link
+                key={t._id.toString()}
+                href={`/tutorials/${t.slug}`}
+                className="group flex flex-col overflow-hidden rounded-[12px] border border-black/10 bg-white shadow-sm transition-all duration-[250ms] hover:-translate-y-0.5 hover:border-orange-300/40 hover:shadow-[0_14px_28px_rgba(15,23,42,0.14)] dark:border-[#1e2440] dark:bg-[#0d1128] dark:hover:border-orange-500/20 dark:hover:shadow-[0_14px_30px_rgba(0,0,0,0.55),0_0_0_1px_rgba(249,115,22,0.08)]"
+              >
+                {/* Media top — badges overlaid */}
+                {hasMedia && (
+                  <div className="relative overflow-hidden bg-black">
+                    <div className="absolute left-2.5 top-2.5 z-10 flex flex-wrap items-center gap-1.5">
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.07em] leading-none ${diffStyle.pill}`}>
+                        {diffStyle.label}
+                      </span>
+                      {t.content_type === "video" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.07em] leading-none text-white/90 backdrop-blur-sm">
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5.14v14l11-7-11-7z" /></svg>
+                          Video
+                        </span>
+                      )}
+                      {t.content_type === "hybrid" && (
+                        <span className="rounded-full bg-violet-500/80 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.07em] leading-none text-white">
+                          Hybrid
+                        </span>
+                      )}
+                    </div>
+                    {mediaEl}
+                  </div>
+                )}
+
+                {/* Body */}
+                <div className="flex flex-1 flex-col px-4 pb-4 pt-3.5">
+                  {/* Badges when no media */}
+                  {!hasMedia && (
+                    <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.07em] leading-none ${diffStyle.pill}`}>
+                        {diffStyle.label}
+                      </span>
+                      {t.content_type === "video" && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-[#1e2440] bg-[#141830] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.07em] leading-none text-[#8b92a8]">
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5.14v14l11-7-11-7z" /></svg>
+                          Video
+                        </span>
+                      )}
+                      {t.content_type === "hybrid" && (
+                        <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.07em] leading-none text-violet-400 ring-1 ring-violet-500/30">
+                          Hybrid
+                        </span>
+                      )}
+                      {t.content_type === "article" && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-[#1e2440] bg-[#141830] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.07em] leading-none text-[#8b92a8]">
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /></svg>
+                          Article
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <h3 className="line-clamp-2 text-[14px] font-semibold leading-snug text-slate-800 transition group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
+                    {t.title}
+                  </h3>
+                  <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-slate-500 dark:text-[#8b92a8]">
+                    {t.excerpt}
+                  </p>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-orange-500 transition group-hover:text-orange-400">
+                      {t.content_type === "video" ? "Watch Tutorial" : "Read Article"} →
+                    </span>
+                    <span className="flex items-center gap-1 text-[10px] text-[#4d5470]">
+                      {t.content_type === "video" ? (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      ) : (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      )}
+                      {t.estimated_minutes} min {t.content_type === "video" ? "watch" : "read"}
+                    </span>
+                  </div>
                 </div>
-              )}
-
-              <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
-                <span>{t.estimated_minutes} min {t.content_type === "video" ? "watch" : "read"}</span>
-                {t.tags[0] && (
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">
-                    {t.tags[0]}
-                  </span>
-                )}
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

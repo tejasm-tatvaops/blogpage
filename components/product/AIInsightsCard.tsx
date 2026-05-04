@@ -139,8 +139,8 @@ function ExpandableInsightColumn({
 
   const heading =
     variant === "green"
-      ? "text-[11px] font-bold uppercase tracking-wider text-green-800 dark:text-green-300"
-      : "text-[11px] font-bold uppercase tracking-wider text-orange-900 dark:text-orange-200";
+      ? "text-[0.54rem] font-bold uppercase leading-none tracking-wider text-green-800 dark:text-green-300"
+      : "text-[0.54rem] font-bold uppercase leading-none tracking-wider text-orange-900 dark:text-orange-200";
 
   const iconWrap =
     variant === "green"
@@ -152,7 +152,7 @@ function ExpandableInsightColumn({
       <h3 className={cn("mb-3", heading)}>{title}</h3>
       <ul className="space-y-3">
         {visible.map((line, i) => (
-          <li key={`${line}-${i}`} className="flex gap-3 text-sm leading-relaxed text-slate-900 dark:text-slate-100">
+          <li key={`${line}-${i}`} className="flex gap-3 font-sans text-[0.78rem] font-normal leading-[1.5] text-slate-900 dark:text-slate-100">
             <span className={iconWrap}>
               {variant === "green" ? <CheckIcon /> : <AlertIcon />}
             </span>
@@ -164,7 +164,7 @@ function ExpandableInsightColumn({
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
-          className={cn("mt-4 text-left text-xs font-semibold transition", expandBtn)}
+          className={cn("mt-4 text-left font-sans text-[0.72rem] font-semibold leading-none transition", expandBtn)}
         >
           {expanded ? "Show less" : `Show ${items.length - initial} more`}
         </button>
@@ -185,6 +185,7 @@ export function AIInsightsCard({
   cautions = [],
   earlyInsights = [],
   variant = "product",
+  className: layoutClassName,
 }: AIInsightsCardProps) {
   const conf = confidenceLabel(confidence);
   const provenance = dataProvenance(discussionCount, state, variant);
@@ -204,7 +205,8 @@ export function AIInsightsCard({
     : "No discussions yet. AI insights will appear once users start engaging with this product.";
 
   const outer = cn(
-    "tatva-insights-fade-up relative mb-8 rounded-[18px] p-5 backdrop-blur-[10px] sm:p-6 md:mb-10",
+    "tatva-insights-fade-up relative rounded-[18px] p-5 backdrop-blur-[10px] sm:p-6",
+    layoutClassName ?? "mb-8 md:mb-10",
     /* Light: strong elevated surface */
     "border border-black/10 bg-white/95 shadow-[0_10px_36px_rgba(0,0,0,0.12)]",
     /* Dark: deep glass (design spec) */
@@ -225,15 +227,19 @@ export function AIInsightsCard({
       <div className="mb-5 flex flex-wrap items-start gap-4">
         <HeaderIcon />
         <div className="min-w-0 flex-1">
-          <h2 id="ai-insights-title" className="text-lg font-bold tracking-tight text-app sm:text-xl">
+          <h2 id="ai-insights-title" className="font-serif text-[1.4rem] font-medium leading-tight tracking-tight text-app">
             {mainTitle}
           </h2>
-          <p className="mt-1 text-sm text-muted dark:text-white/70">{subtitle}</p>
-          <p className="mt-2 text-xs font-semibold text-muted dark:text-white/55">{provenance}</p>
+          <p className="mt-1 font-sans text-[0.78rem] font-normal leading-[1.5] text-muted dark:text-white/70">
+            {subtitle}
+          </p>
+          <p className="mt-2 font-sans text-[0.56rem] font-normal leading-none text-muted dark:text-white/55">
+            {provenance}
+          </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
           {conf ? (
-            <span className="rounded-full border border-black/10 bg-black/[0.04] px-3 py-1 text-[11px] font-semibold text-muted dark:border-white/15 dark:bg-white/10 dark:text-white/85">
+            <span className="rounded-full border border-black/10 bg-black/[0.04] px-3 py-1 font-sans text-[0.54rem] font-semibold leading-none text-muted dark:border-white/15 dark:bg-white/10 dark:text-white/85">
               {conf}
             </span>
           ) : null}
@@ -243,7 +249,7 @@ export function AIInsightsCard({
       {state === "empty" ? (
         <div className="opacity-80">
           <div className="rounded-[14px] border border-dashed border-black/15 bg-black/[0.03] px-4 py-6 dark:border-white/15 dark:bg-white/[0.04] sm:px-6">
-            <p className="text-sm leading-relaxed text-muted dark:text-white/75">{emptyBody}</p>
+            <p className="font-sans text-[0.78rem] font-normal leading-[1.5] text-muted dark:text-white/75">{emptyBody}</p>
             <div className="mt-5">
               <EmptyShimmer />
             </div>
@@ -254,14 +260,16 @@ export function AIInsightsCard({
       {state === "early" ? (
         <div className="max-w-full rounded-[14px] border border-orange-500/20 bg-orange-500/10 p-4 sm:p-5 dark:border-orange-400/25 dark:bg-orange-500/[0.08]">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/15 px-3 py-1 dark:border-orange-400/35 dark:bg-orange-500/20">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-orange-700 dark:text-orange-300">
+            <span className="text-[0.54rem] font-bold uppercase leading-none tracking-wider text-orange-700 dark:text-orange-300">
               {earlyChip}
             </span>
           </div>
-          <p className="text-sm italic leading-relaxed text-muted dark:text-white/65">{earlyIntro}</p>
+          <p className="font-sans text-[0.78rem] font-normal italic leading-[1.5] text-muted dark:text-white/65">
+            {earlyIntro}
+          </p>
           <ul className="mt-4 space-y-3">
             {earlyInsights.slice(0, 2).map((line, i) => (
-              <li key={i} className="flex gap-3 text-sm leading-relaxed text-app dark:text-white/90">
+              <li key={i} className="flex gap-3 font-sans text-[0.78rem] font-normal leading-[1.5] text-app dark:text-white/90">
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-500/20 ring-1 ring-green-500/25 dark:bg-green-500/15">
                   <CheckIcon />
                 </span>

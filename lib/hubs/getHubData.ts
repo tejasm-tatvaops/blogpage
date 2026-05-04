@@ -9,6 +9,8 @@ export type HubData = {
   blogs: BlogPost[];
   forums: ForumPost[];
   discussions: ForumPost[];
+  /** When set (e.g. product discussion hub), used for UI copy instead of humanizing `hubKey`. */
+  displayTitle?: string;
 };
 
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {

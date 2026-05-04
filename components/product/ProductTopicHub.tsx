@@ -51,16 +51,27 @@ export function ProductHeader({
   return (
     <header className="mb-10">
       {/* Breadcrumb */}
-      <nav className="mb-5 flex items-center gap-2 text-sm text-muted" aria-label="Breadcrumb">
-        <Link href="/" className="transition hover:text-app">Home</Link>
-        <span aria-hidden className="text-faint">/</span>
-        <Link href="/forums" className="transition hover:text-app">Forums</Link>
-        <span aria-hidden className="text-faint">/</span>
+      <nav
+        className="mb-5 flex items-center gap-2 font-sans text-[0.72rem] font-normal leading-none text-muted"
+        aria-label="Breadcrumb"
+      >
+        <Link href="/" className="transition hover:text-app">
+          Home
+        </Link>
+        <span aria-hidden className="text-faint">
+          /
+        </span>
+        <Link href="/forums" className="transition hover:text-app">
+          Forums
+        </Link>
+        <span aria-hidden className="text-faint">
+          /
+        </span>
         <span className="font-medium text-app">{displayName}</span>
       </nav>
 
       {/* Category badge */}
-      <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-app bg-subtle px-3 py-1 text-sm font-semibold text-muted">
+      <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-app bg-subtle px-3 py-1 font-sans text-[0.6rem] font-semibold leading-none text-muted">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
           <line x1="7" y1="7" x2="7.01" y2="7"/>
@@ -68,10 +79,9 @@ export function ProductHeader({
         {category}
       </div>
 
-      <h1 className="text-3xl font-extrabold tracking-tight text-app sm:text-4xl">
-        {displayName}
-      </h1>
-      <p className="mt-2 text-sm text-muted">
+      <h1 className="font-serif text-[1.65rem] font-semibold leading-tight tracking-tight text-app">Product Topic Hub</h1>
+      <p className="mt-2 font-serif text-[1.4rem] font-medium leading-tight tracking-tight text-app">{displayName}</p>
+      <p className="mt-2 font-sans text-[0.78rem] font-normal leading-[1.5] text-muted">
         {discussionCount} discussion{discussionCount !== 1 ? "s" : ""}
         <span className="mx-1.5 text-faint" aria-hidden>·</span>
         {articleCount} article{articleCount !== 1 ? "s" : ""}
@@ -91,12 +101,12 @@ export function ProductDiscussionList({
 }) {
   return (
     <section aria-labelledby="discussions-heading">
-      <h2 id="discussions-heading" className="mb-5 text-lg font-bold text-app">
+      <h2 id="discussions-heading" className="mb-5 font-serif text-[1.4rem] font-medium leading-tight tracking-tight text-app">
         Discussions
       </h2>
 
       {discussions.length === 0 ? (
-        <p className="text-sm text-faint">No discussions for this product yet.</p>
+        <p className="font-sans text-[0.78rem] font-normal leading-[1.5] text-faint">No discussions for this product yet.</p>
       ) : (
         <ul className="space-y-3">
           {discussions.map((post) => (
@@ -119,19 +129,23 @@ export function ProductDiscussionList({
                   )}
                 </div>
 
-                <h3 className="text-sm font-semibold leading-snug text-app transition group-hover:text-orange-500 line-clamp-2">
+                <h3 className="font-sans text-[0.9rem] font-semibold leading-tight text-app transition group-hover:text-orange-500 line-clamp-2">
                   {post.title}
                 </h3>
-                <p className="text-xs text-muted line-clamp-2">{post.excerpt}</p>
+                <p className="font-sans text-[0.78rem] font-normal leading-[1.5] text-muted line-clamp-2">{post.excerpt}</p>
 
                 {/* Footer meta */}
                 <div className="mt-1.5 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-3 text-[11px] text-faint">
-                    <span className="font-medium text-muted">{post.author_name}</span>
-                    <span aria-hidden>·</span>
-                    <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
+                  <div className="flex items-center gap-3 font-sans leading-none text-faint">
+                    <span className="text-[0.62rem] font-medium text-muted">{post.author_name}</span>
+                    <span aria-hidden className="text-[0.56rem]">
+                      ·
+                    </span>
+                    <time className="text-[0.56rem] font-normal" dateTime={post.created_at}>
+                      {formatDate(post.created_at)}
+                    </time>
                   </div>
-                  <div className="flex items-center gap-2.5 text-[11px] text-faint">
+                  <div className="flex items-center gap-2.5 font-sans text-[0.68rem] font-normal leading-none text-faint">
                     <span className="inline-flex items-center gap-1">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                         <polyline points="18 15 12 9 6 15"/>
@@ -155,7 +169,7 @@ export function ProductDiscussionList({
       <div className="mt-5">
         <Link
           href={`/forums?tag=${encodeURIComponent(productSlug)}`}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-app bg-subtle px-4 py-2 text-sm font-medium text-muted transition hover:bg-card hover:text-app"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-app bg-subtle px-4 py-2 font-sans text-[0.72rem] font-medium leading-none text-muted transition hover:bg-card hover:text-app"
         >
           Browse all discussions
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -178,30 +192,34 @@ export function ProductArticleList({
 }) {
   return (
     <section aria-labelledby="articles-heading">
-      <h2 id="articles-heading" className="mb-5 text-lg font-bold text-app">
+      <h2 id="articles-heading" className="mb-5 font-serif text-[1.4rem] font-medium leading-tight tracking-tight text-app">
         Articles
       </h2>
 
       {articles.length === 0 ? (
-        <p className="text-sm text-faint">No articles for this product yet.</p>
+        <p className="font-sans text-[0.78rem] font-normal leading-[1.5] text-faint">No articles for this product yet.</p>
       ) : (
         <ul className="space-y-4">
           {articles.map((post) => (
             <li key={post.id} className="group rounded-2xl border border-app bg-surface p-5 shadow-sm transition hover:shadow-md hover:border-orange-500/25">
               <Link href={`/blog/${post.slug}`} className="block">
-                <span className="mb-1.5 inline-block rounded-full bg-orange-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-orange-500">
+                <span className="mb-1.5 inline-block rounded-full bg-orange-500/10 px-2 py-0.5 text-[0.54rem] font-bold uppercase leading-none tracking-wider text-orange-500">
                   {post.category}
                 </span>
-                <h3 className="text-base font-semibold leading-snug text-app transition group-hover:text-orange-500 line-clamp-2">
+                <h3 className="font-sans text-[0.9rem] font-semibold leading-tight text-app transition group-hover:text-orange-500 line-clamp-2">
                   {post.title}
                 </h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted line-clamp-2">
+                <p className="mt-1.5 font-sans text-[0.78rem] font-normal leading-[1.5] text-muted line-clamp-2">
                   {post.excerpt}
                 </p>
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-faint">
-                  <span className="font-medium text-muted">{post.author}</span>
-                  <span aria-hidden>·</span>
-                  <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
+                <div className="mt-3 flex flex-wrap items-center gap-3 font-sans leading-none text-faint">
+                  <span className="text-[0.62rem] font-medium text-muted">{post.author}</span>
+                  <span aria-hidden className="text-[0.56rem]">
+                    ·
+                  </span>
+                  <time className="text-[0.56rem] font-normal" dateTime={post.created_at}>
+                    {formatDate(post.created_at)}
+                  </time>
                   {post.view_count > 0 && (
                     <>
                       <span aria-hidden>·</span>
@@ -219,7 +237,7 @@ export function ProductArticleList({
         <div className="mt-5">
           <Link
             href={`/blog?tag=${encodeURIComponent(productSlug)}`}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-app bg-subtle px-4 py-2 text-sm font-medium text-muted transition hover:bg-card hover:text-app"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-app bg-subtle px-4 py-2 font-sans text-[0.72rem] font-medium leading-none text-muted transition hover:bg-card hover:text-app"
           >
             Browse all articles
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

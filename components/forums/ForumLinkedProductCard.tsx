@@ -42,9 +42,9 @@ export function ForumLinkedProductCard({
       <Link href="/brand-profile" className="group block">
         <div className={`relative flex h-32 w-full items-center justify-center bg-gradient-to-br ${gradient}`}>
           {/* Large icon as focal point */}
-          <span className="text-5xl drop-shadow-lg">{icon}</span>
+          <span className="text-[1.65rem] leading-none drop-shadow-lg">{icon}</span>
           {/* Brand badge */}
-          <span className="absolute bottom-3 left-3 rounded-md bg-black/30 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+          <span className="absolute bottom-3 left-3 rounded-md bg-black/30 px-2 py-0.5 text-[0.54rem] font-semibold leading-none text-white backdrop-blur-sm">
             {productBrand}
           </span>
           {/* Hover overlay */}
@@ -54,7 +54,7 @@ export function ForumLinkedProductCard({
 
       <div className="p-4">
         {/* Section label */}
-        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-indigo-600">
+        <p className="mb-2 flex items-center gap-1.5 text-[0.54rem] font-semibold uppercase leading-none tracking-wide text-orange-600 dark:text-orange-400">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
             <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
             <line x1="7" y1="7" x2="7.01" y2="7" />
@@ -65,7 +65,7 @@ export function ForumLinkedProductCard({
         {/* Product name */}
         <Link
           href="/brand-profile"
-          className="group/name block text-sm font-bold leading-snug text-app transition hover:text-indigo-600"
+          className="group/name block text-[0.9rem] font-semibold leading-tight text-app transition hover:text-orange-600 dark:hover:text-orange-400"
         >
           {productName}
           <svg
@@ -87,12 +87,12 @@ export function ForumLinkedProductCard({
         {/* Price + stock */}
         {product && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-slate-800">
+            <span className="text-[0.9rem] font-semibold leading-tight text-slate-800 dark:text-white/90">
               ₹{product.priceMin.toLocaleString("en-IN")}
-              <span className="font-normal text-slate-400"> – </span>
+              <span className="font-normal text-slate-400 dark:text-[#4d5470]"> – </span>
               ₹{product.priceMax.toLocaleString("en-IN")}
             </span>
-            <span className="text-xs text-slate-400">{product.unit}</span>
+            <span className="text-[0.54rem] font-normal leading-none text-slate-400 dark:text-[#4d5470]">{product.unit}</span>
           </div>
         )}
 
@@ -100,7 +100,7 @@ export function ForumLinkedProductCard({
         {product && stock && (
           <div className="mt-2 flex items-center gap-1.5">
             <span className={`h-1.5 w-1.5 rounded-full ${stock.dot}`} />
-            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${stock.pill}`}>
+            <span className={`rounded-full border px-2 py-0.5 text-[0.6rem] font-semibold leading-none ${stock.pill}`}>
               {product.stockStatus}
             </span>
           </div>
@@ -108,7 +108,7 @@ export function ForumLinkedProductCard({
 
         {/* Description */}
         {product && (
-          <p className="mt-3 text-xs leading-relaxed text-slate-500 line-clamp-3">
+          <p className="mt-3 line-clamp-3 text-[0.78rem] font-normal leading-[1.5] text-slate-500 dark:text-[#8b92a8]">
             {product.description}
           </p>
         )}
@@ -116,7 +116,7 @@ export function ForumLinkedProductCard({
         {/* CTA */}
         <Link
           href="/brand-profile"
-          className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700"
+          className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 font-sans text-[0.72rem] font-semibold uppercase leading-none tracking-[0.05em] text-white shadow-[0_2px_10px_rgba(249,115,22,0.25)] transition hover:bg-orange-400 hover:shadow-[0_4px_14px_rgba(249,115,22,0.35)]"
         >
           View product details
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
