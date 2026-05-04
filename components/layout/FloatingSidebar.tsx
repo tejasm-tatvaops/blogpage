@@ -113,14 +113,14 @@ export function FloatingSidebar() {
   if (pathname.startsWith("/admin")) return null;
 
   return (
-    <aside className="hidden fixed left-[14px] top-1/2 z-[150] -translate-y-1/2 w-[76px] h-[min(657px,calc(100vh-130px))] rounded-[28px] overflow-hidden md:block">
+    <aside className="hidden fixed left-[14px] top-1/2 z-[150] -translate-y-1/2 w-[88px] h-[min(657px,calc(100vh-130px))] rounded-[28px] overflow-hidden md:block">
       <div
-        className="absolute inset-0 flex flex-col items-center py-7 px-0 rounded-[28px]
+        className="absolute inset-0 flex flex-col items-center pt-7 pb-6 px-0 rounded-[28px]
           bg-[rgba(236,238,248,0.82)] dark:bg-[rgba(8,11,28,0.82)]
           backdrop-blur-xl
           shadow-[0px_8px_40px_rgba(80,90,160,0.14),inset_0px_1px_0px_rgba(255,255,255,0.9)]
           dark:shadow-[0_16px_56px_rgba(4,6,18,0.65),inset_0_1px_0_rgba(255,255,255,0.05)]
-          border border-orange-200/20 dark:border-white/10"
+          border border-[#F97316]/20 dark:border-[#F97316]/15"
       >
       {/* Brand strip */}
       <div className="flex flex-col gap-[4px] pb-7">

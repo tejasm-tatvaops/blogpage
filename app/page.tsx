@@ -53,49 +53,81 @@ export default async function HomePage() {
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div
-        className="relative flex min-h-[360px] items-center overflow-hidden rounded-[22px] border border-black/5 dark:border-white/10 sm:min-h-[420px] sm:rounded-[28px]"
+        className="relative flex min-h-[420px] items-center overflow-hidden rounded-[22px] border border-black/5 dark:border-white/10 sm:min-h-[540px] sm:rounded-[28px] lg:min-h-[580px]"
         style={{ backgroundImage: "url('/images/construction/site-team-3.png')", backgroundSize: "cover", backgroundPosition: "center" }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-[#040818]/92 via-[#09122a]/72 to-[#0b142e]/32" />
         <div className="absolute inset-0 bg-[radial-gradient(95%_100%_at_88%_18%,rgba(255,255,255,0.08),transparent_60%)]" />
-        <div className="relative z-10 max-w-[520px] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-        <p className="mb-3 inline-flex rounded-full border border-orange-300/35 bg-orange-500/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-orange-300 sm:mb-4 sm:px-3 sm:text-xs sm:tracking-[0.14em]">
-          TatvaOps Platform
-        </p>
-            <h1 className="break-words text-[clamp(1.65rem,5.2vw,2.625rem)] leading-tight font-semibold text-white sm:text-[42px]">
-              AI-Powered Construction Content,{" "}
-              <span className="text-orange-500">Community</span>, and Decision Support
-            </h1>
-            <p className="mt-4 text-sm text-white/78">
-              TatvaOps combines a smart blog engine, practical city-wise cost guides, and a live
-              forums community so builders, estimators, and teams can plan, discuss, and execute
-              with confidence.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2.5 sm:gap-3">
-              <Link href="/blog" className="inline-flex items-center justify-center rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-300 ease-out hover:shadow-lg sm:px-5">
-                Explore Blogs
-              </Link>
-              <Link href="/forums" className="rounded-xl border border-white/25 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white sm:px-5">
-                Join Forums
-              </Link>
-            </div>
-            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        <div className="relative z-10 max-w-[600px] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+          <p className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-orange-400/30 bg-orange-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-orange-300 sm:mb-4 sm:text-[11px]">
+            <span className="text-orange-400">•</span>
+            Tatvaops Platform
+          </p>
+          <h1 className="break-words text-[clamp(1.8rem,4.8vw,3.5rem)] leading-[1.1] font-bold text-white sm:text-[52px] lg:text-[58px]">
+            AI-Powered Construction Content,{" "}
+            <span className="italic text-orange-500">Community,</span>{" "}
+            and Decision Support
+          </h1>
+          <p className="mt-4 text-sm leading-relaxed text-orange-100/80">
+            TatvaOps combines a smart blog engine, practical city-wise cost guides, and a live
+            forums community so builders, estimators, and teams can plan, discuss, and execute
+            with confidence.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-2.5 sm:gap-3">
+            <Link href="/blog" className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-[13px] font-bold uppercase tracking-[0.06em] text-white shadow-[0_4px_16px_rgba(249,115,22,0.35)] transition-all duration-200 hover:bg-orange-400 hover:shadow-[0_6px_20px_rgba(249,115,22,0.45)] sm:px-6">
+              Explore Blogs
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </Link>
+            <Link href="/forums" className="inline-flex items-center rounded-xl border border-white/25 bg-white/8 px-5 py-2.5 text-[13px] font-bold uppercase tracking-[0.06em] text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/14 hover:border-white/40 sm:px-6">
+              Join Forums
+            </Link>
+          </div>
+          <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
             {[
-              { title: "Blogs",  body: "AI-generated, SEO-structured, editable content.", href: "/blog" },
-              { title: "Forums", body: "Q&A, opinions, voting, and practical discussion.", href: "/forums" },
-              { title: "Shorts", body: "CMS, moderation, autopopulate, and analytics.", href: "/shorts" },
+              {
+                title: "Blogs",
+                body: "AI-generated, SEO-structured, editable content.",
+                href: "/blog",
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+                ),
+                iconBg: "bg-orange-500/20 text-orange-400",
+              },
+              {
+                title: "Forums",
+                body: "Q&A, opinions, voting, and practical discussion.",
+                href: "/forums",
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"/></svg>
+                ),
+                iconBg: "bg-emerald-500/20 text-emerald-400",
+              },
+              {
+                title: "Shorts",
+                body: "CMS, moderation, autopopulate, and analytics.",
+                href: "/shorts",
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><polygon points="5,3 19,12 5,21"/></svg>
+                ),
+                iconBg: "bg-white/10 text-white/60",
+              },
             ].map((card) => (
               <Link
                 key={card.title}
                 href={card.href}
-                className="rounded-xl border border-white/15 bg-white/5 p-3.5 backdrop-blur-md sm:p-4"
+                className="flex items-start gap-3 rounded-xl border border-white/12 bg-white/6 p-3.5 backdrop-blur-md transition-colors duration-200 hover:bg-white/10 hover:border-white/20 sm:p-4"
               >
-                <p className="text-sm font-semibold text-white">{card.title}</p>
-                <p className="mt-1 text-xs text-white/65">{card.body}</p>
+                <span className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${card.iconBg}`}>
+                  {card.icon}
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-white">{card.title}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-white/60">{card.body}</p>
+                </div>
               </Link>
             ))}
-            </div>
           </div>
+        </div>
       </div>
 
       {/* ── Platform Intelligence ─────────────────────────────────────────── */}

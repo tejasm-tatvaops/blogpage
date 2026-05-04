@@ -44,9 +44,9 @@ export function Navbar() {
     ].join(" ");
 
   return (
-    <header className="sticky top-2 z-40 mx-2 mb-2 sm:mx-4 md:top-4">
-      <div className="rounded-2xl glass-nav px-3 py-2 sm:px-4 sm:py-2.5">
-        <div className="flex items-center justify-between gap-2 sm:gap-3">
+    <header className="sticky top-2 z-40 mx-2 mb-2 sm:mx-4 md:top-[14px]">
+      <div className="rounded-[14px] glass-nav px-[18px]">
+        <div className="flex items-center justify-between gap-2 sm:gap-3 h-[50px]">
 
         {/* Logo */}
         <Link href="/" className="flex min-w-0 shrink-0 items-center" aria-label="TatvaOps home" onClick={() => setMobileNavOpen(false)}>

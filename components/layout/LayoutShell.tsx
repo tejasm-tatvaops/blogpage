@@ -10,5 +10,5 @@ export function LayoutShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   // Admin has its own AdminSidebar — no offset needed there
   if (pathname.startsWith("/admin")) return <>{children}</>;
-  return <div className="min-w-0 w-full max-w-[100vw] ml-0 md:ml-[100px]">{children}</div>;
+  return <div className="min-w-0 w-full ml-0 md:ml-[106px] md:w-[calc(100%-106px)]">{children}</div>;
 }
