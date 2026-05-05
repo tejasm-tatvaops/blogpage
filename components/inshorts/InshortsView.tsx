@@ -549,10 +549,10 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
         )}
       </AnimatePresence>
 
-      <div className="ml-0 px-4 pt-[100px] md:ml-[90px] md:px-6 lg:ml-[120px]">
-        <div className="mx-auto w-full max-w-[1280px]">
+      <div className="ml-0 px-4 pb-4 pt-[86px] md:ml-[90px] md:px-6 lg:ml-[120px]">
+        <div className="mx-auto flex w-full max-w-[1280px] flex-col">
       {/* Top bar */}
-      <div className="pointer-events-none relative z-20">
+      <div className="pointer-events-none relative z-20 order-2 mt-3">
         <div className="pointer-events-auto relative bg-black/20 px-3 pt-2 backdrop-blur-lg">
           {/* Progress bar */}
           <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-white/15">
@@ -618,103 +618,103 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
             </motion.p>
           </AnimatePresence>
 
-          {/* Topic chips */}
-          <div className="mb-6 relative">
-            <div
-              ref={tagContainerRef}
-              className="flex snap-x snap-mandatory flex-nowrap gap-2 overflow-x-auto scroll-smooth pb-3 [scrollbar-width:none] [scroll-padding-left:12px] [scroll-padding-right:12px] [&::-webkit-scrollbar]:hidden"
-              onMouseEnter={() => {
-                tagAutoHoverPausedRef.current = true;
-                setTagSnapEnabled(true);
+        </div>
+      </div>
+
+      <div className="relative order-0 mb-2">
+        <div
+          ref={tagContainerRef}
+          className="flex snap-x snap-mandatory flex-nowrap gap-2 overflow-x-auto scroll-smooth pb-3 [scrollbar-width:none] [scroll-padding-left:12px] [scroll-padding-right:12px] [&::-webkit-scrollbar]:hidden"
+          onMouseEnter={() => {
+            tagAutoHoverPausedRef.current = true;
+            setTagSnapEnabled(true);
+          }}
+          onMouseLeave={() => {
+            tagAutoHoverPausedRef.current = false;
+          }}
+          onTouchStart={() => pauseTagAutoScroll(2800)}
+          onWheel={(e) => {
+            const container = e.currentTarget;
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+              e.preventDefault();
+              container.scrollLeft += e.deltaY;
+              pauseTagAutoScroll(2800);
+            }
+          }}
+          style={{
+            maskImage: "linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent)",
+            WebkitMaskImage: "linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTagIndex(0);
+              scrollToTag(0);
+              pauseTagAutoScroll(2800);
+            }}
+            data-logical-index={0}
+            className={`shrink-0 snap-start whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold transition ${
+              activeTagIndex === 0
+                ? "border-sky-300 bg-sky-500 text-white"
+                : "border-white/20 bg-black/35 text-white/95 hover:bg-black/50"
+            }`}
+          >
+            All
+          </button>
+          {autoTagItems.slice(1).map((tag, idx) => {
+            const logicalIndex = (idx % (tagItems.length - 1)) + 1;
+            return (
+            <button
+              type="button"
+              key={`${tag}-${idx}`}
+              onClick={() => {
+                const next = logicalIndex;
+                setActiveTagIndex(next);
+                scrollToTag(next);
+                pauseTagAutoScroll(2800);
               }}
-              onMouseLeave={() => {
-                tagAutoHoverPausedRef.current = false;
-              }}
-              onTouchStart={() => pauseTagAutoScroll(2800)}
-              onWheel={(e) => {
-                const container = e.currentTarget;
-                if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-                  e.preventDefault();
-                  container.scrollLeft += e.deltaY;
-                  pauseTagAutoScroll(2800);
-                }
-              }}
-              style={{
-                maskImage: "linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent)",
-                WebkitMaskImage: "linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent)",
-              }}
+              data-logical-index={logicalIndex}
+              className={`shrink-0 snap-start whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium backdrop-blur-sm transition ${
+                activeTagIndex === logicalIndex
+                  ? "border-sky-300 bg-sky-500 text-white"
+                  : "border-white/20 bg-black/35 text-white/95 hover:bg-black/50"
+              }`}
             >
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTagIndex(0);
-                  scrollToTag(0);
-                  pauseTagAutoScroll(2800);
-                }}
-                data-logical-index={0}
-                className={`shrink-0 snap-start whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                  activeTagIndex === 0
-                    ? "border-sky-300 bg-sky-500 text-white"
-                    : "border-white/20 bg-black/35 text-white/95 hover:bg-black/50"
-                }`}
-              >
-                All
-              </button>
-              {autoTagItems.slice(1).map((tag, idx) => {
-                const logicalIndex = (idx % (tagItems.length - 1)) + 1;
-                return (
-                <button
-                  type="button"
-                  key={`${tag}-${idx}`}
-                  onClick={() => {
-                    const next = logicalIndex;
-                    setActiveTagIndex(next);
-                    scrollToTag(next);
-                    pauseTagAutoScroll(2800);
-                  }}
-                  data-logical-index={logicalIndex}
-                  className={`shrink-0 snap-start whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium backdrop-blur-sm transition ${
-                    activeTagIndex === logicalIndex
-                      ? "border-sky-300 bg-sky-500 text-white"
-                      : "border-white/20 bg-black/35 text-white/95 hover:bg-black/50"
-                  }`}
-                >
-                  #{tag}
-                </button>
-                );
-              })}
-            </div>
-            <div className="pointer-events-none absolute inset-0">
-              <button
-                type="button"
-                onClick={() => scrollTags("left")}
-                className={`pointer-events-auto absolute left-0 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-1.5 text-xs text-white/95 backdrop-blur transition-opacity duration-200 hover:scale-105 hover:bg-white/20 md:inline-flex ${
-                  canScrollTagsLeft ? "opacity-100" : "pointer-events-none opacity-0"
-                }`}
-                aria-label="Scroll tags left"
-              >
-                ←
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollTags("right")}
-                className={`pointer-events-auto absolute right-0 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-1.5 text-xs text-white/95 backdrop-blur transition-opacity duration-200 hover:scale-105 hover:bg-white/20 md:inline-flex ${
-                  canScrollTagsRight ? "opacity-100" : "pointer-events-none opacity-0"
-                }`}
-                aria-label="Scroll tags right"
-              >
-                →
-              </button>
-            </div>
-          </div>
+              #{tag}
+            </button>
+            );
+          })}
+        </div>
+        <div className="pointer-events-none absolute inset-0">
+          <button
+            type="button"
+            onClick={() => scrollTags("left")}
+            className={`pointer-events-auto absolute left-0 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-1.5 text-xs text-white/95 backdrop-blur transition-opacity duration-200 hover:scale-105 hover:bg-white/20 md:inline-flex ${
+              canScrollTagsLeft ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+            aria-label="Scroll tags left"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollTags("right")}
+            className={`pointer-events-auto absolute right-0 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-1.5 text-xs text-white/95 backdrop-blur transition-opacity duration-200 hover:scale-105 hover:bg-white/20 md:inline-flex ${
+              canScrollTagsRight ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+            aria-label="Scroll tags right"
+          >
+            →
+          </button>
         </div>
       </div>
 
       {/* Horizontal scroll card strip */}
-      <div className="relative mt-6">
+      <div className="relative order-1 mt-2">
         <div
           ref={containerRef}
-          className="h-[calc(100vh-280px)] whitespace-nowrap overflow-x-scroll overflow-y-hidden snap-x snap-mandatory md:h-[calc(100vh-260px)] [scroll-behavior:smooth]"
+          className="h-[calc(100vh-330px)] whitespace-nowrap overflow-x-scroll overflow-y-hidden snap-x snap-mandatory md:h-[calc(100vh-300px)] [scroll-behavior:smooth]"
           style={{ scrollbarWidth: "none" }}
           onTouchStart={(event) => {
           const point = event.touches[0];
@@ -1039,8 +1039,8 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
       </div>
 
       {/* Dot progress */}
-      <div className="pointer-events-none mt-6 pb-3 flex justify-center">
-        <div className="mb-2 flex items-center justify-center gap-1.5">
+      <div className="pointer-events-none order-3 mt-4 flex flex-col items-center justify-center gap-2 pb-2">
+        <div className="flex items-center justify-center gap-3">
           {visibleDots.map((_, offset) => {
             const idx = visibleDotStart + offset;
             return (
@@ -1049,7 +1049,9 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                 type="button"
                 onClick={() => scrollTo(idx)}
                 aria-label={`Go to post ${idx + 1}`}
-                className={`pointer-events-auto h-1.5 rounded-full transition-all ${idx === activeIndex ? "w-5 bg-white" : "w-1.5 bg-white/35"}`}
+                className={`pointer-events-auto rounded-full transition-all duration-200 ${
+                  idx === activeIndex ? "h-3 w-10 bg-white" : "h-3 w-3 bg-white/40"
+                }`}
               />
             );
           })}

@@ -9,6 +9,17 @@ import { useEffect } from "react";
  */
 export function UnhandledRejectionGuard() {
   useEffect(() => {
+    const isResourceTarget = (target: EventTarget | null): boolean => {
+      if (!target || typeof window === "undefined") return false;
+      return (
+        target instanceof HTMLImageElement ||
+        target instanceof HTMLVideoElement ||
+        target instanceof HTMLScriptElement ||
+        target instanceof HTMLLinkElement ||
+        target instanceof HTMLSourceElement
+      );
+    };
+
     const isEventLike = (reason: unknown): boolean => {
       if (reason instanceof Event) return true;
       if (String(reason) === "[object Event]") return true;
@@ -35,11 +46,31 @@ export function UnhandledRejectionGuard() {
       }
     };
 
+    const resourceErrorHandler = (event: Event) => {
+      if (String(event) !== "[object Event]") return;
+      if (!isResourceTarget(event.target)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+
     window.addEventListener("unhandledrejection", rejectionHandler);
     window.addEventListener("error", errorHandler);
+    window.addEventListener("error", resourceErrorHandler, true);
+    const previousOnError = window.onerror;
+    window.onerror = (message, _source, _lineno, _colno, error) => {
+      if (String(message) === "[object Event]" || String(error) === "[object Event]") {
+        return true;
+      }
+      if (typeof previousOnError === "function") {
+        return previousOnError(message, _source, _lineno, _colno, error);
+      }
+      return false;
+    };
     return () => {
       window.removeEventListener("unhandledrejection", rejectionHandler);
       window.removeEventListener("error", errorHandler);
+      window.removeEventListener("error", resourceErrorHandler, true);
+      window.onerror = previousOnError ?? null;
     };
   }, []);
 

@@ -56,6 +56,34 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     event.preventDefault();
                   }
                 });
+                window.addEventListener(
+                  "error",
+                  function (event) {
+                    const target = event && event.target;
+                    const isResourceTarget =
+                      (typeof HTMLImageElement !== "undefined" && target instanceof HTMLImageElement) ||
+                      (typeof HTMLVideoElement !== "undefined" && target instanceof HTMLVideoElement) ||
+                      (typeof HTMLScriptElement !== "undefined" && target instanceof HTMLScriptElement) ||
+                      (typeof HTMLLinkElement !== "undefined" && target instanceof HTMLLinkElement) ||
+                      (typeof HTMLSourceElement !== "undefined" && target instanceof HTMLSourceElement);
+                    if (String(event) === "[object Event]" && isResourceTarget) {
+                      event.preventDefault();
+                      if (typeof event.stopImmediatePropagation === "function") {
+                        event.stopImmediatePropagation();
+                      }
+                    }
+                  },
+                  true
+                );
+                window.onerror = function (message, source, lineno, colno, error) {
+                  if (
+                    String(message) === "[object Event]" ||
+                    String(error) === "[object Event]"
+                  ) {
+                    return true;
+                  }
+                  return false;
+                };
               })();
             `,
           }}
