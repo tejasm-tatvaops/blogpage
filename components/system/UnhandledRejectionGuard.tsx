@@ -17,15 +17,30 @@ export function UnhandledRejectionGuard() {
       return "isTrusted" in r || ("type" in r && "target" in r);
     };
 
-    const handler = (event: PromiseRejectionEvent) => {
+    const rejectionHandler = (event: PromiseRejectionEvent) => {
       if (isEventLike(event.reason)) {
         console.warn("[UnhandledRejectionGuard] Ignored non-Error rejection event");
         event.preventDefault();
       }
     };
 
-    window.addEventListener("unhandledrejection", handler);
-    return () => window.removeEventListener("unhandledrejection", handler);
+    const errorHandler = (event: ErrorEvent) => {
+      // Some browser/network failures bubble up as generic Event objects.
+      // Suppress only this narrow noisy case.
+      if (
+        String(event.error) === "[object Event]" ||
+        String(event.message) === "[object Event]"
+      ) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener("unhandledrejection", rejectionHandler);
+    window.addEventListener("error", errorHandler);
+    return () => {
+      window.removeEventListener("unhandledrejection", rejectionHandler);
+      window.removeEventListener("error", errorHandler);
+    };
   }, []);
 
   return null;

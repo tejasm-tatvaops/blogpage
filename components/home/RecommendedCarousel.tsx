@@ -29,9 +29,11 @@ export default function RecommendedCarousel({ blogs }: { blogs: Blog[] }) {
   const [active, setActive] = useState(0);
   const [visible, setVisible] = useState(true);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [forceFallbackImage, setForceFallbackImage] = useState(false);
 
   useEffect(() => {
     setImgLoaded(false);
+    setForceFallbackImage(false);
   }, [active]);
 
   const goTo = useCallback((idx: number) => {
@@ -67,6 +69,9 @@ export default function RecommendedCarousel({ blogs }: { blogs: Blog[] }) {
 
   const blog = blogs[active];
   const fallbackImage = FALLBACK_IMAGES[active % FALLBACK_IMAGES.length];
+  const candidateImage = (blog.cover_image || "").trim();
+  const blockedRemoteImage = candidateImage.includes("source.unsplash.com");
+  const displayImage = !forceFallbackImage && candidateImage && !blockedRemoteImage ? candidateImage : fallbackImage;
 
   return (
     <div className="mt-3 flex flex-col gap-3">
@@ -90,13 +95,20 @@ export default function RecommendedCarousel({ blogs }: { blogs: Blog[] }) {
           </div>
 
           <Image
-            src={blog.cover_image || fallbackImage}
+            src={displayImage}
             alt={blog.title}
             fill
             sizes="(max-width: 768px) 100vw, 400px"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             onLoad={() => setImgLoaded(true)}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).src = fallbackImage; }}
+            onError={() => {
+              if (!forceFallbackImage) {
+                setForceFallbackImage(true);
+                setImgLoaded(false);
+                return;
+              }
+              setImgLoaded(true);
+            }}
           />
 
           {imgLoaded && blog.tags.length > 0 && (

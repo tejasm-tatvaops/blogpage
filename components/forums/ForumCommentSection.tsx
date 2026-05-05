@@ -373,14 +373,14 @@ export function ForumCommentSection({
   };
 
   const inputClass =
-    "w-full rounded-lg border border-app bg-surface px-3 py-2 text-sm text-app outline-none ring-indigo-400 transition placeholder:text-slate-400 focus:ring-2";
+    "w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-slate-200 outline-none ring-orange-400/40 transition-all duration-200 placeholder:text-slate-500 focus:ring-2";
 
   const renderComment = (c: Comment, depth: 0 | 1 | 2 = 0) => {
     const isBest = c.id === bestCommentId && depth === 0;
     return (
       <div
         key={c.id}
-        className={`flex gap-3 ${isBest ? "rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 -mx-3" : ""}`}
+        className={`flex gap-3 rounded-lg py-4 transition-all duration-200 hover:bg-white/[0.03] ${isBest ? "border border-emerald-300/30 bg-emerald-400/10 px-3" : ""}`}
       >
         <UserProfileQuickView
           displayName={getDisplayName(c)}
@@ -391,7 +391,7 @@ export function ForumCommentSection({
               <div className="transition-transform duration-200 hover:scale-105">
                 {avatar.type === "initials" ? (
                   <div
-                    className={`h-9 w-9 flex-shrink-0 rounded-full flex items-center justify-center text-white text-sm font-semibold bg-gradient-to-br ${avatar.gradient} border border-white/10 shadow-sm ring-1 ring-white/5`}
+                    className={`h-[38px] w-[38px] flex-shrink-0 rounded-full flex items-center justify-center text-white text-sm font-semibold bg-gradient-to-br ${avatar.gradient} border border-white/10 shadow-sm ring-1 ring-white/5`}
                   >
                     {avatar.name.slice(0, 2).toUpperCase()}
                   </div>
@@ -399,7 +399,7 @@ export function ForumCommentSection({
                   <img
                     src={avatar.src}
                     alt="User avatar"
-                    className={`h-9 w-9 flex-shrink-0 rounded-full object-cover border border-white/10 shadow-sm ring-1 ring-white/5 ${
+                    className={`h-[38px] w-[38px] flex-shrink-0 rounded-full object-cover border border-white/10 shadow-sm ring-1 ring-white/5 ${
                       avatar.type === "dicebear" ? "opacity-90" : ""
                     }`}
                     loading="lazy"
@@ -466,7 +466,7 @@ export function ForumCommentSection({
                 type="button"
                 disabled={votingCommentId === c.id}
                 onClick={() => onVote(c.id, "up")}
-                className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-md border border-white/15 px-3 py-1.5 text-xs transition-all duration-200 hover:scale-105 hover:border-orange-400/60 hover:bg-white/[0.03] disabled:opacity-50"
               >
                 ▲ {c.upvote_count}
               </button>
@@ -474,7 +474,7 @@ export function ForumCommentSection({
                 type="button"
                 disabled={votingCommentId === c.id}
                 onClick={() => onVote(c.id, "down")}
-                className="inline-flex items-center gap-1 rounded-md border border-app px-2 py-1 hover:bg-subtle disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-md border border-white/15 px-3 py-1.5 text-xs transition-all duration-200 hover:scale-105 hover:border-orange-400/60 hover:bg-white/[0.03] disabled:opacity-50"
               >
                 ▼ {c.downvote_count}
               </button>
@@ -483,7 +483,7 @@ export function ForumCommentSection({
                 <button
                   type="button"
                   onClick={() => setActiveReplyFor((prev) => (prev === c.id ? null : c.id))}
-                  className="rounded-md border border-app px-2 py-1 hover:bg-subtle"
+                  className="rounded-md border border-white/15 px-3 py-1.5 text-xs transition-all duration-200 hover:scale-105 hover:border-orange-400/60 hover:bg-white/[0.03]"
                 >
                   Reply
                 </button>
@@ -493,7 +493,7 @@ export function ForumCommentSection({
                   type="button"
                   disabled={deletingCommentId === c.id}
                   onClick={() => onDelete(c.id)}
-                  className="rounded-md border border-rose-200 px-2 py-1 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                  className="rounded-md border border-rose-300/40 px-3 py-1.5 text-xs text-rose-300 transition-all duration-200 hover:bg-rose-400/10 disabled:opacity-50"
                 >
                   Delete
                 </button>
@@ -504,10 +504,10 @@ export function ForumCommentSection({
                   type="button"
                   disabled={markingBest}
                   onClick={() => onMarkBest(c.id)}
-                  className={`rounded-md border px-2 py-1 text-xs transition disabled:opacity-50 ${
+                  className={`rounded-md border px-3 py-1.5 text-xs transition-all duration-200 disabled:opacity-50 ${
                     isBest
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-surface"
-                      : "border-app text-slate-500 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                      ? "border-emerald-300/40 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/15"
+                      : "border-white/15 text-slate-300 hover:border-emerald-300/40 hover:bg-emerald-400/10 hover:text-emerald-300"
                   }`}
                 >
                   {isBest ? "Unmark best" : "Mark as best"}
@@ -517,7 +517,7 @@ export function ForumCommentSection({
           )}
 
           {activeReplyFor === c.id && (
-            <div className="mt-3 rounded-lg border border-app bg-subtle p-3">
+            <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
               <textarea
                 value={replyDrafts[c.id] ?? ""}
                 onChange={(e) => {
@@ -531,13 +531,13 @@ export function ForumCommentSection({
                 className={inputClass}
               />
               {mentionTarget?.type === "reply" && mentionTarget.id === c.id && mentionSuggestions.length > 0 && (
-                <div className="mt-2 rounded-lg border border-app bg-surface p-1">
+                <div className="mt-2 rounded-lg border border-white/10 bg-[#111827] p-1">
                   {mentionSuggestions.map((item) => (
                     <button
                       key={item.username}
                       type="button"
                       onClick={() => applyMentionSuggestion(item.username)}
-                      className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-subtle"
+                      className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm transition-all duration-200 hover:bg-white/[0.03]"
                     >
                       <span className="font-medium text-app">@{item.username}</span>
                       <span className="text-xs text-muted">{item.displayName || "User"}</span>
@@ -550,7 +550,7 @@ export function ForumCommentSection({
                   type="button"
                   disabled={!(replyDrafts[c.id] ?? "").trim() || submitting}
                   onClick={() => onReply(c.id)}
-                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold !text-white hover:bg-indigo-700 disabled:opacity-50"
+                  className="rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold !text-white transition-all duration-200 hover:bg-orange-400 disabled:opacity-50"
                 >
                   {submitting ? "Posting…" : "Post reply"}
                 </button>
@@ -559,7 +559,7 @@ export function ForumCommentSection({
           )}
 
           {c.replies.length > 0 && (
-            <div className="mt-4 space-y-4 border-l-2 border-indigo-100 pl-4">
+            <div className="ml-4 mt-4 space-y-4 border-l border-white/10 pl-4">
               {c.replies.map((reply) => renderComment(reply, (depth + 1) as 0 | 1 | 2))}
             </div>
           )}
@@ -569,9 +569,9 @@ export function ForumCommentSection({
   };
 
   return (
-    <section className="mt-12 border-t border-app pt-10">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-app">
+    <section>
+      <div className="mb-5 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-slate-100">
           {comments.length > 0
             ? `${comments.length} Repl${comments.length !== 1 ? "ies" : "y"}`
             : "Discussion"}
@@ -582,10 +582,10 @@ export function ForumCommentSection({
               key={mode}
               type="button"
               onClick={() => setSortMode(mode)}
-              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+              className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all duration-200 ${
                 sortMode === mode
-                  ? "bg-slate-900 !text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  ? "border-orange-400/70 bg-orange-500/20 !text-orange-200"
+                  : "border-white/15 bg-white/[0.03] text-slate-300 hover:border-orange-400/50 hover:text-orange-200"
               }`}
             >
               {mode === "top" ? "Top" : "Newest"}
@@ -598,24 +598,24 @@ export function ForumCommentSection({
         <button
           type="button"
           onClick={() => clearNewActivity()}
-          className="mb-4 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+          className="mb-4 rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300 transition-all duration-200 hover:bg-emerald-400/15"
         >
           New activity detected
         </button>
       )}
       {typingUsers.length > 0 && (
-        <div className="mb-3 text-xs font-medium text-slate-500">{typingUsers.join(", ")} is typing...</div>
+        <div className="mb-3 text-xs font-medium text-slate-400">{typingUsers.join(", ")} is typing...</div>
       )}
 
       {/* Comment form */}
-      <form onSubmit={onSubmit} className="mb-10 rounded-2xl border border-app bg-subtle p-5">
-        <p className="mb-4 text-sm font-semibold text-slate-700">Join the discussion</p>
-        <p className="-mt-2 mb-4 text-xs text-slate-500">Name is optional. If left blank, we&apos;ll post as Anonymous.</p>
+      <form onSubmit={onSubmit} className="mb-6 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <p className="mb-4 text-sm font-semibold text-slate-100">Join the discussion</p>
+        <p className="-mt-2 mb-4 text-xs text-slate-400">Name is optional. If left blank, we&apos;ll post as Anonymous.</p>
         {error && (
-          <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+          <p className="mb-3 rounded-lg bg-red-400/10 px-3 py-2 text-sm text-red-300">{error}</p>
         )}
         {success && (
-          <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <p className="mb-3 rounded-lg bg-emerald-400/10 px-3 py-2 text-sm text-emerald-300">
             Reply posted!
           </p>
         )}
@@ -642,13 +642,13 @@ export function ForumCommentSection({
             className={inputClass}
           />
           {mentionTarget?.type === "main" && mentionSuggestions.length > 0 && (
-            <div className="rounded-lg border border-app bg-surface p-1">
+            <div className="rounded-lg border border-white/10 bg-[#111827] p-1">
               {mentionSuggestions.map((item) => (
                 <button
                   key={item.username}
                   type="button"
                   onClick={() => applyMentionSuggestion(item.username)}
-                  className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-subtle"
+                  className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm transition-all duration-200 hover:bg-white/[0.03]"
                 >
                   <span className="font-medium text-app">@{item.username}</span>
                   <span className="text-xs text-muted">{item.displayName || "User"}</span>
@@ -658,11 +658,11 @@ export function ForumCommentSection({
           )}
         </div>
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-xs text-slate-400">{content.length}/2000</span>
+          <span className="text-xs text-slate-500">{content.length}/2000</span>
           <button
             type="submit"
             disabled={submitting || !content.trim()}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-indigo-700 disabled:opacity-50"
+            className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold !text-white transition-all duration-200 hover:bg-orange-400 disabled:opacity-50"
           >
             {submitting ? "Posting…" : "Post reply"}
           </button>
@@ -670,11 +670,11 @@ export function ForumCommentSection({
       </form>
 
       {comments.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-app p-6 text-center text-sm text-slate-500">
+        <p className="rounded-xl border border-dashed border-white/15 p-6 text-center text-sm text-slate-400">
           No replies yet. Start the discussion!
         </p>
       ) : (
-        <div className="space-y-5">{sortedComments.map((c) => renderComment(c))}</div>
+        <div className="space-y-4 divide-y divide-white/10">{sortedComments.map((c) => renderComment(c))}</div>
       )}
     </section>
   );

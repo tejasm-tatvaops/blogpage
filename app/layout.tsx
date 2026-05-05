@@ -4,6 +4,7 @@ import Script from "next/script";
 import { Navbar } from "@/components/layout/Navbar";
 import { FloatingSidebar } from "@/components/layout/FloatingSidebar";
 import { LayoutShell } from "@/components/layout/LayoutShell";
+import { AskAiFab } from "@/components/layout/AskAiFab";
 import { UnhandledRejectionGuard } from "@/components/system/UnhandledRejectionGuard";
 import { ThemeProvider } from "@/components/system/ThemeProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
@@ -47,6 +48,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     event.preventDefault();
                   }
                 });
+                window.addEventListener("error", function (event) {
+                  if (
+                    String(event && event.error) === "[object Event]" ||
+                    String(event && event.message) === "[object Event]"
+                  ) {
+                    event.preventDefault();
+                  }
+                });
               })();
             `,
           }}
@@ -59,6 +68,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Navbar />
               <main>{children}</main>
             </LayoutShell>
+            <AskAiFab />
           </div>
         </AuthProvider>
       </body>

@@ -225,6 +225,13 @@ type VerticalVideoPlayerProps = {
   onFirstInteraction: () => void;
 };
 
+function isLikelyDirectVideoSource(url: string): boolean {
+  const normalized = url.toLowerCase();
+  if (normalized.startsWith("blob:")) return true;
+  if (normalized.includes(".m3u8")) return true;
+  return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(normalized);
+}
+
 /**
  * Lazy YouTube / MP4 player.
  *
@@ -243,10 +250,12 @@ export function VerticalVideoPlayer({
   onFirstInteraction,
 }: VerticalVideoPlayerProps) {
   const [thumbnailError, setThumbnailError] = useState(false);
+  const [playbackError, setPlaybackError] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const youtubeFrameRef = useRef<HTMLIFrameElement | null>(null);
 
   const thumbnail = thumbnailError ? null : post.thumbnailUrl;
+  const hasLikelyPlayableSource = !!post.videoUrl && isLikelyDirectVideoSource(post.videoUrl);
 
   useEffect(() => {
     if (post.sourceType !== "youtube" || !post.youtubeVideoId || !isActive) return;
@@ -307,7 +316,7 @@ export function VerticalVideoPlayer({
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const node = videoRef.current;
-    if (!node || !isActive) return;
+    if (!node || !isActive || !hasLikelyPlayableSource || playbackError) return;
 
     node.volume = 1;
     node.muted = muted;
@@ -316,11 +325,19 @@ export function VerticalVideoPlayer({
     }
     const playPromise = node.play();
     if (playPromise && typeof playPromise.catch === "function") {
-      playPromise.catch((err) => console.error("Play failed:", err));
+      playPromise.catch((err: unknown) => {
+        if (err && typeof err === "object" && "name" in err && (err as { name?: string }).name === "NotSupportedError") {
+          setPlaybackError(true);
+          return;
+        }
+        if (process.env.NODE_ENV === "development") {
+          console.error("Play failed:", err);
+        }
+      });
     }
-  }, [isActive, muted, post.slug]);
+  }, [hasLikelyPlayableSource, isActive, muted, playbackError, post.slug]);
 
-  if (post.videoUrl) {
+  if (post.videoUrl && hasLikelyPlayableSource && !playbackError) {
     return (
       <div
         className={[
@@ -340,6 +357,7 @@ export function VerticalVideoPlayer({
             controls
             className="absolute inset-0 h-full w-full object-cover"
             onClick={onFirstInteraction}
+            onError={() => setPlaybackError(true)}
           />
         ) : thumbnail ? (
           <InshortsThumbnail

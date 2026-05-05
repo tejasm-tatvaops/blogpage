@@ -27,10 +27,12 @@ export default function ContinueLearningCarousel({ tutorials }: { tutorials: Tut
   const [active, setActive] = useState(0);
   const [visible, setVisible] = useState(true);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [forceFallbackImage, setForceFallbackImage] = useState(false);
 
   // Reset skeleton whenever the active slide changes
   useEffect(() => {
     setImgLoaded(false);
+    setForceFallbackImage(false);
   }, [active]);
 
   const goTo = useCallback((idx: number) => {
@@ -66,6 +68,9 @@ export default function ContinueLearningCarousel({ tutorials }: { tutorials: Tut
 
   const tut = tutorials[active];
   const fallbackImage = FALLBACK_IMAGES[active % FALLBACK_IMAGES.length];
+  const candidateImage = (tut.cover_image || "").trim();
+  const blockedRemoteImage = candidateImage.includes("source.unsplash.com");
+  const displayImage = !forceFallbackImage && candidateImage && !blockedRemoteImage ? candidateImage : fallbackImage;
 
   const difficultyStyle =
     tut.difficulty === "beginner"
@@ -97,13 +102,20 @@ export default function ContinueLearningCarousel({ tutorials }: { tutorials: Tut
           </div>
 
           <Image
-            src={tut.cover_image || fallbackImage}
+            src={displayImage}
             alt={tut.title}
             fill
             sizes="(max-width: 768px) 100vw, 400px"
             className="object-cover"
             onLoad={() => setImgLoaded(true)}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).src = fallbackImage; }}
+            onError={() => {
+              if (!forceFallbackImage) {
+                setForceFallbackImage(true);
+                setImgLoaded(false);
+                return;
+              }
+              setImgLoaded(true);
+            }}
           />
 
           {/* Difficulty badge — only show once image is loaded */}

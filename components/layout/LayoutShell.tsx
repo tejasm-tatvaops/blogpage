@@ -10,6 +10,6 @@ export function LayoutShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   // Admin has its own AdminSidebar — no offset needed there
   if (pathname.startsWith("/admin")) return <>{children}</>;
-  /* Extra offset vs sidebar so main column + navbar do not hug the rail */
-  return <div className="min-w-0 w-full ml-0 md:ml-[140px] md:w-[calc(100%-140px)]">{children}</div>;
+  /* Keep a consistent content gutter relative to the sidebar */
+  return <div className="min-w-0 w-full ml-0 md:ml-[120px] md:w-[calc(100%-120px)]">{children}</div>;
 }

@@ -85,6 +85,8 @@ const isLikelyUsableImageSource = (value: string): boolean => {
   if (v.startsWith("https://") || v.startsWith("http://")) return true;
   return false;
 };
+const isRemoteHttpImage = (value: string): boolean =>
+  value.startsWith("https://") || value.startsWith("http://");
 
 const getDeterministicImage = (slug: string): string => {
   const pool = LOCAL_SAFE_IMAGE_POOL.length > 0 ? LOCAL_SAFE_IMAGE_POOL : ["/images/blog-default.svg"];
@@ -137,6 +139,7 @@ export function CoverImage({
   const displaySrc = sourceChain[sourceIndex] ?? LEGACY_BLOG_COVER_IMAGE;
   const isDataUrl = displaySrc.startsWith("data:image/");
   const isSvgSrc = displaySrc.includes(".svg") || displaySrc.startsWith("/api/cover-image");
+  const isRemoteSrc = isRemoteHttpImage(displaySrc);
 
   useEffect(() => {
     if (!debugId) return;
@@ -153,7 +156,7 @@ export function CoverImage({
       className={`absolute inset-0 ${className}`}
       sizes={sizes}
       priority={priority}
-      unoptimized={isDataUrl || isSvgSrc}
+      unoptimized={isDataUrl || isSvgSrc || isRemoteSrc}
       onError={() =>
         setSourceIndex((current) => (current < sourceChain.length - 1 ? current + 1 : current))
       }

@@ -118,6 +118,12 @@ type InshortsViewProps = {
 
 export function InshortsView({ initialPosts }: InshortsViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const tagContainerRef = useRef<HTMLDivElement>(null);
+  const tagScrollRafRef = useRef<number | null>(null);
+  const tagAutoRafRef = useRef<number | null>(null);
+  const tagAutoHoverPausedRef = useRef(false);
+  const tagAutoPauseUntilRef = useRef(0);
+  const tagAutoLastProgrammaticScrollRef = useRef(0);
   const touchStartXRef = useRef(0);
   const touchStartAtRef = useRef(0);
   const touchMovedRef = useRef(0);
@@ -133,6 +139,12 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
   const [swipeGlow, setSwipeGlow] = useState(false);
   const [igCopiedPostId, setIgCopiedPostId] = useState<string | null>(null);
   const [validatedImageByPostId, setValidatedImageByPostId] = useState<Record<string, string | null>>({});
+  const [localShareCountByPostId, setLocalShareCountByPostId] = useState<Record<string, number>>({});
+  const [localShareAvatarsByPostId, setLocalShareAvatarsByPostId] = useState<Record<string, string[]>>({});
+  const [hasLocallySharedByPostId, setHasLocallySharedByPostId] = useState<Record<string, boolean>>({});
+  const [canScrollTagsLeft, setCanScrollTagsLeft] = useState(false);
+  const [canScrollTagsRight, setCanScrollTagsRight] = useState(false);
+  const [activeTagIndex, setActiveTagIndex] = useState(0);
 
   // Load posts client-side if SSR didn't provide any
   useEffect(() => {
@@ -144,6 +156,35 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
       .catch(() => undefined)
       .finally(() => setLoading(false));
   }, [initialPosts.length]);
+
+  useEffect(() => {
+    const nextCounts: Record<string, number> = {};
+    const nextAvatars: Record<string, string[]> = {};
+    for (const post of posts) {
+      const postWithShares = post as BlogPost & {
+        share_count?: number;
+        shares?: Array<{ avatarUrl?: string | null }>;
+      };
+      const shares = Array.isArray(postWithShares.shares) ? postWithShares.shares : [];
+      const seededAvatar = (idx: number) =>
+        `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(`${post.id}-${idx}`)}`;
+      const avatars = shares
+        .map((item) => String(item.avatarUrl ?? "").trim())
+        .filter(Boolean)
+        .slice(0, 8);
+      const countFromShares = shares.length;
+      const countFromPost = typeof postWithShares.share_count === "number" ? postWithShares.share_count : 0;
+      const count = Math.max(countFromShares, countFromPost);
+      if (avatars.length === 0 && count > 0) {
+        nextAvatars[post.id] = Array.from({ length: Math.min(count, 3) }, (_, i) => seededAvatar(i));
+      } else {
+        nextAvatars[post.id] = avatars;
+      }
+      nextCounts[post.id] = count;
+    }
+    setLocalShareCountByPostId(nextCounts);
+    setLocalShareAvatarsByPostId(nextAvatars);
+  }, [posts]);
 
   // Keyboard nav
   useEffect(() => {
@@ -277,6 +318,191 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
     [0.2, 0.95, 0.25, 1],
   ];
   const transitionEase = easingPool[activeIndex % easingPool.length]!;
+  const tagItems = ["All", ...topTags];
+  const autoTagItems = [...tagItems, ...tagItems];
+
+  const updateTagScrollState = () => {
+    const container = tagContainerRef.current;
+    if (!container) return;
+    const epsilon = 2;
+    setCanScrollTagsLeft(container.scrollLeft > epsilon);
+    setCanScrollTagsRight(container.scrollLeft + container.clientWidth < container.scrollWidth - epsilon);
+  };
+
+  const markProgrammaticTagScroll = () => {
+    tagAutoLastProgrammaticScrollRef.current = performance.now();
+  };
+
+  const setTagSnapEnabled = (enabled: boolean) => {
+    const container = tagContainerRef.current;
+    if (!container) return;
+    container.style.scrollSnapType = enabled ? "x mandatory" : "none";
+  };
+
+  const pauseTagAutoScroll = (ms = 2600) => {
+    tagAutoPauseUntilRef.current = Date.now() + ms;
+    setTagSnapEnabled(true);
+  };
+
+  const scrollToTag = (index: number) => {
+    const container = tagContainerRef.current;
+    if (!container) return;
+    const currentCenter = container.scrollLeft + container.clientWidth / 2;
+    const candidates = Array.from(
+      container.querySelectorAll<HTMLElement>(`[data-logical-index="${index}"]`),
+    );
+    if (candidates.length === 0) return;
+    let target = candidates[0];
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (const node of candidates) {
+      const nodeCenter = node.offsetLeft + node.clientWidth / 2;
+      const distance = Math.abs(nodeCenter - currentCenter);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        target = node;
+      }
+    }
+    if (!target) return;
+    const containerWidth = container.clientWidth;
+    const targetLeft = target.offsetLeft;
+    const targetWidth = target.clientWidth;
+    const desired = targetLeft - containerWidth / 2 + targetWidth / 2;
+    const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
+    const finalScroll = Math.max(0, Math.min(desired, maxScroll));
+    markProgrammaticTagScroll();
+    container.scrollTo({ left: finalScroll, behavior: "smooth" });
+  };
+
+  const scrollTags = (direction: "left" | "right") => {
+    const container = tagContainerRef.current;
+    if (!container) return;
+    const children = Array.from(container.children) as HTMLElement[];
+    if (children.length === 0) return;
+    const current = container.scrollLeft;
+    let target: HTMLElement | undefined;
+
+    if (direction === "right") {
+      const threshold = current + container.clientWidth * 0.2;
+      target = children.find((el) => el.offsetLeft > threshold);
+      if (!target) target = children[children.length - 1];
+    } else {
+      const threshold = current - 20;
+      for (let i = children.length - 1; i >= 0; i -= 1) {
+        const candidate = children[i];
+        if (!candidate) continue;
+        if (candidate.offsetLeft < threshold) {
+          target = candidate;
+          break;
+        }
+      }
+      if (!target) target = children[0];
+    }
+
+    container.scrollTo({
+      left: target.offsetLeft,
+      behavior: "smooth",
+    });
+    markProgrammaticTagScroll();
+    pauseTagAutoScroll();
+  };
+
+  useEffect(() => {
+    updateTagScrollState();
+    const container = tagContainerRef.current;
+    if (!container) return;
+    const onScroll = () => {
+      if (tagScrollRafRef.current !== null) return;
+      tagScrollRafRef.current = window.requestAnimationFrame(() => {
+        tagScrollRafRef.current = null;
+        const now = performance.now();
+        if (now - tagAutoLastProgrammaticScrollRef.current > 90) {
+          pauseTagAutoScroll();
+        }
+        updateTagScrollState();
+      });
+    };
+    container.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      container.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (tagScrollRafRef.current !== null) {
+        window.cancelAnimationFrame(tagScrollRafRef.current);
+        tagScrollRafRef.current = null;
+      }
+    };
+  }, [topTags.length]);
+
+  useEffect(() => {
+    const container = tagContainerRef.current;
+    if (!container) return;
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      setTagSnapEnabled(true);
+      return;
+    }
+
+    const speed = 0.45;
+    const loop = () => {
+      const node = tagContainerRef.current;
+      if (!node) return;
+      const paused = tagAutoHoverPausedRef.current || Date.now() < tagAutoPauseUntilRef.current;
+      if (paused) {
+        setTagSnapEnabled(true);
+      } else {
+        setTagSnapEnabled(false);
+        node.scrollLeft += speed;
+        markProgrammaticTagScroll();
+        if (node.scrollLeft >= node.scrollWidth / 2) {
+          node.scrollLeft = 0;
+          markProgrammaticTagScroll();
+        }
+      }
+      tagAutoRafRef.current = window.requestAnimationFrame(loop);
+    };
+
+    tagAutoRafRef.current = window.requestAnimationFrame(loop);
+    return () => {
+      if (tagAutoRafRef.current !== null) {
+        window.cancelAnimationFrame(tagAutoRafRef.current);
+        tagAutoRafRef.current = null;
+      }
+      setTagSnapEnabled(true);
+    };
+  }, [topTags.length]);
+
+  useEffect(() => {
+    const targetTag = interestSignal?.toLowerCase();
+    const nextIdx = targetTag
+      ? topTags.findIndex((tag) => tag.toLowerCase() === targetTag)
+      : -1;
+    const mappedIndex = nextIdx >= 0 ? nextIdx + 1 : 0;
+    setActiveTagIndex(mappedIndex);
+  }, [interestSignal, topTags]);
+
+  useEffect(() => {
+    if (tagItems.length === 0) return;
+    const clampedIndex = Math.max(0, Math.min(activeTagIndex, tagItems.length - 1));
+    scrollToTag(clampedIndex);
+    // allow layout to settle before first arrow-state check
+    window.setTimeout(() => updateTagScrollState(), 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTagIndex, tagItems.length]);
+
+  useEffect(() => {
+    window.setTimeout(() => scrollToTag(0), 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const bumpLocalShare = (postId: string) => {
+    if (hasLocallySharedByPostId[postId]) return;
+    setHasLocallySharedByPostId((prev) => ({ ...prev, [postId]: true }));
+    setLocalShareCountByPostId((prev) => ({ ...prev, [postId]: (prev[postId] ?? 0) + 1 }));
+    setLocalShareAvatarsByPostId((prev) => {
+      const current = prev[postId] ?? [];
+      const fresh = `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(`builder-${postId}-${Date.now()}`)}`;
+      return { ...prev, [postId]: [fresh, ...current].slice(0, 8) };
+    });
+  };
 
   if (loading) {
     return (
@@ -343,23 +569,11 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
           </div>
 
           {/* Header row */}
-          <div className="mb-4 flex items-center gap-2">
-            {/* Left: back + title */}
-            <div className="flex flex-shrink-0 items-center gap-3">
-              <Link
-                href="/"
-                className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/20"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-                Back
-              </Link>
-              <div>
-                <span className="text-sm font-bold tracking-wide text-white">Tatva Inshorts</span>
-                <span className="ml-2 text-xs text-white/50">{activeIndex + 1}/{posts.length}</span>
-              </div>
-            </div>
+          <div className="mt-2 mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-medium text-white">
+              Tatva Inshorts
+              <span className="ml-2 text-white/40">{activeIndex + 1}/{posts.length}</span>
+            </h2>
 
             {/* Right: full nav — scrollable, matches navbar links */}
             <div className="hidden min-w-0 flex-1 justify-end overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -405,41 +619,117 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
           </AnimatePresence>
 
           {/* Topic chips */}
-          <div className="mb-6 flex flex-wrap gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <span className="whitespace-nowrap rounded-full border border-sky-300 bg-sky-500 px-3 py-1 text-xs font-semibold text-white">
-              All
-            </span>
-            {topTags.map((tag) => (
-              <span
-                key={tag}
-                className="whitespace-nowrap rounded-full border border-white/20 bg-black/35 px-3 py-1 text-xs font-medium text-white/95 backdrop-blur-sm transition hover:bg-black/50"
+          <div className="mb-6 relative">
+            <div
+              ref={tagContainerRef}
+              className="flex snap-x snap-mandatory flex-nowrap gap-2 overflow-x-auto scroll-smooth pb-3 [scrollbar-width:none] [scroll-padding-left:12px] [scroll-padding-right:12px] [&::-webkit-scrollbar]:hidden"
+              onMouseEnter={() => {
+                tagAutoHoverPausedRef.current = true;
+                setTagSnapEnabled(true);
+              }}
+              onMouseLeave={() => {
+                tagAutoHoverPausedRef.current = false;
+              }}
+              onTouchStart={() => pauseTagAutoScroll(2800)}
+              onWheel={(e) => {
+                const container = e.currentTarget;
+                if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                  e.preventDefault();
+                  container.scrollLeft += e.deltaY;
+                  pauseTagAutoScroll(2800);
+                }
+              }}
+              style={{
+                maskImage: "linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent)",
+                WebkitMaskImage: "linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTagIndex(0);
+                  scrollToTag(0);
+                  pauseTagAutoScroll(2800);
+                }}
+                data-logical-index={0}
+                className={`shrink-0 snap-start whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                  activeTagIndex === 0
+                    ? "border-sky-300 bg-sky-500 text-white"
+                    : "border-white/20 bg-black/35 text-white/95 hover:bg-black/50"
+                }`}
               >
-                #{tag}
-              </span>
-            ))}
+                All
+              </button>
+              {autoTagItems.slice(1).map((tag, idx) => {
+                const logicalIndex = (idx % (tagItems.length - 1)) + 1;
+                return (
+                <button
+                  type="button"
+                  key={`${tag}-${idx}`}
+                  onClick={() => {
+                    const next = logicalIndex;
+                    setActiveTagIndex(next);
+                    scrollToTag(next);
+                    pauseTagAutoScroll(2800);
+                  }}
+                  data-logical-index={logicalIndex}
+                  className={`shrink-0 snap-start whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium backdrop-blur-sm transition ${
+                    activeTagIndex === logicalIndex
+                      ? "border-sky-300 bg-sky-500 text-white"
+                      : "border-white/20 bg-black/35 text-white/95 hover:bg-black/50"
+                  }`}
+                >
+                  #{tag}
+                </button>
+                );
+              })}
+            </div>
+            <div className="pointer-events-none absolute inset-0">
+              <button
+                type="button"
+                onClick={() => scrollTags("left")}
+                className={`pointer-events-auto absolute left-0 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-1.5 text-xs text-white/95 backdrop-blur transition-opacity duration-200 hover:scale-105 hover:bg-white/20 md:inline-flex ${
+                  canScrollTagsLeft ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
+                aria-label="Scroll tags left"
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollTags("right")}
+                className={`pointer-events-auto absolute right-0 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-1.5 text-xs text-white/95 backdrop-blur transition-opacity duration-200 hover:scale-105 hover:bg-white/20 md:inline-flex ${
+                  canScrollTagsRight ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
+                aria-label="Scroll tags right"
+              >
+                →
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Horizontal scroll card strip */}
-      <div
-        ref={containerRef}
-        className="mt-6 h-[calc(100vh-280px)] whitespace-nowrap overflow-x-scroll overflow-y-hidden snap-x snap-mandatory md:h-[calc(100vh-260px)] [scroll-behavior:smooth]"
-        style={{ scrollbarWidth: "none" }}
-        onTouchStart={(event) => {
+      <div className="relative mt-6">
+        <div
+          ref={containerRef}
+          className="h-[calc(100vh-280px)] whitespace-nowrap overflow-x-scroll overflow-y-hidden snap-x snap-mandatory md:h-[calc(100vh-260px)] [scroll-behavior:smooth]"
+          style={{ scrollbarWidth: "none" }}
+          onTouchStart={(event) => {
           const point = event.touches[0];
           touchStartXRef.current = point?.clientX ?? 0;
           touchStartAtRef.current = Date.now();
           touchMovedRef.current = 0;
           interactionDepthRef.current = "low";
-        }}
-        onTouchMove={(event) => {
+          }}
+          onTouchMove={(event) => {
           const point = event.touches[0];
           const move = Math.abs((point?.clientX ?? 0) - touchStartXRef.current);
           touchMovedRef.current = Math.max(touchMovedRef.current, move);
           if (touchMovedRef.current > 35) interactionDepthRef.current = "medium";
-        }}
-        onTouchEnd={(event) => {
+          }}
+          onTouchEnd={(event) => {
           const point = event.changedTouches[0];
           const dx = (point?.clientX ?? 0) - touchStartXRef.current;
           const dt = Math.max(1, Date.now() - touchStartAtRef.current);
@@ -454,9 +744,9 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
             return;
           }
           scrollTo(activeIndex, "smooth");
-        }}
-      >
-        {posts.map((post, i) => {
+          }}
+        >
+          {posts.map((post, i) => {
           const articleUrl = typeof window !== "undefined"
             ? `${window.location.origin}/blog/${post.slug}`
             : `/blog/${post.slug}`;
@@ -471,6 +761,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
           };
 
           const trackShare = (channel: string) => {
+            bumpLocalShare(post.id);
             fetch(`/api/blog/${encodeURIComponent(post.slug)}/share`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -493,6 +784,8 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
             }
           };
           const shareThreads = () => { threadsChannel.share(payload, articleUrl); trackShare("threads"); };
+          const shareCount = localShareCountByPostId[post.id] ?? 0;
+          const shareAvatars = localShareAvatarsByPostId[post.id] ?? [];
 
           return (
             <div
@@ -675,12 +968,74 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                     >
                       Read full article →
                     </a>
+
+                    <div className="mt-4 flex items-center justify-between rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 backdrop-blur-md">
+                      <div className="flex items-center gap-2.5">
+                        {shareCount > 0 ? (
+                          <>
+                            <div className="flex items-center">
+                              {shareAvatars.slice(0, 3).map((avatar, idx) => (
+                                <div
+                                  key={`${avatar}-${idx}`}
+                                  className="h-7 w-7 overflow-hidden rounded-full border-2 bg-white/10"
+                                  style={{
+                                    marginLeft: idx === 0 ? 0 : "-10px",
+                                    borderColor: "#0a0c12",
+                                  }}
+                                >
+                                  <img src={avatar} alt="" className="h-full w-full object-cover" />
+                                </div>
+                              ))}
+                              {shareCount > 3 && (
+                                <div
+                                  className="flex h-7 min-w-7 items-center justify-center rounded-full border-2 bg-white/20 px-1 text-[10px] font-semibold text-white"
+                                  style={{ marginLeft: "-10px", borderColor: "#0a0c12" }}
+                                >
+                                  +{Math.max(0, shareCount - 3)}
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs text-white/85">
+                              <strong>Shared by {shareCount} builders</strong>
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-xs text-white/75">
+                            <strong>Be the first to share</strong>
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </motion.article>
               )}
             </div>
           );
-        })}
+          })}
+        </div>
+
+        <div className="pointer-events-none absolute inset-x-6 top-1/2 z-30 hidden -translate-y-1/2 items-center justify-between md:flex lg:inset-x-8">
+          <button
+            type="button"
+            onClick={() => scrollTo(activeIndex - 1)}
+            aria-label="Previous inshort"
+            className="pointer-events-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md transition-all duration-200 hover:scale-105 hover:bg-black/60"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollTo(activeIndex + 1)}
+            aria-label="Next inshort"
+            className="pointer-events-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md transition-all duration-200 hover:scale-105 hover:bg-black/60"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Dot progress */}
