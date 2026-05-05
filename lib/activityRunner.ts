@@ -80,7 +80,7 @@ const registerEngagement = async (activity: Activity): Promise<void> => {
   if (next.length >= TRENDING_THRESHOLD) {
     await setForumPostTrending(activity.postId, true);
     if (Math.random() > 0.45) {
-      requeueActivity(
+      await requeueActivity(
         {
           type: "vote",
           postId: activity.postId,
@@ -143,7 +143,7 @@ const executeActivity = async (activity: Activity): Promise<boolean> => {
         const replySeed = behavior.writingTone === "aggressive"
           ? "I disagree with that assumption. Site variability is much higher."
           : "One practical way is to benchmark against the latest BOQ revision and vendor quotes.";
-        requeueActivity(
+        await requeueActivity(
           {
             type: "reply",
             postId: activity.postId,
@@ -214,7 +214,7 @@ const executeActivity = async (activity: Activity): Promise<boolean> => {
 };
 
 const refillQueueIfNeeded = async (): Promise<void> => {
-  const stats = getActivityQueueStats();
+  const stats = await getActivityQueueStats();
   const now = Date.now();
   if (stats.total > 30) return;
   if (now - state.lastRefillAt < 10 * 60 * 1000) return;
@@ -239,7 +239,7 @@ const refillQueueIfNeeded = async (): Promise<void> => {
   ];
 
   const drafted = await preGenerateActivityDrafts(targets);
-  const accepted = enqueueActivities(
+  const accepted = await enqueueActivities(
     drafted.map((item) => ({
       type: item.type,
       postId: item.postId,
@@ -255,7 +255,7 @@ const refillQueueIfNeeded = async (): Promise<void> => {
   );
 
   state.lastRefillAt = now;
-  logger.info({ accepted, queue: getActivityQueueStats() }, "activity queue refilled");
+  logger.info({ accepted, queue: await getActivityQueueStats() }, "activity queue refilled");
 };
 
 const tick = async (): Promise<void> => {
@@ -277,12 +277,12 @@ const tick = async (): Promise<void> => {
     const weekend = [0, 6].includes(new Date().getDay());
     const clusterBurst = Math.random() < (weekend ? 0.24 : 0.34);
     const batchSize = Math.min(remaining, clusterBurst ? randInt(2, 2) : 1);
-    const activities = dequeueReadyActivities(batchSize);
+    const activities = await dequeueReadyActivities(batchSize);
     for (const activity of activities) {
       const behavior = buildBehaviorProfile(`${getActivityAuthorSeed(activity)}|${activity.postId}`);
       const ok = await executeActivity(activity);
       if (!ok && activity.attempts < 2) {
-        requeueActivity({ ...activity, attempts: activity.attempts + 1 }, randInt(30_000, 80_000));
+        await requeueActivity({ ...activity, attempts: activity.attempts + 1 }, randInt(30_000, 80_000));
       } else if (ok) {
         state.minuteActions += 1;
       }
@@ -321,18 +321,27 @@ export const ensureActivityRunnerStarted = (): void => {
   scheduleNext();
 };
 
-export const setLiveActivityEnabled = (enabled: boolean): { enabled: boolean; queue: ReturnType<typeof getActivityQueueStats> } => {
+export const setLiveActivityEnabled = async (
+  enabled: boolean,
+): Promise<{ enabled: boolean; queue: Awaited<ReturnType<typeof getActivityQueueStats>> }> => {
   ensureActivityRunnerStarted();
   const next = setSystemToggles({ liveActivityEnabled: enabled });
-  return { enabled: next.liveActivityEnabled, queue: getActivityQueueStats() };
+  return { enabled: next.liveActivityEnabled, queue: await getActivityQueueStats() };
 };
 
-export const getLiveActivityStatus = (): {
+export const getLiveActivityStatus = async (): Promise<{
   enabled: boolean;
-  queue: ReturnType<typeof getActivityQueueStats>;
+  queue: Awaited<ReturnType<typeof getActivityQueueStats>>;
   actionsThisMinute: number;
-} => ({
-  enabled: getSystemToggles().liveActivityEnabled,
-  queue: getActivityQueueStats(),
-  actionsThisMinute: state.minuteActions,
-});
+}> => {
+  const queue = await getActivityQueueStats();
+  return {
+    enabled: getSystemToggles().liveActivityEnabled,
+    queue,
+    actionsThisMinute: state.minuteActions,
+  };
+};
+
+export const runActivityTickOnce = async (): Promise<void> => {
+  await withTimeout("activity tick", tick(), 25_000);
+};

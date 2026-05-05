@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     window_hours: windowHours,
     ...metrics,
     health: {
-      feed_events: getFeedObservabilityHealth(),
+      feed_events: await getFeedObservabilityHealth(),
       reconciliation: getReconciliationHealth(),
     },
   });

@@ -1,5 +1,6 @@
 import { LRUCache } from "lru-cache";
 import { NextRequest, NextResponse } from "next/server";
+import { getRedisClient } from "@/lib/redis";
 
 type RateLimiterOptions = {
   /** Maximum number of requests allowed within the window. */
@@ -39,11 +40,43 @@ export const createRateLimiter = ({ limit, windowMs }: RateLimiterOptions): Limi
   };
 };
 
+export const checkRedisRateLimit = async (
+  key: string,
+  { limit, windowMs }: RateLimiterOptions,
+  options?: { failClosed?: boolean },
+): Promise<RateLimitResult | null> => {
+  const redis = getRedisClient();
+  if (!redis || redis.status !== "ready") {
+    if (!options?.failClosed) return null;
+    return {
+      allowed: false,
+      remaining: 0,
+      limit,
+      resetMs: Date.now() + windowMs,
+    };
+  }
+
+  const bucketKey = `ratelimit:${key}:${Math.floor(Date.now() / windowMs)}`;
+  const count = await redis.incr(bucketKey);
+  if (count === 1) {
+    await redis.pexpire(bucketKey, windowMs);
+  }
+
+  const ttlMs = Math.max(0, Number(await redis.pttl(bucketKey)));
+  return {
+    allowed: count <= limit,
+    remaining: Math.max(0, limit - count),
+    limit,
+    resetMs: Date.now() + ttlMs,
+  };
+};
+
 /** Per-route limiters — shared across requests via module-level singletons. */
 export const generateBlogLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 export const bulkGenerateLimiter = createRateLimiter({ limit: 2, windowMs: 60_000 });
 export const adminApiLimiter = createRateLimiter({ limit: 60, windowMs: 60_000 });
 export const commentLimiter = createRateLimiter({ limit: 3, windowMs: 60_000 });
+export const blogCommentLimiter = createRateLimiter({ limit: 6, windowMs: 60_000 });
 export const upvoteLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 export const downvoteLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 // Anti-gaming: hard cap on total likes per identity per minute across all posts
@@ -52,7 +85,7 @@ export const likeAntiGamingLimiter = createRateLimiter({ limit: 20, windowMs: 60
 // Forum-specific limiters
 export const forumPostLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
 export const forumVoteLimiter = createRateLimiter({ limit: 20, windowMs: 60_000 });
-export const forumCommentLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
+export const forumCommentLimiter = createRateLimiter({ limit: 8, windowMs: 60_000 });
 
 /**
  * Returns the best available identifier for rate-limiting a request.

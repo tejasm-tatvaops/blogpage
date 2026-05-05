@@ -1,5 +1,18 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap");
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: "Noto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
+  --color-orange-brand: #ea580c;
+  --color-orange-light: #f97316;
+  --radius-ds-sm: 8px;
+  --radius-ds-md: 12px;
+  --radius-ds-lg: 14px;
+  --radius-ds-xl: 18px;
+  --radius-ds-card: 24px;
+}
 
 /* ─── Enable Tailwind dark: prefix via [data-theme="dark"] attribute ──────────
    This means any dark:* utility class in a component will activate when
@@ -53,26 +66,26 @@
 
 /* ─── Dark theme tokens — intentionally designed, not inverted light ──────── */
 [data-theme="dark"] {
-  --color-bg:           #0b1220;
-  --color-bg-subtle:    #111827;
-  --color-surface:      #111827;
-  --color-card:         #1e293b;
-  --color-card-bg:      #1e293b;
-  --color-card-hover:   #263447;
-  --color-border:       #334155;
-  --color-border-focus: #475569;
-  --color-text:         #f8fafc;
-  --color-text-muted:   #94a3b8;
-  --color-text-faint:   #64748b;
+  --color-bg:           #07091a;
+  --color-bg-subtle:    #0d1030;
+  --color-surface:      #0a0d22;
+  --color-card:         #0d1128;
+  --color-card-bg:      #0d1128;
+  --color-card-hover:   #141830;
+  --color-border:       #1e2440;
+  --color-border-focus: #2d3460;
+  --color-text:         #f0f2ff;
+  --color-text-muted:   #8b92a8;
+  --color-text-faint:   #4d5470;
   --color-heading:      #ffffff;
-  --color-accent:       #38bdf8;
-  --color-accent-hover: #7dd3fc;
-  --color-primary:      #38bdf8;
-  --color-primary-hover:#7dd3fc;
-  --color-primary-text: #0b1220;
-  --color-inverted-bg:  #334155;
-  --color-inverted-hover:#475569;
-  --color-inverted-text:#f8fafc;
+  --color-accent:       #f97316;
+  --color-accent-hover: #fb923c;
+  --color-primary:      #f97316;
+  --color-primary-hover:#fb923c;
+  --color-primary-text: #ffffff;
+  --color-inverted-bg:  #1e2440;
+  --color-inverted-hover:#2d3460;
+  --color-inverted-text:#f0f2ff;
   --color-info-bg-soft: #082f49;
   --color-info-border-soft: #0c4a6e;
   --color-info-text-soft: #7dd3fc;
@@ -85,13 +98,13 @@
   --color-danger-bg-soft: #4c0519;
   --color-danger-border-soft:#9f1239;
   --color-danger-text-soft:#fda4af;
-  --color-pill-bg:      #1e293b;
-  --color-pill-border:  #334155;
-  --color-pill-text:    #cbd5e1;
-  --color-navbar-bg:    #0b1220;
-  --color-code-bg:      #0b1220;
-  --shadow-card:        0 1px 0 0 rgb(255 255 255 / 0.04), 0 2px 8px 0 rgb(0 0 0 / 0.4);
-  --shadow-card-hover:  0 1px 0 0 rgb(255 255 255 / 0.06), 0 6px 24px 0 rgb(0 0 0 / 0.5);
+  --color-pill-bg:      #0d1128;
+  --color-pill-border:  #1e2440;
+  --color-pill-text:    #8b92a8;
+  --color-navbar-bg:    #07091a;
+  --color-code-bg:      #07091a;
+  --shadow-card:        0 1px 0 0 rgb(255 255 255 / 0.03), 0 2px 8px 0 rgb(0 0 0 / 0.5);
+  --shadow-card-hover:  0 1px 0 0 rgb(255 255 255 / 0.05), 0 8px 32px 0 rgb(0 0 0 / 0.6);
 }
 
 /* ─── Smooth scroll ───────────────────────────────────────────────────────── */
@@ -416,12 +429,6 @@ main { width: 100%; }
 
 /* ─── Dark mode: structural element overrides ────────────────────────────── */
 
-/* Navbar */
-[data-theme="dark"] header {
-  background: var(--color-navbar-bg);
-  border-color: var(--color-border);
-}
-
 /* Hero radial glow — positioned behind hero content in dark mode */
 [data-theme="dark"] .hero-glow::before {
   content: '';
@@ -431,7 +438,7 @@ main { width: 100%; }
   transform: translateX(-50%);
   width: 70%;
   height: 60%;
-  background: radial-gradient(ellipse at center, rgb(56 189 248 / 0.07) 0%, transparent 65%);
+  background: radial-gradient(ellipse at center, rgb(249 115 22 / 0.07) 0%, transparent 65%);
   pointer-events: none;
   z-index: 0;
 }
@@ -471,4 +478,82 @@ main { width: 100%; }
 [data-theme="dark"] .admin-surface {
   background: var(--color-surface);
   border-color: var(--color-border);
+}
+
+/* ─── Glass morphism utilities ────────────────────────────────────────────── */
+
+/* Light-first base — dark override via [data-theme="dark"] */
+.glass-nav {
+  background: rgba(244, 245, 251, 0.97);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+}
+[data-theme="dark"] .glass-nav {
+  background: rgba(7, 9, 26, 0.96);
+  border: 1px solid rgba(249, 115, 22, 0.30);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.glass-sidebar {
+  background: rgba(250, 251, 253, 0.97);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07);
+}
+[data-theme="dark"] .glass-sidebar {
+  background: rgba(7, 9, 26, 0.98);
+  border: 1px solid rgba(249, 115, 22, 0.12);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
+}
+
+.glass-widget {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+[data-theme="dark"] .glass-widget {
+  background: rgba(13, 17, 40, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ─── Orange active sidebar glow ──────────────────────────────────────────── */
+.sidebar-active-glow {
+  box-shadow: 0 0 10px 2px rgba(251, 146, 60, 0.4);
+}
+
+/* ─── Forum thread card — theme-aware ────────────────────────────────────── */
+.forum-card-bg {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+[data-theme="dark"] .forum-card-bg {
+  background: rgba(13, 17, 40, 0.70);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.forum-card-tail {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+[data-theme="dark"] .forum-card-tail {
+  background: rgba(13, 17, 40, 0.70);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Product hub — AI insights card entrance */
+@keyframes tatva-insights-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tatva-insights-fade-up {
+  animation: tatva-insights-fade-up 0.4s ease forwards;
 }

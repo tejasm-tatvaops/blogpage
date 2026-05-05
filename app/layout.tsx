@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Script from "next/script";
 import { Navbar } from "@/components/layout/Navbar";
+import { FloatingSidebar } from "@/components/layout/FloatingSidebar";
+import { LayoutShell } from "@/components/layout/LayoutShell";
 import { UnhandledRejectionGuard } from "@/components/system/UnhandledRejectionGuard";
 import { ThemeProvider } from "@/components/system/ThemeProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
@@ -51,9 +53,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
         <UnhandledRejectionGuard />
         <AuthProvider>
-          <div className="min-h-screen bg-app text-app">
-            <Navbar />
-            <main>{children}</main>
+          <div className="min-h-screen overflow-x-hidden bg-app text-app">
+            <FloatingSidebar />
+            <LayoutShell>
+              <Navbar />
+              <main>{children}</main>
+            </LayoutShell>
           </div>
         </AuthProvider>
       </body>

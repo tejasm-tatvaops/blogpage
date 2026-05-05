@@ -15,7 +15,7 @@ export function NavbarAuthButton({ pillClass }: Props) {
 
   if (isLoading) {
     return (
-      <span className={`${pillClass} w-20 animate-pulse !bg-slate-200 dark:!bg-slate-700`} />
+      <span className={`${pillClass} h-8 w-20 animate-pulse !bg-slate-200 dark:!bg-slate-700`} />
     );
   }
 
@@ -25,23 +25,23 @@ export function NavbarAuthButton({ pillClass }: Props) {
       <div className="relative group">
         <button
           type="button"
-          className={`${pillClass} gap-2 !px-2`}
+          className={`${pillClass} gap-1.5 !px-2`}
           aria-label="Account menu"
         >
           {session.user.image ? (
             <Image
               src={session.user.image}
               alt={session.user.name ?? "User"}
-              width={24}
-              height={24}
-              className="h-6 w-6 rounded-full object-cover"
+              width={28}
+              height={28}
+              className="h-7 w-7 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-xs font-bold text-white">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[0.54rem] font-bold leading-none text-white">
               {(session.user.name ?? "U")[0].toUpperCase()}
             </span>
           )}
-          <span className="max-w-[90px] truncate text-xs">
+          <span className="max-w-[90px] truncate text-[0.72rem] font-medium leading-none">
             {session.user.name?.split(" ")[0]}
           </span>
         </button>
@@ -49,13 +49,13 @@ export function NavbarAuthButton({ pillClass }: Props) {
         {/* Dropdown */}
         <div className="pointer-events-none absolute right-0 top-full z-30 mt-1 min-w-[140px] rounded-xl border border-app bg-app opacity-0 shadow-lg transition-all group-hover:pointer-events-auto group-hover:opacity-100">
           <div className="border-b border-app px-4 py-2.5">
-            <p className="truncate text-xs font-semibold text-app">{session.user.name}</p>
-            <p className="truncate text-xs text-muted">{session.user.email}</p>
+            <p className="truncate text-[0.9rem] font-semibold leading-tight text-app">{session.user.name}</p>
+            <p className="truncate text-[0.78rem] font-normal leading-[1.5] text-muted">{session.user.email}</p>
           </div>
           {myIdentityKey ? (
             <Link
               href={`/user/${encodeURIComponent(myIdentityKey)}`}
-              className="block w-full px-4 py-2.5 text-left text-sm text-muted transition hover:bg-subtle hover:text-app"
+              className="block w-full px-4 py-2.5 text-left text-[0.72rem] font-normal leading-none text-muted transition hover:bg-subtle hover:text-app"
             >
               My profile
             </Link>
@@ -63,7 +63,7 @@ export function NavbarAuthButton({ pillClass }: Props) {
           <button
             type="button"
             onClick={() => signOut()}
-            className="block w-full rounded-b-xl px-4 py-2.5 text-left text-sm text-muted transition hover:bg-subtle hover:text-app"
+            className="block w-full rounded-b-xl px-4 py-2.5 text-left text-[0.72rem] font-normal leading-none text-muted transition hover:bg-subtle hover:text-app"
           >
             Sign out
           </button>

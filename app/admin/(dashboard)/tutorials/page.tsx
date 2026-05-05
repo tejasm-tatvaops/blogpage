@@ -3,6 +3,7 @@ import Link from "next/link";
 import { TutorialSortableList, type TutorialRow } from "@/components/admin/TutorialSortableList";
 import { GenerateTrendDraftsButton } from "@/components/admin/GenerateTrendDraftsButton";
 import { KnowledgeAutomationPanel } from "@/components/admin/KnowledgeAutomationPanel";
+import UploadTutorialButton from "@/components/tutorials/UploadTutorialButton";
 import { getTutorials } from "@/lib/tutorialService";
 import { connectToDatabase } from "@/lib/db/mongodb";
 import { TutorialProgressModel } from "@/models/TutorialProgress";
@@ -117,6 +118,7 @@ export default async function TutorialsAdminPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <UploadTutorialButton />
           <GenerateTrendDraftsButton />
           <Link
             href="/tutorials"

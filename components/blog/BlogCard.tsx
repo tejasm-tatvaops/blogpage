@@ -39,17 +39,8 @@ const resolveCardImage = (post: BlogPost): { primary: string; fallbackPool: stri
     return CARD_LOCAL_IMAGE_POOL[i];
   });
 
-  if (provided) {
-    return {
-      primary: provided,
-      fallbackPool: orderedPool,
-    };
-  }
-
-  return {
-    primary: orderedPool[0],
-    fallbackPool: orderedPool.slice(1),
-  };
+  if (provided) return { primary: provided, fallbackPool: orderedPool };
+  return { primary: orderedPool[0], fallbackPool: orderedPool.slice(1) };
 };
 
 const formatDate = (dateString: string): string =>
@@ -86,17 +77,16 @@ export function BlogCard({
       : intelligence?.bucket === "exploration"
       ? "✨ Discover"
       : null;
-  const toneClass =
-    variantTone === "emerald"
-      ? "from-emerald-600/35 via-emerald-900/30 to-black/65"
-      : variantTone === "amber"
-      ? "from-amber-600/35 via-amber-900/30 to-black/65"
-      : "from-indigo-600/35 via-indigo-900/30 to-black/65";
+
+  // variantTone kept for API compatibility but no longer applied as a card-wide tint
+  void variantTone;
 
   return (
-    <article className="group relative h-full min-h-[26rem] overflow-hidden bg-black">
-      <Link href={`/blog/${post.slug}`} className="block h-full tap-target">
-        <div className="absolute inset-0 overflow-hidden bg-slate-100">
+    <article className="group flex flex-col overflow-hidden rounded-[14px] border border-black/10 bg-white shadow-sm transition-all duration-[250ms] ease-out hover:-translate-y-0.5 hover:border-orange-300/40 hover:shadow-[0_14px_30px_rgba(15,23,42,0.16)] dark:border-[#1e2440] dark:bg-[#0d1128] dark:hover:border-orange-500/20 dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.55),0_0_0_1px_rgba(249,115,22,0.1)]">
+      <Link href={`/blog/${post.slug}`} className="flex flex-1 flex-col">
+
+        {/* ── Image section ── */}
+        <div className="relative h-[200px] overflow-hidden bg-slate-100 sm:h-[220px]">
           <CoverImage
             src={imageResolution.primary}
             slug={post.slug}
@@ -108,56 +98,58 @@ export function BlogCard({
             sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
             priority={false}
           />
-        </div>
-        <div className={`absolute inset-0 bg-gradient-to-t ${toneClass}`} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+          {/* Dark-to-clear gradient for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-3 p-5 text-white">
-          {(reasonLabel || showPopular || showActive) && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              {reasonLabel && (
-                <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white border border-white/20">
-                  {reasonLabel}
-                </span>
-              )}
+          {/* Badges — top-left */}
+          {(showPopular || reasonLabel || showActive) && (
+            <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
               {showPopular && (
-                <span className="rounded-full bg-orange-500/90 px-2 py-0.5 text-[10px] font-bold text-white">
-                  🔥 Popular
+                <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-white shadow-sm">
+                  Popular
                 </span>
               )}
               {showActive && (
-                <span className="rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-bold text-white">
-                  💬 Active
+                <span className="rounded-full bg-emerald-500/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-white shadow-sm">
+                  Active
+                </span>
+              )}
+              {reasonLabel && (
+                <span className="max-w-[78%] truncate rounded-full border border-white/20 bg-black/60 px-2 py-0.5 text-[9px] font-semibold text-white/95 backdrop-blur-sm">
+                  {reasonLabel}
                 </span>
               )}
             </div>
           )}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs font-medium text-white/80">
-            <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
-            <span aria-hidden>•</span>
-            <span>{post.author}</span>
-            <span aria-hidden>•</span>
-            <span>{post.view_count.toLocaleString()} views</span>
-            <span aria-hidden>•</span>
-            <span>{replyCount.toLocaleString()} replies</span>
-            <span aria-hidden>•</span>
-            <span>{post.upvote_count.toLocaleString()} likes</span>
+
+          {/* Meta + title — bottom of image */}
+          <div className="absolute inset-x-0 bottom-0 px-3.5 pb-3.5 pt-8">
+            <div className="mb-1.5 flex flex-wrap items-center gap-1 text-[9px] font-medium text-white/75 sm:text-[10px]">
+              <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
+              <span aria-hidden>·</span>
+              <span>{post.author}</span>
+              <span aria-hidden>·</span>
+              <span>{post.view_count.toLocaleString()} views</span>
+            </div>
+            <h2 className="line-clamp-2 text-[15px] font-semibold leading-[1.2] text-white sm:text-[17px]">
+              {post.title}
+            </h2>
           </div>
+        </div>
 
-          <h2 className="line-clamp-2 break-words text-xl font-extrabold leading-tight text-white sm:text-[1.75rem]">
-            {post.title}
-          </h2>
-
-          <p className="line-clamp-3 text-sm leading-6 text-white/80">{post.excerpt}</p>
-
-          <div className="mt-auto flex flex-wrap gap-2 pt-1">
+        {/* ── Excerpt + tags ── */}
+        <div className="flex flex-1 flex-col justify-between gap-3 bg-white px-3.5 py-3 dark:bg-[#0d1128]">
+          <p className="line-clamp-2 text-[11px] leading-[1.55] text-slate-500 dark:text-[#8b92a8]">
+            {post.excerpt}
+          </p>
+          <div className="flex flex-wrap items-center gap-1.5">
             {post.tags.slice(0, 3).map((tag) => (
               <span
                 key={`${post.id}-${tag}`}
-                className={`rounded-full px-2.5 py-1 text-xs font-medium border transition ${
+                className={`rounded-md border px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.06em] transition ${
                   normalizedHighlights.includes(tag.toLowerCase())
-                    ? "bg-white text-slate-900 border-white/80"
-                    : "bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700"
+                    ? "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-500/25 dark:bg-orange-500/10 dark:text-orange-400"
+                    : "border-slate-200 bg-slate-50 text-slate-500 dark:border-[#1e2440] dark:bg-[#141830] dark:text-[#8b92a8]"
                 }`}
               >
                 #{tag}
@@ -165,6 +157,7 @@ export function BlogCard({
             ))}
           </div>
         </div>
+
       </Link>
     </article>
   );

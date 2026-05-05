@@ -3,7 +3,9 @@ import { getAllPosts } from "@/lib/blogService";
 import { getForumPosts } from "@/lib/forumService";
 import { getTutorials } from "@/lib/tutorialService";
 import { getAllVideoTags } from "@/lib/videoService";
-
+import RecommendedCarousel from "@/components/home/RecommendedCarousel";
+import ContinueLearningCarousel from "@/components/home/ContinueLearningCarousel";
+import { HeroSection } from "@/components/home/HeroSection";
 export default async function HomePage() {
   const [latestBlogs, trendingForumsResult, tutorialsResult, videoTags] = await Promise.all([
     getAllPosts({ limit: 10 }).catch(() => []),
@@ -12,18 +14,29 @@ export default async function HomePage() {
     getAllVideoTags().catch(() => []),
   ]);
 
-  const tutorials = tutorialsResult as (typeof tutorialsResult[0] & {
+  const tutorials = JSON.parse(JSON.stringify(tutorialsResult ?? [])) as Array<{
+    slug?: unknown;
+    title?: unknown;
+    excerpt?: unknown;
+    cover_image?: unknown;
+    difficulty?: unknown;
+    estimated_minutes?: unknown;
     interactive_blocks?: unknown[];
-    difficulty?: string;
-    estimated_minutes?: number;
-  })[];
+  }>;
 
-  const featuredTutorial = tutorials[0];
-  const moreTutorials = tutorials.slice(1, 3);
-  const featuredBlog = latestBlogs[0];
-  const moreBlogsForYou = latestBlogs.slice(1, 3);
+  const carouselTutorials = tutorials.slice(0, 6).map((tutorial) => ({
+    slug: String(tutorial.slug ?? ""),
+    title: String(tutorial.title ?? ""),
+    excerpt: tutorial.excerpt == null ? null : String(tutorial.excerpt),
+    cover_image: tutorial.cover_image == null ? null : String(tutorial.cover_image),
+    difficulty: tutorial.difficulty == null ? undefined : String(tutorial.difficulty),
+    estimated_minutes: typeof tutorial.estimated_minutes === "number" ? tutorial.estimated_minutes : undefined,
+    interactive_blocks: Array.isArray(tutorial.interactive_blocks)
+      ? new Array(tutorial.interactive_blocks.length).fill(null)
+      : [],
+  }));
+  const carouselBlogs = latestBlogs.slice(0, 6);
   const recentlyUpdated = latestBlogs.slice(3, 6);
-  const trendingDiscussions = trendingForumsResult.slice(0, 4);
   const popularDiscussions = trendingForumsResult.slice(0, 4);
 
   const topicHubs = Array.from(
@@ -36,56 +49,19 @@ export default async function HomePage() {
 
 
   return (
-    <section className="mx-auto w-full max-w-[1500px] px-4 py-8 sm:px-6 md:py-12 lg:py-16">
+    <section className="mx-auto max-w-[1200px] space-y-6 px-3 py-4 sm:space-y-8 sm:px-4 sm:py-6 lg:space-y-10 lg:px-6 lg:py-8">
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-8 md:p-10 dark:border-slate-800 dark:bg-[#0e1829]">
-        <p className="mb-4 inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-400">
-          TatvaOps Platform
-        </p>
-
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:gap-10">
-          <div>
-            <h1 className="max-w-4xl text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl md:text-5xl dark:text-white">
-              AI-Powered Construction Content, Community, and Decision Support
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base md:text-lg dark:text-slate-300">
-              TatvaOps combines a smart blog engine, practical city-wise cost guides, and a live
-              forums community so builders, estimators, and teams can plan, discuss, and execute
-              with confidence.
-            </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link href="/blog" className="inline-flex w-full min-w-[150px] items-center justify-center rounded-lg bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-400 sm:w-auto">
-                Explore Blogs
-              </Link>
-              <Link href="/forums" className="inline-flex w-full min-w-[150px] items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800/50 sm:w-auto">
-                Join Forums
-              </Link>
-            </div>
-
-          </div>
-
-          {/* Right: feature mini-cards */}
-          <div className="grid grid-cols-1 gap-4 self-end sm:grid-cols-3 lg:grid-cols-1">
-            {[
-              { title: "Blogs",  body: "AI-generated, SEO-structured, editable content.", href: "/blog" },
-              { title: "Forums", body: "Q&A, opinions, voting, and practical discussion.", href: "/forums" },
-              { title: "Shorts", body: "CMS, moderation, autopopulate, and analytics.", href: "/shorts" },
-            ].map((card) => (
-              <Link key={card.title} href={card.href} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-sky-200 hover:bg-sky-50/60 dark:border-slate-700/60 dark:bg-slate-800/60 dark:hover:border-sky-700/40 dark:hover:bg-slate-800">
-                <p className="text-xl font-bold text-slate-900 dark:text-white">{card.title}</p>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{card.body}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
+      <HeroSection />
 
       {/* ── Platform Intelligence ─────────────────────────────────────────── */}
-      <section className="mt-8 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-400">Platform Intelligence</p>
-        <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900 dark:text-white">How TatvaOps works for you</h2>
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <section className="rounded-[22px] border border-black/5 bg-slate-50/80 p-5 dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.6)] sm:rounded-[28px] sm:p-8 lg:p-10">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-orange-600 dark:text-orange-400">Platform Intelligence</p>
+        <h2 className="mt-2 text-center text-[26px] font-semibold text-black dark:text-white sm:text-[30px]">A complete construction content platform</h2>
+        <p className="mt-2 text-center text-[13.5px] leading-relaxed text-gray-500 dark:text-[#8b92a8]">
+          Built to attract high-intent traffic, answer practical site questions, and streamline your publishing workflow with architectural precision.
+        </p>
+        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
           {[
             {
               icon: (
@@ -95,7 +71,7 @@ export default async function HomePage() {
               ),
               title: "Personalized recommendations",
               body: "Content is ranked based on your reading history, engagement patterns, and topics you explore most.",
-              accent: "text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400",
+              accent: "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/15 dark:text-indigo-400",
             },
             {
               icon: (
@@ -105,7 +81,7 @@ export default async function HomePage() {
               ),
               title: "Community-reviewed accuracy",
               body: "Expert contributors review and approve edits. Every article shows its verification status and revision history.",
-              accent: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400",
+              accent: "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15 dark:text-emerald-400",
             },
             {
               icon: (
@@ -115,16 +91,16 @@ export default async function HomePage() {
               ),
               title: "Intelligent content discovery",
               body: "Blogs, tutorials, forums, and short videos are connected by topic signals across all content types.",
-              accent: "text-sky-600 bg-sky-50 dark:bg-sky-900/30 dark:text-sky-400",
+              accent: "text-orange-600 bg-orange-50 dark:bg-orange-500/15 dark:text-orange-400",
             },
           ].map((item) => (
-            <div key={item.title} className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-700/40 dark:bg-slate-800/40">
-              <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${item.accent}`}>
+            <div key={item.title} className="rounded-xl border border-black/5 bg-white/70 p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.5)] dark:hover:border-orange-500/15 dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+              <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${item.accent}`}>
                 {item.icon}
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.title}</p>
-                <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{item.body}</p>
+                <p className="mt-3 text-[14px] font-semibold text-black dark:text-white">{item.title}</p>
+                <p className="mt-1.5 text-[12.5px] leading-relaxed text-gray-500 dark:text-[#8b92a8]">{item.body}</p>
               </div>
             </div>
           ))}
@@ -132,211 +108,56 @@ export default async function HomePage() {
       </section>
 
       {/* ── Smart Discovery Hub ───────────────────────────────────────────── */}
-      <section className="mt-8 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
-        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+      <section className="rounded-2xl border border-black/5 bg-white/70 p-4 shadow-sm backdrop-blur-xl transition-all duration-300 ease-out dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.7)]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-400">Smart Discovery Hub</p>
-            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl dark:text-white">Your connected knowledge workspace</h2>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-orange-600 dark:text-orange-400">Smart Discovery Hub</p>
+            <h2 className="mt-1 text-[22px] font-bold tracking-tight text-slate-900 dark:text-white sm:text-[26px]">Your connected knowledge workspace</h2>
           </div>
-          <Link href="/ask" className="inline-flex w-full items-center justify-center rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-400 sm:w-auto">
+          <Link href="/ask" className="inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-4 py-2 text-[11.5px] font-semibold uppercase tracking-[0.06em] text-white shadow-[0_2px_12px_rgba(249,115,22,0.25)] transition-all duration-200 hover:bg-orange-400 hover:shadow-[0_4px_16px_rgba(249,115,22,0.35)] sm:w-auto">
             Ask AI anything on TatvaOps
           </Link>
         </div>
 
         {/* Top row */}
-        <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
 
           {/* Continue Learning */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-700/40 dark:bg-slate-800/40">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Continue Learning</h3>
-
-            {featuredTutorial ? (
-              <>
-                {/* Featured tutorial */}
-                <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/60">
-                  <div className="flex items-center gap-2">
-                    {featuredTutorial.difficulty && (
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                        featuredTutorial.difficulty === "beginner"
-                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                          : featuredTutorial.difficulty === "intermediate"
-                          ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                          : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                      }`}>
-                        {featuredTutorial.difficulty}
-                      </span>
-                    )}
-                    {featuredTutorial.estimated_minutes && (
-                      <span className="text-[11px] text-slate-400">~{featuredTutorial.estimated_minutes} min</span>
-                    )}
-                  </div>
-                  <p className="mt-2 line-clamp-2 text-sm font-semibold leading-snug text-slate-900 dark:text-white">
-                    {featuredTutorial.title}
-                  </p>
-                  {featuredTutorial.excerpt && (
-                    <p className="mt-1.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
-                      {featuredTutorial.excerpt}
-                    </p>
-                  )}
-                  <div className="mt-3">
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                      <div className="h-full w-[4%] rounded-full bg-sky-500" />
-                    </div>
-                    <div className="mt-1.5 flex items-center justify-between">
-                      <p className="text-[11px] text-slate-400">
-                        1 of {featuredTutorial.interactive_blocks?.length ?? "—"} steps completed
-                      </p>
-                      <Link href={`/tutorials/${featuredTutorial.slug}`} className="text-xs font-semibold text-sky-600 hover:text-sky-500 dark:text-sky-400">
-                        Continue →
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-
-                {/* More tutorials */}
-                {moreTutorials.length > 0 && (
-                  <ul className="mt-3 space-y-2">
-                    {moreTutorials.map((t) => (
-                      <li key={t.slug}>
-                        <Link href={`/tutorials/${t.slug}`} className="group flex items-start gap-2 rounded-lg p-2 transition hover:bg-slate-100 dark:hover:bg-slate-700/40">
-                          <span className="mt-0.5 h-4 w-4 flex-shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-600" />
-                          <div className="min-w-0">
-                            <p className="line-clamp-1 text-xs font-semibold text-slate-700 group-hover:text-sky-600 dark:text-slate-300">
-                              {t.title}
-                            </p>
-                            <p className="text-[10px] text-slate-400">
-                              {(t as typeof t & { difficulty?: string }).difficulty} · {(t as typeof t & { estimated_minutes?: number }).estimated_minutes ?? 5} min
-                            </p>
-                          </div>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            ) : (
-              <div className="mt-3 rounded-lg border border-dashed border-slate-200 p-4 text-center dark:border-slate-700">
-                <p className="text-sm text-slate-400">No tutorials yet</p>
-                <Link href="/tutorials" className="mt-1 block text-xs font-semibold text-sky-600">Browse all →</Link>
-              </div>
-            )}
+          <div className="relative min-h-[260px] overflow-hidden rounded-2xl">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-[#4d5470]">Continue Learning</h3>
+            <ContinueLearningCarousel tutorials={carouselTutorials} />
           </div>
 
           {/* Recommended For You */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-700/40 dark:bg-slate-800/40">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Recommended For You</h3>
-
-            {featuredBlog ? (
-              <>
-                {/* Featured blog */}
-                <Link href={`/blog/${featuredBlog.slug}`} className="group mt-3 block rounded-lg border border-slate-200 bg-white p-3 transition hover:border-sky-200 hover:shadow-sm dark:border-slate-700 dark:bg-slate-900/60 dark:hover:border-sky-700/40">
-                  {/* Tags */}
-                  {featuredBlog.tags && featuredBlog.tags.length > 0 && (
-                    <div className="mb-2 flex flex-wrap gap-1">
-                      {featuredBlog.tags.slice(0, 3).map((tag) => (
-                        <span key={tag} className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-900/30 dark:text-sky-400">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <p className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 group-hover:text-sky-700 dark:text-white dark:group-hover:text-sky-400">
-                    {featuredBlog.title}
-                  </p>
-                  {featuredBlog.excerpt && (
-                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                      {featuredBlog.excerpt}
-                    </p>
-                  )}
-                  <div className="mt-2.5 flex items-center gap-3 border-t border-slate-100 pt-2 dark:border-slate-700">
-                    <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                      {featuredBlog.view_count ?? 0}
-                    </span>
-                    <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" /><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" /></svg>
-                      {featuredBlog.upvote_count ?? 0}
-                    </span>
-                    <span className="ml-auto text-[11px] text-slate-400">{featuredBlog.author}</span>
-                  </div>
-                </Link>
-
-                {/* More blogs */}
-                {moreBlogsForYou.length > 0 && (
-                  <ul className="mt-3 space-y-1.5">
-                    {moreBlogsForYou.map((blog) => (
-                      <li key={blog.slug}>
-                        <Link href={`/blog/${blog.slug}`} className="group flex items-start gap-2 rounded-lg p-2 transition hover:bg-slate-100 dark:hover:bg-slate-700/40">
-                          <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-sky-400" />
-                          <div className="min-w-0">
-                            <p className="line-clamp-1 text-xs font-semibold text-slate-700 group-hover:text-sky-600 dark:text-slate-300">
-                              {blog.title}
-                            </p>
-                            <p className="text-[10px] text-slate-400">
-                              {blog.view_count ?? 0} views · {blog.upvote_count ?? 0} likes
-                            </p>
-                          </div>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            ) : (
-              <div className="mt-3 rounded-lg border border-dashed border-slate-200 p-4 text-center dark:border-slate-700">
-                <p className="text-sm text-slate-400">No posts yet</p>
-                <Link href="/blog" className="mt-1 block text-xs font-semibold text-sky-600">Browse all →</Link>
-              </div>
-            )}
-          </div>
-
-          {/* Trending Discussions */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-700/40 dark:bg-slate-800/40">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Trending Discussions</h3>
-            {trendingDiscussions.length > 0 ? (
-              <ul className="mt-3 space-y-3">
-                {trendingDiscussions.map((forum) => (
-                  <li key={forum.slug} className="flex gap-2.5">
-                    <div className="flex w-8 flex-shrink-0 flex-col items-center">
-                      <span className="text-sm leading-none">🔥</span>
-                      <span className="mt-0.5 text-xs font-bold text-slate-700 dark:text-slate-300">{forum.upvote_count}</span>
-                    </div>
-                    <div className="min-w-0">
-                      <Link href={`/forums/${forum.slug}`} className="line-clamp-2 block text-sm font-semibold text-slate-900 hover:text-sky-600 dark:text-white dark:hover:text-sky-400">
-                        {forum.title}
-                      </Link>
-                      <p className="mt-0.5 text-[11px] text-slate-400">
-                        {new Date(forum.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric" })} · {forum.author_name}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-3 text-sm text-slate-400">No discussions yet.</p>
-            )}
+          <div className="relative min-h-[260px] overflow-hidden rounded-2xl">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 dark:text-[#4d5470]">Recommended For You</h3>
+            <RecommendedCarousel blogs={carouselBlogs} />
           </div>
         </div>
 
         {/* Bottom row */}
-        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
 
           {/* Popular Discussions */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-700/40 dark:bg-slate-800/40">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Popular Discussions</h3>
+          <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur-xl dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.5)]">
+            <h3 className="mb-3 text-[13.5px] font-semibold text-black dark:text-white">Popular Discussions</h3>
             {popularDiscussions.length > 0 ? (
               <ul className="mt-3 space-y-3">
                 {popularDiscussions.map((forum) => (
-                  <li key={forum.slug} className="flex gap-2.5">
-                    <div className="flex w-8 flex-shrink-0 flex-col items-center">
-                      <span className="text-sm leading-none">🔥</span>
-                      <span className="mt-0.5 text-xs font-bold text-slate-700 dark:text-slate-300">{forum.upvote_count}</span>
+                  <li key={forum.slug} className="flex items-start justify-between border-b border-black/5 py-2 dark:border-[#1e2440]">
+                    <div className="flex w-8 shrink-0 flex-col items-center">
+                      <span className="leading-none text-orange-500" aria-hidden>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m9 3-3 18" /><path d="m15 3-3 18" /><path d="M4 9h14" /><path d="M3 15h14" />
+                        </svg>
+                      </span>
+                      <span className="mt-0.5 text-[11px] font-bold text-orange-500">{forum.upvote_count}</span>
                     </div>
                     <div className="min-w-0">
-                      <Link href={`/forums/${forum.slug}`} className="line-clamp-1 block text-sm font-semibold text-slate-900 hover:text-sky-600 dark:text-white dark:hover:text-sky-400">
+                      <Link href={`/forums/${forum.slug}`} className="line-clamp-1 block text-[13px] text-black transition hover:text-orange-600 dark:text-white dark:hover:text-orange-400">
                         {forum.title}
                       </Link>
-                      <p className="mt-0.5 text-[11px] text-slate-400">
+                      <p className="mt-0.5 text-[10px] text-[#8b92a8]">
                         {new Date(forum.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric" })} · {forum.author_name}
                       </p>
                     </div>
@@ -344,22 +165,22 @@ export default async function HomePage() {
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-sm text-slate-400">No discussions yet.</p>
+              <p className="mt-3 text-[12.5px] text-[#8b92a8]">No discussions yet.</p>
             )}
           </div>
 
           {/* Recently Updated */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-700/40 dark:bg-slate-800/40">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Recently Updated</h3>
+          <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur-xl dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.5)]">
+            <h3 className="mb-3 text-[13.5px] font-semibold text-black dark:text-white">Recently Updated</h3>
             {recentlyUpdated.length > 0 ? (
               <ul className="mt-3 space-y-3">
                 {recentlyUpdated.map((blog) => (
-                  <li key={blog.slug}>
+                  <li key={blog.slug} className="border-b border-black/5 py-2 dark:border-[#1e2440]">
                     <Link href={`/blog/${blog.slug}`} className="group block">
-                      <p className="line-clamp-1 text-sm font-semibold text-slate-900 group-hover:text-sky-600 dark:text-white dark:group-hover:text-sky-400">
+                      <p className="line-clamp-1 text-[13px] text-black transition group-hover:text-orange-600 dark:text-white dark:group-hover:text-orange-400">
                         {blog.title}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-slate-400">
+                      <p className="mt-0.5 text-[10px] text-[#8b92a8]">
                         {new Date(blog.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric" })} · {blog.author}
                       </p>
                     </Link>
@@ -367,78 +188,99 @@ export default async function HomePage() {
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-sm text-slate-400">Nothing recently updated.</p>
+              <p className="mt-3 text-[12.5px] text-[#8b92a8]">Nothing recently updated.</p>
             )}
           </div>
 
           {/* Topic Explorer */}
-          <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-700/40 dark:bg-slate-800/60">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Topic Explorer</h3>
+          <div className="rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur-xl dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.5)]">
+            <h3 className="mb-3 text-[13.5px] font-semibold text-black dark:text-white">Topic Explorer</h3>
             {topicHubs.length > 0 ? (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-1.5">
                 {topicHubs.map((tag) => (
                   <Link
                     key={tag}
                     href={`/tags/${encodeURIComponent(tag)}`}
-                    className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                    className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.06em] text-slate-600 transition hover:border-orange-400 hover:bg-orange-500 hover:text-white dark:border-[#1e2440] dark:bg-[#0d1128] dark:text-[#8b92a8] dark:hover:border-orange-500/40 dark:hover:bg-orange-500 dark:hover:text-white"
                   >
                     {tag}
                   </Link>
                 ))}
               </div>
             ) : (
-              <p className="mt-3 text-sm text-slate-400">No topics yet.</p>
+              <p className="mt-3 text-[12.5px] text-[#8b92a8]">No topics yet.</p>
             )}
           </div>
         </div>
+
+        {/* ProductHub removed from home for now — re-add: import ProductHub + <ProductHub /> */}
       </section>
 
       {/* ── What TatvaOps includes ────────────────────────────────────────── */}
-      <div className="mt-12">
-        <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl md:text-3xl dark:text-white">What TatvaOps includes</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 md:text-base dark:text-slate-400">
-          A complete construction content platform built to attract search traffic, answer practical
-          site questions, and keep your publishing workflow fast and consistent.
+      <div className="rounded-[22px] border border-black/5 bg-slate-50/80 p-5 dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.6)] sm:rounded-[28px] sm:p-8 lg:p-10">
+        <h2 className="text-center text-[26px] font-semibold text-black dark:text-white sm:text-[30px]">A complete construction content platform</h2>
+        <p className="mt-2 text-center text-[13.5px] leading-relaxed text-gray-500 dark:text-[#8b92a8]">
+          Built to attract high-intent traffic, answer practical site questions, and streamline your publishing workflow with architectural precision.
         </p>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
-        {[
-          {
-            title: "AI Blog Generation",
-            body: "Generate high-intent construction articles with references, clean structure, and local cost context. Publish directly through the CMS.",
-          },
-          {
-            title: "Forums + Engagement Layer",
-            body: "Run Reddit-style threads with comments, replies, votes, best answers, and trending signals to keep the platform active and useful.",
-          },
-          {
-            title: "Operations + Growth Controls",
-            body: "Use admin tools for autopopulate, moderation, analytics, newsletters, and activity simulation to scale content without losing quality.",
-          },
-        ].map((feature) => (
-          <article key={feature.title} className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/60 dark:bg-[#1e293b] dark:hover:border-slate-600 dark:hover:bg-[#263447]">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{feature.title}</h3>
-            <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-400">{feature.body}</p>
-          </article>
-        ))}
+        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {[
+            {
+              title: "AI Blog Generation",
+              body: "Generate high-intent construction articles with references, clean structure, and local cost context. Publish directly through the CMS.",
+            },
+            {
+              title: "Forums + Engagement Layer",
+              body: "Run Reddit-style threads with comments, replies, votes, best answers, and trending signals to keep the platform active and useful.",
+            },
+            {
+              title: "Operations + Growth Controls",
+              body: "Use admin tools for autopopulate, moderation, analytics, newsletters, and activity simulation to scale content without losing quality.",
+            },
+          ].map((feature) => (
+            <article key={feature.title} className="rounded-xl border border-black/5 bg-white/70 p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.5)] dark:hover:border-orange-500/15 dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+              <h3 className="text-[14px] font-semibold text-black dark:text-white">{feature.title}</h3>
+              <p className="mt-2 text-[12.5px] leading-relaxed text-gray-500 dark:text-[#8b92a8]">{feature.body}</p>
+            </article>
+          ))}
+        </div>
       </div>
 
       {/* ── Bottom CTA ───────────────────────────────────────────────────── */}
-      <div className="mt-12 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 md:flex md:items-center md:justify-between md:gap-6 dark:border-slate-700/50 dark:bg-slate-900/60">
+      <div className="flex flex-col gap-4 rounded-[22px] bg-gradient-to-r from-[#ea580c] to-[#f97316] p-5 text-white shadow-[0_8px_32px_rgba(234,88,12,0.35)] sm:rounded-[28px] sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:p-10">
         <div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">Start with what you need now</h3>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Read practical guides and jump into active discussions.</p>
+          <h3 className="text-[24px] font-semibold sm:text-[28px]">Start with what you need now</h3>
+          <p className="mt-2 text-[13.5px] leading-relaxed text-white/85">Access practical construction guides and join thousands of professionals in active technical discussions.</p>
         </div>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap md:mt-0">
-          <Link href="/blog" className="inline-flex w-full min-w-[140px] items-center justify-center rounded-lg bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-400 sm:w-auto">
+        <div className="mt-1 flex w-full flex-wrap gap-3 sm:w-auto md:mt-0">
+          <Link href="/blog" className="inline-flex min-w-[140px] items-center justify-center rounded-xl border border-white/80 bg-white px-4 py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.06em] !text-orange-600 transition hover:bg-white/90">
             Go to Blog
           </Link>
-          <Link href="/forums" className="inline-flex w-full min-w-[140px] items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-800/50 sm:w-auto">
+          <Link href="/forums" className="inline-flex min-w-[140px] items-center justify-center rounded-xl border border-white/80 px-4 py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.06em] text-white transition hover:bg-white/12 hover:border-white">
             Go to Forums
           </Link>
         </div>
       </div>
+
+      <Link
+        href="/ask"
+        title="Ask AI"
+        aria-label="Ask AI"
+        className="fixed bottom-4 right-4 z-[100] flex h-11 w-11 items-center justify-center rounded-full bg-orange-500 text-white shadow-lg transition hover:scale-105 sm:bottom-6 sm:right-6 sm:h-12 sm:w-12"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="m12 2 2.45 4.97L20 7.8l-4 3.9.94 5.5L12 14.9l-4.94 2.6.94-5.5-4-3.9 5.55-.83L12 2Z" />
+        </svg>
+      </Link>
     </section>
   );
 }

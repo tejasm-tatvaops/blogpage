@@ -13,6 +13,7 @@ import { getPostsByTag } from "@/lib/blogService";
 import { getComments } from "@/lib/services/comment.service";
 import { getActiveUsersByTopic } from "@/lib/userProfileService";
 import { ForumActiveUsersStrip } from "@/components/users/ForumActiveUsersStrip";
+import { ForumLinkedProductCard } from "@/components/forums/ForumLinkedProductCard";
 import { buildForumPostJsonLd, buildForumBreadcrumbJsonLd } from "@/lib/forumSeo";
 import { generateSEO } from "@/lib/seo";
 import { getTutorials } from "@/lib/tutorialService";
@@ -78,7 +79,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
 
   const [comments, topicUsers, relatedBlogs, relatedTutorials, relatedShorts] = await Promise.all([
     getComments(post.id),
-    getActiveUsersByTopic([...post.tags, post.title], 8).catch(() => []),
+    getActiveUsersByTopic([...post.tags, post.title], 5).catch(() => []),
     primaryTag ? getPostsByTag(primaryTag, 4).catch(() => []) : Promise.resolve([]),
     getTutorials({ tag: primaryTag || null, limit: 4, includeUnpublished: false }).then((result) => result.tutorials).catch(() => []),
     getVideosByTags(post.tags, 4).catch(() => []),
@@ -98,11 +99,11 @@ export default async function ForumThreadPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <ReadingProgressBar />
-      <main className="mx-auto min-h-screen w-full max-w-[1300px] px-4 py-6 sm:py-8">
-        <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[1fr_320px]">
+      <main className="mx-auto min-h-screen w-full max-w-[1300px] px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
           <div className="min-w-0 space-y-6">
             {/* Breadcrumb */}
-            <nav className="mb-6 hidden items-center gap-2 text-sm text-slate-500 sm:flex" aria-label="Breadcrumb">
+            <nav className="mb-6 flex items-center gap-2 text-sm text-slate-500" aria-label="Breadcrumb">
               <Link href="/forums" className="transition hover:text-app">
                 Forums
               </Link>
@@ -125,7 +126,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
             {post.linked_blog_slug && (
               <Link
                 href={`/blog/${post.linked_blog_slug}`}
-                className="mb-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-100 sm:w-auto"
+                className="mb-5 inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-100"
               >
                 <svg
                   width="14"
@@ -164,7 +165,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
             <h1 className="mb-2 text-2xl sm:text-3xl font-bold tracking-tight text-app leading-tight">{post.title}</h1>
 
             {/* Meta */}
-            <div className="mb-6 flex flex-wrap items-center gap-2 text-xs text-slate-500 sm:gap-3 sm:text-sm">
+            <div className="mb-6 flex flex-wrap items-center gap-3 text-sm text-slate-500">
               <span className="font-medium text-slate-700">{post.author_name}</span>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
                 {post.author_reputation_tier}
@@ -196,7 +197,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
             )}
 
             {/* Engagement bar */}
-            <div className="flex flex-wrap items-center gap-3 rounded-xl bg-gray-50 px-3 py-3 sm:px-4">
+            <div className="flex flex-wrap items-center gap-3 rounded-xl bg-gray-50 px-4 py-3">
               <ForumVoteBar
                 slug={post.slug}
                 initialUpvotes={post.upvote_count}
@@ -207,7 +208,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
             </div>
 
             {/* Action bar — share */}
-            <div className="mb-8 flex flex-wrap items-center gap-3 rounded-xl bg-gray-50 px-3 py-3 sm:px-4">
+            <div className="mb-8 flex flex-wrap items-center gap-3 rounded-xl bg-gray-50 px-4 py-3">
               <ForumShareButtons
                 title={post.title}
                 slug={post.slug}
@@ -216,6 +217,11 @@ export default async function ForumThreadPage({ params }: PageProps) {
                 tags={post.tags}
               />
             </div>
+
+            {/* Post content */}
+            <article className="prose prose-slate mt-6 max-w-none rounded-2xl border border-gray-100 bg-gray-50 p-5">
+              <MarkdownRenderer content={post.content} />
+            </article>
 
             {/* Discussion first */}
             <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
@@ -226,11 +232,6 @@ export default async function ForumThreadPage({ params }: PageProps) {
                 creatorFingerprint={post.creator_fingerprint}
               />
             </div>
-
-            {/* Post content */}
-            <article className="prose prose-slate prose-base sm:prose-lg mt-6 max-w-none rounded-2xl border border-gray-100 bg-gray-50 p-4 sm:p-5">
-              <MarkdownRenderer content={post.content} />
-            </article>
 
             {/* Related Articles */}
             {relatedBlogs.length > 0 && (
@@ -281,6 +282,13 @@ export default async function ForumThreadPage({ params }: PageProps) {
           </div>
 
           <aside className="hidden lg:flex flex-col gap-6">
+            {post.linked_product_id && post.linked_product_name && post.linked_product_brand && (
+              <ForumLinkedProductCard
+                productId={post.linked_product_id}
+                productName={post.linked_product_name}
+                productBrand={post.linked_product_brand}
+              />
+            )}
             <ForumActiveUsersStrip title="People active in similar threads" users={topicUsers} />
             <KnowledgeEcosystemPanel
               topicLabel={primaryTag || "this discussion"}

@@ -9,6 +9,7 @@ import { getReconciliationHealth, startReconciliationWorker } from "@/lib/reconc
 import { getLatencyStats, recordLatency } from "@/lib/perfMetrics";
 import { getAskAiQualitySnapshot } from "@/lib/askAiQualityMetrics";
 import { getRecommendationQualitySnapshot } from "@/lib/recommendationQualityMetrics";
+import { getActivityQueueStats } from "@/lib/activityQueue";
 
 const driftEntityLabel = (value: string): "Blog" | "Forum" | "Other" => {
   if (value.startsWith("blog")) return "Blog";
@@ -29,7 +30,7 @@ export async function GET() {
   const fiveMinutesAgo = new Date(now - 5 * 60_000);
   const oneHourAgo = new Date(now - 60 * 60_000);
 
-  const [events1m, dwell1m, skip5m, total5m, failedPending, failedHighAttempts, recentDrifts, recommendationAgg, recommendationPositionRows] = await Promise.all([
+  const [events1m, dwell1m, skip5m, total5m, failedPending, failedHighAttempts, recentDrifts, recommendationAgg, recommendationPositionRows, activityQueue] = await Promise.all([
     FeedEventModel.countDocuments({ created_at: { $gte: oneMinuteAgo } }),
     FeedEventModel.countDocuments({ event_type: "dwell_time", created_at: { $gte: oneMinuteAgo } }),
     FeedEventModel.countDocuments({ event_type: "skip", created_at: { $gte: fiveMinutesAgo } }),
@@ -65,9 +66,10 @@ export async function GET() {
       { $sort: { _id: 1 } },
       { $limit: 6 },
     ]),
+    getActivityQueueStats(),
   ]);
 
-  const queue = getFeedObservabilityHealth().queue;
+  const queue = (await getFeedObservabilityHealth()).queue;
   const reconciliation = getReconciliationHealth();
   const eventRatePerSec = events1m / 60;
   const dwellRatePerSec = dwell1m / 60;
@@ -91,6 +93,12 @@ export async function GET() {
     status: healthStatus,
     queue: {
       depth: queue.queued,
+      activity_depth: activityQueue.total,
+      processing_depth: queue.processing,
+      processing_lag_ms: queue.oldestLagMs,
+      success_count: queue.successCount,
+      failure_count: queue.failureCount,
+      success_rate: queue.successRate,
       flush_status: queue.flushing ? "flushing" : "idle",
       replay_backlog_size: failedPending,
       failed_event_count: failedHighAttempts,

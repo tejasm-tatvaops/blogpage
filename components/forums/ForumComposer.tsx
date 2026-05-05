@@ -2,10 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getOrCreateFingerprint } from "@/lib/personalization";
 import type { ForumPost } from "@/lib/forumService";
+import { brandProducts, type BrandProduct } from "@/data/brandProfileMock";
 
 const TAGS_PLACEHOLDER = "construction, project-management, tools";
+
+const STOCK_COLORS: Record<string, string> = {
+  "In Stock":      "bg-emerald-50 text-emerald-700",
+  "Limited Stock": "bg-amber-50 text-amber-700",
+  "Out of Stock":  "bg-red-50 text-red-700",
+};
 
 export function ForumComposer() {
   const router = useRouter();
@@ -18,7 +26,27 @@ export function ForumComposer() {
   const [submitting, setSubmitting] = useState(false);
   const [improving, setImproving] = useState(false);
   const [improveError, setImproveError] = useState<string | null>(null);
+  const [linkedProduct, setLinkedProduct] = useState<BrandProduct | null>(null);
+  const [productSearch, setProductSearch] = useState("");
+  const [productOpen, setProductOpen] = useState(false);
   const contentRef = useRef<HTMLTextAreaElement>(null);
+  const productRef = useRef<HTMLDivElement>(null);
+
+  // Close product dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (productRef.current && !productRef.current.contains(e.target as Node)) {
+        setProductOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filteredProducts = brandProducts.filter((p) => {
+    const q = productSearch.toLowerCase();
+    return !q || p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
+  });
 
   // Establish fingerprint on mount (client-only)
   useEffect(() => {
@@ -84,6 +112,9 @@ export function ForumComposer() {
           tags: parseTags(tagsRaw),
           author_name: authorName.trim() || "Anonymous",
           creator_fingerprint: fingerprint,
+          linked_product_id:    linkedProduct?.id ?? null,
+          linked_product_name:  linkedProduct?.name ?? null,
+          linked_product_brand: linkedProduct?.brand ?? null,
         }),
       });
 
@@ -232,6 +263,94 @@ export function ForumComposer() {
           className={`${inputClass} font-mono text-xs leading-6`}
         />
         <p className="mt-1 text-right text-xs text-slate-400">{content.length}/50,000</p>
+      </div>
+
+      {/* Products */}
+      <div ref={productRef}>
+        <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+          Products <span className="font-normal text-slate-400">(optional)</span>
+        </label>
+
+        {linkedProduct ? (
+          /* ── Selected product card ── */
+          <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold text-slate-800">{linkedProduct.name}</span>
+                <span className="text-xs text-slate-400">{linkedProduct.brand}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${STOCK_COLORS[linkedProduct.stockStatus] ?? "bg-slate-100 text-slate-600"}`}>
+                  {linkedProduct.stockStatus}
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-slate-500">
+                ₹{linkedProduct.priceMin.toLocaleString("en-IN")} – ₹{linkedProduct.priceMax.toLocaleString("en-IN")}{" "}
+                <span className="text-slate-400">{linkedProduct.unit}</span>
+              </p>
+              <Link
+                href="/brand-profile"
+                target="_blank"
+                className="mt-1 inline-block text-[11px] font-medium text-indigo-600 hover:underline"
+              >
+                View on brand profile →
+              </Link>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setLinkedProduct(null); setProductSearch(""); }}
+              className="shrink-0 rounded p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
+              aria-label="Remove product"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          /* ── Search + dropdown ── */
+          <div className="relative">
+            <div className="flex items-center rounded-lg border border-app bg-surface px-3 py-2.5 ring-indigo-400 transition focus-within:ring-2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-2 shrink-0 text-slate-400" aria-hidden>
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search products to link…"
+                value={productSearch}
+                onChange={(e) => { setProductSearch(e.target.value); setProductOpen(true); }}
+                onFocus={() => setProductOpen(true)}
+                className="flex-1 bg-transparent text-sm text-app outline-none placeholder:text-slate-400"
+              />
+            </div>
+
+            {productOpen && (
+              <div className="absolute z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg">
+                {filteredProducts.length === 0 ? (
+                  <p className="px-4 py-3 text-xs text-slate-400">No products found</p>
+                ) : (
+                  <ul className="max-h-56 overflow-y-auto py-1">
+                    {filteredProducts.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          onClick={() => { setLinkedProduct(p); setProductOpen(false); setProductSearch(""); }}
+                          className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-800">{p.name}</p>
+                            <p className="text-xs text-slate-400">{p.brand} · ₹{p.priceMin.toLocaleString("en-IN")}–{p.priceMax.toLocaleString("en-IN")} {p.unit}</p>
+                          </div>
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${STOCK_COLORS[p.stockStatus] ?? "bg-slate-100 text-slate-600"}`}>
+                            {p.stockStatus}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tags */}

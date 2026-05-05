@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   }
 
   if (typeof parsed.data.liveActivityEnabled === "boolean") {
-    setLiveActivityEnabled(parsed.data.liveActivityEnabled);
+    await setLiveActivityEnabled(parsed.data.liveActivityEnabled);
   }
 
   const toggles = setSystemToggles({

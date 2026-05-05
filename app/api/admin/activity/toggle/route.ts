@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   }
 
   ensureActivityRunnerStarted();
-  const state = setLiveActivityEnabled(parsed.data.enabled);
+  const state = await setLiveActivityEnabled(parsed.data.enabled);
   return NextResponse.json(state, { status: 200 });
 }
 
@@ -44,5 +44,5 @@ export async function GET(request: Request) {
   if (!rl.allowed) return rateLimitResponse(rl);
 
   ensureActivityRunnerStarted();
-  return NextResponse.json(getLiveActivityStatus(), { status: 200 });
+  return NextResponse.json(await getLiveActivityStatus(), { status: 200 });
 }

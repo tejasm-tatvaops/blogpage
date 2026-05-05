@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { incrementUpvote, getPostBySlug } from "@/lib/blogService";
 import {
+  checkRedisRateLimit,
   upvoteLimiter,
   likeAntiGamingLimiter,
   getRateLimitKey,
@@ -20,19 +21,33 @@ export async function POST(
 ) {
   // ── Rate limit: standard per-IP ──────────────────────────────────────────
   const ip = getRateLimitKey(request);
-  const rl = upvoteLimiter(ip);
-  if (!rl.allowed) return rateLimitResponse(rl);
+  const identityKey = await getIdentityKeyFromSessionOrRequest(request).catch(() => "anonymous");
+  const rl = await checkRedisRateLimit(
+    `blog_upvote:${ip}:${identityKey}`,
+    { limit: 10, windowMs: 60_000 },
+    { failClosed: false },
+  );
+  const localFallback = upvoteLimiter(ip);
+  const effectiveLimit = rl ?? localFallback;
+  if (!effectiveLimit.allowed) return rateLimitResponse(effectiveLimit);
 
   try {
     const { slug } = await params;
     const decodedSlug = decodeURIComponent(slug);
 
     // ── Build identity key (session-first) ───────────────────────────────────
-    const identityKey = await getIdentityKeyFromSessionOrRequest(request);
-
     // ── Anti-gaming: max 20 likes/min per identity ───────────────────────────
-    const antiGaming = likeAntiGamingLimiter(identityKey);
-    if (!antiGaming.allowed) {
+    const antiGaming = await checkRedisRateLimit(
+      `blog_like_anti_gaming:${identityKey}`,
+      {
+        limit: 20,
+        windowMs: 60_000,
+      },
+      { failClosed: false },
+    );
+    const antiGamingFallback = likeAntiGamingLimiter(identityKey);
+    const effectiveAntiGaming = antiGaming ?? antiGamingFallback;
+    if (!effectiveAntiGaming.allowed) {
       return NextResponse.json(
         { error: "Too many likes in a short period. Slow down." },
         { status: 429, headers: { "Retry-After": "60" } },
@@ -86,7 +101,7 @@ export async function POST(
       { upvote_count: newCount },
       {
         status: 200,
-        headers: { "X-RateLimit-Remaining": String(rl.remaining) },
+        headers: { "X-RateLimit-Remaining": String(effectiveLimit.remaining) },
       },
     );
   } catch (error) {

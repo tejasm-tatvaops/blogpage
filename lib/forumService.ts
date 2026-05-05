@@ -38,6 +38,9 @@ export type ForumPost = {
   is_trending: boolean;
   best_comment_id: string | null;
   linked_blog_slug: string | null;
+  linked_product_id: string | null;
+  linked_product_name: string | null;
+  linked_product_brand: string | null;
   creator_fingerprint: string | null;
   created_at: string;
   updated_at: string;
@@ -73,6 +76,9 @@ type ForumPostLean = {
   is_trending?: boolean;
   best_comment_id?: string | null;
   linked_blog_slug?: string | null;
+  linked_product_id?: string | null;
+  linked_product_name?: string | null;
+  linked_product_brand?: string | null;
   creator_fingerprint?: string | null;
   deleted_at?: Date | null;
   created_at: Date;
@@ -88,6 +94,9 @@ export type ForumPostInput = {
   author_name?: string;
   creator_fingerprint?: string;
   linked_blog_slug?: string | null;
+  linked_product_id?: string | null;
+  linked_product_name?: string | null;
+  linked_product_brand?: string | null;
 };
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -115,6 +124,9 @@ export const forumPostInputSchema = z.object({
     .optional()
     .default("Anonymous"),
   creator_fingerprint: z.string().max(64).optional(),
+  linked_product_id:    z.string().max(60).optional().nullable(),
+  linked_product_name:  z.string().max(200).trim().optional().nullable(),
+  linked_product_brand: z.string().max(100).trim().optional().nullable(),
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -147,6 +159,9 @@ const toForumPost = (doc: ForumPostLean): ForumPost => ({
   is_trending: doc.is_trending ?? false,
   best_comment_id: doc.best_comment_id ?? null,
   linked_blog_slug: doc.linked_blog_slug ?? null,
+  linked_product_id: doc.linked_product_id ?? null,
+  linked_product_name: doc.linked_product_name ?? null,
+  linked_product_brand: doc.linked_product_brand ?? null,
   creator_fingerprint: doc.creator_fingerprint ?? null,
   created_at: doc.created_at.toISOString(),
   updated_at: doc.updated_at.toISOString(),
@@ -612,6 +627,9 @@ export const createForumPost = async (input: ForumPostInput): Promise<ForumPost>
     is_trending: false,
     best_comment_id: null,
     linked_blog_slug: input.linked_blog_slug ?? null,
+    linked_product_id: input.linked_product_id ?? null,
+    linked_product_name: input.linked_product_name ?? null,
+    linked_product_brand: input.linked_product_brand ?? null,
     creator_fingerprint: input.creator_fingerprint ?? null,
     deleted_at: null,
   });

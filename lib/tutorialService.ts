@@ -38,6 +38,7 @@ export type TutorialListOptions = {
   learningPathSlug?: string | null;
   includeUnpublished?: boolean;
   includeTestData?: boolean;
+  includeContent?: boolean;
 };
 
 export async function getTutorials(opts: TutorialListOptions = {}) {
@@ -53,6 +54,7 @@ export async function getTutorials(opts: TutorialListOptions = {}) {
     learningPathSlug,
     includeUnpublished = false,
     includeTestData = false,
+    includeContent = false,
   } = opts;
 
   const filter: FilterQuery<typeof TutorialModel> = {
@@ -82,11 +84,10 @@ export async function getTutorials(opts: TutorialListOptions = {}) {
   const skip = (page - 1) * limit;
 
   const [tutorials, total] = await Promise.all([
-    TutorialModel.find(filter)
+    (includeContent ? TutorialModel.find(filter) : TutorialModel.find(filter).select("-content")) // omit body unless explicitly requested
       .sort(query ? { score: { $meta: "textScore" } } : { step_number: 1, created_at: -1 })
       .skip(skip)
       .limit(limit)
-      .select("-content") // omit body for list view
       .lean(),
     TutorialModel.countDocuments(filter),
   ]);
@@ -130,6 +131,7 @@ export type CreateTutorialInput = {
     answerIndex?: number | null;
     explanation?: string | null;
   }>;
+  transcript?: Array<{ time: number; text: string }>;
   published?: boolean;
   isTestData?: boolean;
 };
@@ -164,6 +166,7 @@ export async function createTutorial(input: CreateTutorialInput) {
       answer_index: block.answerIndex ?? null,
       explanation: block.explanation ?? null,
     })),
+    transcript: input.transcript ?? [],
     published: input.published ?? false,
     is_test_data: input.isTestData ?? false,
   });

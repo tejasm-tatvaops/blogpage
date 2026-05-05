@@ -43,7 +43,15 @@ function extractReferences(markdown: string): string[] {
 
 const PROFILE_KEY = "tatvaops_user_profile";
 
-type TutorialItem = { slug: string; title: string; excerpt: string; difficulty?: string; tags: string[] };
+type TutorialItem = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  difficulty?: string;
+  tags: string[];
+  estimated_minutes?: number;
+  thumbnail?: string | null;
+};
 
 function scoreItems(items: TutorialItem[], viewedTags: Record<string, number>, viewedSlugs: string[], currentSlug: string): TutorialItem[] {
   return items
@@ -137,22 +145,56 @@ export function TutorialSidebar({
                   href={`/tutorials/${tutorial.slug}`}
                   className="group flex items-start gap-3 px-4 py-3.5 transition hover:bg-subtle"
                 >
-                  <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 transition group-hover:bg-indigo-100">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 transition group-hover:text-indigo-600" aria-hidden>
-                      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                    </svg>
+                  <div className="h-14 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-app bg-slate-100">
+                    {tutorial.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={tutorial.thumbnail} alt={tutorial.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="relative h-full w-full overflow-hidden bg-slate-900">
+                        <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-black" />
+                        <div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.5),transparent_35%),radial-gradient(circle_at_80%_75%,rgba(99,102,241,0.45),transparent_40%)]" />
+                        <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/80 to-transparent" />
+                        <div className="relative flex h-full flex-col justify-between p-2">
+                          <div className="flex items-center gap-1 self-start rounded-full bg-white/10 px-1.5 py-0.5 backdrop-blur">
+                            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                            <span className="text-[8px] font-semibold uppercase tracking-[0.12em] text-white/90">
+                              Tutorial
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-center">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-red-600 shadow-lg ring-2 ring-white/40">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                                <path d="M9 7.5v9l8-4.5-8-4.5z" fill="currentColor" />
+                              </svg>
+                            </span>
+                          </div>
+                          <div className="flex items-end justify-between">
+                            <span className="text-[8px] font-medium uppercase tracking-[0.1em] text-white/85">
+                              Preview unavailable
+                            </span>
+                            <span className="rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                              {tutorial.estimated_minutes ?? 8}:00
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold leading-snug text-slate-800 transition group-hover:text-indigo-700 line-clamp-2">
                       {tutorial.title}
                     </p>
                     <p className="mt-0.5 text-xs leading-relaxed text-slate-400 line-clamp-2">{tutorial.excerpt}</p>
-                    {tutorial.difficulty && (
-                      <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${DIFFICULTY_COLORS[tutorial.difficulty] ?? "bg-slate-100 text-slate-600"}`}>
-                        {tutorial.difficulty}
+                    <div className="mt-1 flex items-center gap-1.5">
+                      {tutorial.difficulty && (
+                        <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${DIFFICULTY_COLORS[tutorial.difficulty] ?? "bg-slate-100 text-slate-600"}`}>
+                          {tutorial.difficulty}
+                        </span>
+                      )}
+                      <span className="text-[10px] font-medium text-slate-400">
+                        {tutorial.estimated_minutes ?? 8} min
                       </span>
-                    )}
+                    </div>
                   </div>
                 </Link>
               </li>
