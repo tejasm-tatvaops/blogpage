@@ -4,23 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import type { VideoPost } from "@/models/VideoPost";
-import { ShortVideoCard } from "./ShortVideoCard";
+import { ShortSlide } from "./ShortSlide";
+import { ShortsTopBar } from "./ShortsTopBar";
+import { ShortsPage } from "./ShortsPage";
 
 type ShortsFeedProps = {
   initialPosts: VideoPost[];
 };
-
-const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "Blogs", href: "/blog" },
-  { label: "Forums", href: "/forums" },
-  { label: "Shorts", href: "/shorts", active: true },
-  { label: "Tatva Inshorts", href: "/inshorts" },
-  { label: "Tutorials", href: "/tutorials" },
-  { label: "Ask AI", href: "/ask", highlight: true },
-  { label: "Saved", href: "/saved" },
-  { label: "Admin", href: "/admin/login" },
-];
 
 // ─── Feed event helper ────────────────────────────────────────────────────────
 // Reuses the existing /api/feed/events endpoint so video signals flow into
@@ -204,8 +194,6 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
     window.setTimeout(() => setInteractionAck(null), 1200);
   }, [hasInteracted]);
 
-  const progressPct = posts.length > 1 ? ((activeIndex + 1) / posts.length) * 100 : 100;
-
   if (posts.length === 0) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-black text-white">
@@ -219,146 +207,92 @@ export function ShortsFeed({ initialPosts }: ShortsFeedProps) {
   }
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-black text-white">
-      {/* ── Top bar ── */}
-      <div className="pointer-events-none absolute left-0 right-0 top-0 z-30">
-        <div className="pointer-events-auto sticky top-0 bg-black/20 px-4 pt-2 backdrop-blur-lg">
-          {/* Progress bar */}
-          <div className="mb-2 h-0.5 w-full overflow-hidden rounded-full bg-surface/20">
-            <motion.div
-              className="h-full rounded-full bg-surface/80"
-              animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+    <ShortsPage
+      topBar={<ShortsTopBar activeIndex={activeIndex} total={posts.length} />}
+      feed={(
+        <div
+          ref={containerRef}
+          className="h-full w-full overflow-y-scroll snap-y snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {posts.map((post, i) => (
+            <ShortSlide
+              key={post.id}
+              post={post}
+              index={i}
+              isActive={i === activeIndex}
+              muted={muted}
+              hasInteracted={hasInteracted}
+              liked={!!likedById[post.slug]}
+              onLike={handleLike}
+              onMuteToggle={() => setMuted((v) => !v)}
+              onFirstInteraction={handleFirstInteraction}
             />
-          </div>
+          ))}
 
-          {/* Header row */}
-          <div className="flex items-center gap-2 pb-2">
-            <div className="flex flex-shrink-0 items-center gap-3">
-              <Link
-                href="/"
-                className="flex items-center gap-1.5 rounded-full bg-surface/10 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-surface/20"
+          {loadingMore && (
+            <div className="flex h-24 w-full items-center justify-center">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+            </div>
+          )}
+        </div>
+      )}
+      dots={(
+        <div className="pointer-events-none fixed bottom-6 left-1/2 z-30 -translate-x-1/2 md:left-[calc(50%+64px)]">
+          <div className="flex items-center gap-1.5">
+            {posts.slice(Math.max(0, activeIndex - 4), activeIndex + 5).map((_, offset) => {
+              const i = Math.max(0, activeIndex - 4) + offset;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => scrollToIndex(i)}
+                  className={`pointer-events-auto rounded-full transition-all ${
+                    i === activeIndex ? "h-5 w-1.5 bg-surface" : "h-1.5 w-1.5 bg-surface/35"
+                  }`}
+                  aria-label={`Go to video ${i + 1}`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+      overlays={(
+        <>
+          <AnimatePresence>
+            {showGestureHint && (
+              <motion.div
+                className="pointer-events-none fixed bottom-14 left-1/2 z-30 -translate-x-1/2 md:left-[calc(50%+64px)]"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25 }}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-                Back
-              </Link>
-              <span className="text-sm font-bold tracking-wide">Shorts</span>
-              <span className="text-xs text-white/50">{activeIndex + 1} / {posts.length}</span>
-            </div>
-            <div className="flex min-w-0 flex-1 justify-end overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className="flex items-center gap-1">
-                {navLinks.map((link) =>
-                  link.active ? (
-                    <span
-                      key={link.href}
-                      className="whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-black"
-                    >
-                      {link.label}
-                    </span>
-                  ) : (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition hover:text-white ${
-                        link.highlight
-                          ? "bg-indigo-600/80 text-white hover:bg-indigo-500"
-                          : "bg-white/10 text-white/70 hover:bg-white/20"
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  )
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+                <span className="rounded-full bg-black/40 px-4 py-1.5 text-xs text-white/80 backdrop-blur-md">
+                  Scroll or swipe up to continue
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-      {/* ── Vertical snap scroll container ── */}
-      <div
-        ref={containerRef}
-        className="h-full w-full overflow-y-scroll snap-y snap-mandatory"
-        style={{ scrollbarWidth: "none" }}
-      >
-        {posts.map((post, i) => (
-          <ShortVideoCard
-            key={post.id}
-            post={post}
-            index={i}
-            isActive={i === activeIndex}
-            muted={muted}
-            hasInteracted={hasInteracted}
-            liked={!!likedById[post.slug]}
-            onLike={handleLike}
-            onMuteToggle={() => setMuted((v) => !v)}
-            onFirstInteraction={handleFirstInteraction}
-          />
-        ))}
-
-        {loadingMore && (
-          <div className="flex h-24 w-full items-center justify-center">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-          </div>
-        )}
-      </div>
-
-      {/* ── Dot progress indicator ── */}
-      <div className="pointer-events-none absolute bottom-6 left-1/2 z-30 -translate-x-1/2">
-        <div className="flex items-center gap-1.5">
-          {posts.slice(Math.max(0, activeIndex - 4), activeIndex + 5).map((_, offset) => {
-            const i = Math.max(0, activeIndex - 4) + offset;
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => scrollToIndex(i)}
-                className={`pointer-events-auto rounded-full transition-all ${
-                  i === activeIndex ? "h-5 w-1.5 bg-surface" : "h-1.5 w-1.5 bg-surface/35"
-                }`}
-                aria-label={`Go to video ${i + 1}`}
-              />
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Gesture hint ── */}
-      <AnimatePresence>
-        {showGestureHint && (
-          <motion.div
-            className="pointer-events-none absolute bottom-14 left-1/2 z-30 -translate-x-1/2"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.25 }}
-          >
-            <span className="rounded-full bg-black/40 px-4 py-1.5 text-xs text-white/80 backdrop-blur-md">
-              Scroll or swipe up to continue
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Interaction acknowledgement toast ── */}
-      <AnimatePresence>
-        {interactionAck && (
-          <motion.div
-            key={interactionAck}
-            className="pointer-events-none absolute left-1/2 top-24 z-40 -translate-x-1/2"
-            initial={{ opacity: 0, scale: 0.9, y: -8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -6 }}
-            transition={{ duration: 0.2 }}
-          >
-            <span className="rounded-full bg-emerald-500/90 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm shadow-lg">
-              {interactionAck}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          <AnimatePresence>
+            {interactionAck && (
+              <motion.div
+                key={interactionAck}
+                className="pointer-events-none fixed left-1/2 top-24 z-40 -translate-x-1/2 md:left-[calc(50%+64px)]"
+                initial={{ opacity: 0, scale: 0.9, y: -8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                transition={{ duration: 0.2 }}
+              >
+                <span className="rounded-full bg-emerald-500/90 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm shadow-lg">
+                  {interactionAck}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
+    />
   );
 }

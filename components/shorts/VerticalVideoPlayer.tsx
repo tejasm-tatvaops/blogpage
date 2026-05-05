@@ -267,8 +267,8 @@ export function VerticalVideoPlayer({
       <div
         className={[
           "relative overflow-hidden bg-black",
-          "h-[100dvh] w-full",
-          "lg:h-screen lg:max-w-[420px] lg:mx-auto lg:rounded-xl lg:shadow-2xl",
+          "h-full w-full",
+          "mx-auto max-w-[420px] rounded-2xl shadow-2xl",
         ].join(" ")}
       >
         {!isActive && (
@@ -325,8 +325,8 @@ export function VerticalVideoPlayer({
       <div
         className={[
           "relative overflow-hidden bg-black",
-          "h-[100dvh] w-full",
-          "lg:h-screen lg:max-w-[420px] lg:mx-auto lg:rounded-xl lg:shadow-2xl",
+          "h-full w-full",
+          "mx-auto max-w-[420px] rounded-2xl shadow-2xl",
         ].join(" ")}
       >
         {isActive ? (
