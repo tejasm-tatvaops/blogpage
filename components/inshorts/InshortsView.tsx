@@ -309,6 +309,8 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
   const topTags = [...new Set(posts.flatMap((p) => [p.category, ...p.tags]).filter(Boolean))].slice(0, 12);
   const activePost = posts[activeIndex];
   const interestSignal = activePost?.category ?? activePost?.tags[0] ?? "construction";
+  const activeShareCount = activePost ? (localShareCountByPostId[activePost.id] ?? 0) : 0;
+  const activeShareAvatars = activePost ? (localShareAvatarsByPostId[activePost.id] ?? []) : [];
   const visibleDotStart = Math.max(0, activeIndex - 4);
   const visibleDots = posts.slice(visibleDotStart, visibleDotStart + 9);
 
@@ -618,6 +620,44 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
             </motion.p>
           </AnimatePresence>
 
+          <div className="mb-2 flex items-center justify-between rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 backdrop-blur-md">
+            <div className="flex items-center gap-2.5">
+              {activeShareCount > 0 ? (
+                <>
+                  <div className="flex items-center">
+                    {activeShareAvatars.slice(0, 3).map((avatar, idx) => (
+                      <div
+                        key={`${avatar}-${idx}`}
+                        className="h-7 w-7 overflow-hidden rounded-full border-2 bg-white/10"
+                        style={{
+                          marginLeft: idx === 0 ? 0 : "-10px",
+                          borderColor: "#0a0c12",
+                        }}
+                      >
+                        <img src={avatar} alt="" className="h-full w-full object-cover" />
+                      </div>
+                    ))}
+                    {activeShareCount > 3 && (
+                      <div
+                        className="flex h-7 min-w-7 items-center justify-center rounded-full border-2 bg-white/20 px-1 text-[10px] font-semibold text-white"
+                        style={{ marginLeft: "-10px", borderColor: "#0a0c12" }}
+                      >
+                        +{Math.max(0, activeShareCount - 3)}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-white/85">
+                    <strong>Shared by {activeShareCount} builders</strong>
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-white/75">
+                  <strong>Be the first to share</strong>
+                </p>
+              )}
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -784,9 +824,6 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
             }
           };
           const shareThreads = () => { threadsChannel.share(payload, articleUrl); trackShare("threads"); };
-          const shareCount = localShareCountByPostId[post.id] ?? 0;
-          const shareAvatars = localShareAvatarsByPostId[post.id] ?? [];
-
           return (
             <div
               key={post.id}
@@ -969,43 +1006,6 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                       Read full article →
                     </a>
 
-                    <div className="mt-4 flex items-center justify-between rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 backdrop-blur-md">
-                      <div className="flex items-center gap-2.5">
-                        {shareCount > 0 ? (
-                          <>
-                            <div className="flex items-center">
-                              {shareAvatars.slice(0, 3).map((avatar, idx) => (
-                                <div
-                                  key={`${avatar}-${idx}`}
-                                  className="h-7 w-7 overflow-hidden rounded-full border-2 bg-white/10"
-                                  style={{
-                                    marginLeft: idx === 0 ? 0 : "-10px",
-                                    borderColor: "#0a0c12",
-                                  }}
-                                >
-                                  <img src={avatar} alt="" className="h-full w-full object-cover" />
-                                </div>
-                              ))}
-                              {shareCount > 3 && (
-                                <div
-                                  className="flex h-7 min-w-7 items-center justify-center rounded-full border-2 bg-white/20 px-1 text-[10px] font-semibold text-white"
-                                  style={{ marginLeft: "-10px", borderColor: "#0a0c12" }}
-                                >
-                                  +{Math.max(0, shareCount - 3)}
-                                </div>
-                              )}
-                            </div>
-                            <p className="text-xs text-white/85">
-                              <strong>Shared by {shareCount} builders</strong>
-                            </p>
-                          </>
-                        ) : (
-                          <p className="text-xs text-white/75">
-                            <strong>Be the first to share</strong>
-                          </p>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 </motion.article>
               )}
