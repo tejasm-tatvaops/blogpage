@@ -325,7 +325,7 @@ export function BlogList({
             {canCreatePost ? (
               <Link
                 href="/admin/blog/new"
-                className="h-10 rounded-xl border border-white/20 bg-[#0b1026] px-4 text-sm font-semibold !text-white transition hover:bg-[#131a3b] dark:border-white/10 sm:col-span-4 sm:w-full sm:justify-self-stretch"
+                className="h-10 rounded-xl bg-orange-500 px-4 text-sm font-semibold !text-white shadow-[0_2px_12px_rgba(249,115,22,0.25)] transition hover:bg-orange-400 hover:shadow-[0_4px_16px_rgba(249,115,22,0.35)] sm:col-span-4 sm:w-full sm:justify-self-stretch"
               >
                 <span className="inline-flex h-full items-center">+ New post</span>
               </Link>

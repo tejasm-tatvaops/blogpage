@@ -3,6 +3,7 @@ import { getPostBySlug } from "@/lib/blogService";
 import { voteComment } from "@/lib/services/comment.service";
 import { getRateLimitKey, rateLimitResponse, upvoteLimiter } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
+import { getIdentityKeyFromSessionOrRequest } from "@/lib/auth/identity";
 
 type VotePayload = {
   direction?: "up" | "down";
@@ -20,6 +21,7 @@ export async function POST(
     const { slug, commentId } = await params;
     const post = await getPostBySlug(decodeURIComponent(slug));
     if (!post) return NextResponse.json({ error: "Post not found." }, { status: 404 });
+    const actorKey = await getIdentityKeyFromSessionOrRequest(request);
 
     let body: VotePayload;
     try {
@@ -33,7 +35,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid vote direction." }, { status: 400 });
     }
 
-    const updated = await voteComment(post.id, commentId, direction);
+    const updated = await voteComment(post.id, commentId, direction, actorKey);
     if (!updated) {
       return NextResponse.json({ error: "Comment not found." }, { status: 404 });
     }

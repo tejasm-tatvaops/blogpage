@@ -1,6 +1,7 @@
 import { isValidObjectId, type ClientSession } from "mongoose";
 import { z } from "zod";
 import { CommentModel, type CommentDocument } from "@/models/Comment";
+import { CommentVoteModel } from "@/models/CommentVote";
 import { PositiveMentionCounterModel } from "@/models/PositiveMentionCounter";
 import { ForumPostModel } from "@/models/ForumPost";
 import { UserProfileModel } from "@/models/UserProfile";
@@ -332,11 +333,75 @@ export const voteComment = async (
   postId: string,
   commentId: string,
   direction: "up" | "down",
-): Promise<Pick<Comment, "id" | "upvote_count" | "downvote_count" | "score"> | null> => {
+  identityKey: string,
+): Promise<
+  (Pick<Comment, "id" | "upvote_count" | "downvote_count" | "score"> & {
+    already_voted?: boolean;
+    existing_direction?: "up" | "down";
+  }) | null
+> => {
   await connectToDatabase();
-  if (!isValidObjectId(commentId)) return null;
+  if (!isValidObjectId(commentId) || !identityKey.trim()) return null;
+
+  const baseComment = (await CommentModel.findOne({
+    _id: commentId,
+    post_id: postId,
+    ...notDeleted,
+  })
+    .select("_id upvote_count downvote_count")
+    .lean()) as CommentDocument | null;
+  if (!baseComment) return null;
+
+  const existingVote = await CommentVoteModel.findOne({
+    comment_id: commentId,
+    identity_key: identityKey.trim(),
+  })
+    .select("direction")
+    .lean();
+  if (existingVote) {
+    const up = baseComment.upvote_count ?? 0;
+    const down = baseComment.downvote_count ?? 0;
+    return {
+      id: baseComment._id.toString(),
+      upvote_count: up,
+      downvote_count: down,
+      score: up - down,
+      already_voted: true,
+      existing_direction: existingVote.direction as "up" | "down",
+    };
+  }
 
   const field = direction === "up" ? "upvote_count" : "downvote_count";
+  try {
+    await CommentVoteModel.create({
+      post_id: postId,
+      comment_id: commentId,
+      identity_key: identityKey.trim(),
+      direction,
+    });
+  } catch (error: unknown) {
+    if (typeof error === "object" && error !== null && (error as { code?: number }).code === 11000) {
+      const latest = (await CommentModel.findOne({
+        _id: commentId,
+        post_id: postId,
+        ...notDeleted,
+      })
+        .select("_id upvote_count downvote_count")
+        .lean()) as CommentDocument | null;
+      if (!latest) return null;
+      const up = latest.upvote_count ?? 0;
+      const down = latest.downvote_count ?? 0;
+      return {
+        id: latest._id.toString(),
+        upvote_count: up,
+        downvote_count: down,
+        score: up - down,
+        already_voted: true,
+      };
+    }
+    throw error;
+  }
+
   const updated = (await CommentModel.findOneAndUpdate(
     { _id: commentId, post_id: postId, ...notDeleted },
     { $inc: { [field]: 1 } },
