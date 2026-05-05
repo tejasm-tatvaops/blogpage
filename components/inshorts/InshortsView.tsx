@@ -323,9 +323,11 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
         )}
       </AnimatePresence>
 
+      <div className="ml-0 px-4 pt-[100px] md:ml-[90px] md:px-6 lg:ml-[120px]">
+        <div className="mx-auto w-full max-w-[1280px]">
       {/* Top bar */}
-      <div className="pointer-events-none absolute left-0 right-0 top-0 z-20">
-        <div className="pointer-events-auto sticky top-0 bg-black/20 px-3 pt-2 backdrop-blur-lg">
+      <div className="pointer-events-none relative z-20">
+        <div className="pointer-events-auto relative bg-black/20 px-3 pt-2 backdrop-blur-lg">
           {/* Progress bar */}
           <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-white/15">
             <motion.div
@@ -341,7 +343,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
           </div>
 
           {/* Header row */}
-          <div className="mb-2 flex items-center gap-2">
+          <div className="mb-4 flex items-center gap-2">
             {/* Left: back + title */}
             <div className="flex flex-shrink-0 items-center gap-3">
               <Link
@@ -360,7 +362,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
             </div>
 
             {/* Right: full nav — scrollable, matches navbar links */}
-            <div className="flex min-w-0 flex-1 justify-end overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="hidden min-w-0 flex-1 justify-end overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex items-center gap-1">
                 {navLinks.map((link) =>
                   link.active ? (
@@ -403,7 +405,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
           </AnimatePresence>
 
           {/* Topic chips */}
-          <div className="flex gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="mb-6 flex flex-wrap gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <span className="whitespace-nowrap rounded-full border border-sky-300 bg-sky-500 px-3 py-1 text-xs font-semibold text-white">
               All
             </span>
@@ -422,7 +424,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
       {/* Horizontal scroll card strip */}
       <div
         ref={containerRef}
-        className="h-screen whitespace-nowrap overflow-x-scroll overflow-y-hidden snap-x snap-mandatory px-2 pb-2 pt-[7.5rem] [scroll-behavior:smooth]"
+        className="mt-6 h-[calc(100vh-280px)] whitespace-nowrap overflow-x-scroll overflow-y-hidden snap-x snap-mandatory md:h-[calc(100vh-260px)] [scroll-behavior:smooth]"
         style={{ scrollbarWidth: "none" }}
         onTouchStart={(event) => {
           const point = event.touches[0];
@@ -496,7 +498,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
             <div
               key={post.id}
               data-slide={i}
-              className="mr-3 inline-block h-[calc(100vh-8rem)] w-[calc(100vw-2.75rem)] align-top snap-center"
+              className="mr-0 inline-block h-full min-w-full align-top snap-start"
             >
               {Math.abs(i - activeIndex) > 1 ? (
                 <div className="h-full w-full bg-black" />
@@ -622,7 +624,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                   </div>
 
                   {/* Bottom content */}
-                  <div className="absolute inset-x-0 bottom-0 z-10 p-4 pb-10 sm:p-6">
+                  <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-10 pt-4 md:px-10">
                     {/* Badges */}
                     <div className="mb-2 flex flex-wrap items-center gap-1.5">
                       {(post.view_count >= 80 || post.upvote_count >= 12) && (
@@ -682,7 +684,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
       </div>
 
       {/* Dot progress */}
-      <div className="pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
+      <div className="pointer-events-none mt-6 pb-3 flex justify-center">
         <div className="mb-2 flex items-center justify-center gap-1.5">
           {visibleDots.map((_, offset) => {
             const idx = visibleDotStart + offset;
@@ -702,6 +704,8 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
             Swipe left or right to continue
           </p>
         )}
+      </div>
+        </div>
       </div>
 
       {/* Article detail overlay */}
