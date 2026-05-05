@@ -314,6 +314,7 @@ const processPost = async (
   const users = pickDistinctFakeUsers(aiComments.length + aiComments.reduce((sum, c) => sum + c.replies.length, 0));
   const userBehaviorMap = new Map(users.map((u) => [u.name, buildBehaviorProfile(`${u.name}|${post.id}`)]));
   let userIndex = 0;
+  let syntheticVoteIndex = 0;
 
   const normaliseBody = (value: string): string =>
     value.toLowerCase().replace(/[^\w\s]/g, "").replace(/\s+/g, " ").trim();
@@ -362,16 +363,19 @@ const processPost = async (
       if (upvoteRoll > 0.3) {
         const upvotes = Math.floor(Math.random() * 6) + 1; // 1–6
         for (let i = 0; i < upvotes; i++) {
-          await voteComment(post.id, parentId, "up");
+          const voterKey = `system:auto-voter:${post.id}:${parentId}:up:${syntheticVoteIndex++}`;
+          await voteComment(post.id, parentId, "up", voterKey);
         }
       }
       // Occasional downvotes
       if (Math.random() < 0.1) {
-        await voteComment(post.id, parentId, "down");
+        const voterKey = `system:auto-voter:${post.id}:${parentId}:down:${syntheticVoteIndex++}`;
+        await voteComment(post.id, parentId, "down", voterKey);
       }
       // Contradictory behavior: occasional downvote after commenting.
       if (behavior?.behaviorType === "contrarian" && Math.random() < 0.2) {
-        await voteComment(post.id, parentId, "down");
+        const voterKey = `system:auto-voter:${post.id}:${parentId}:down:${syntheticVoteIndex++}`;
+        await voteComment(post.id, parentId, "down", voterKey);
       }
     } catch (err) {
       logger.warn({ postId: post.id, error: (err as Error).message }, "autopopulate: failed to create comment");
@@ -411,7 +415,8 @@ const processPost = async (
         if (Math.random() > 0.5) {
           const upvotes = Math.floor(Math.random() * 3) + 1;
           for (let i = 0; i < upvotes; i++) {
-            await voteComment(post.id, createdReply.id, "up");
+            const voterKey = `system:auto-voter:${post.id}:${createdReply.id}:up:${syntheticVoteIndex++}`;
+            await voteComment(post.id, createdReply.id, "up", voterKey);
           }
         }
       } catch (err) {
