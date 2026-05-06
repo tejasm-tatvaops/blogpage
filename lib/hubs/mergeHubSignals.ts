@@ -41,6 +41,9 @@ function hubContentToSyntheticForum(
     linked_product_name: null,
     linked_product_brand: null,
     creator_fingerprint: null,
+    author_expertise_badge: null,
+    author_profession: null,
+    author_expertise: null,
     created_at,
     updated_at: created_at,
   };
