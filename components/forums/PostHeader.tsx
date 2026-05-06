@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ForumViewCount } from "@/components/forums/ForumViewCount";
+import { LiveActivityPulse } from "@/components/shared/LiveActivityPulse";
+import { ExpertiseBadge } from "@/components/shared/ExpertiseBadge";
 
 type PostHeaderProps = {
   title: string;
@@ -13,6 +15,7 @@ type PostHeaderProps = {
   createdAt: string;
   viewCount: number;
   badges: string[];
+  expertiseBadge?: string | null;
 };
 
 const formatDate = (iso: string): string =>
@@ -34,7 +37,9 @@ export function PostHeader({
   createdAt,
   viewCount,
   badges,
+  expertiseBadge,
 }: PostHeaderProps) {
+  const liveNowCount = Math.max(4, Math.round(viewCount / 35) + Math.round((engagementScore ?? 0) * 20));
   return (
     <div>
       <Link
@@ -102,6 +107,7 @@ export function PostHeader({
 
       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-slate-400">
         <span className="font-semibold text-slate-700">{authorName}</span>
+        <ExpertiseBadge badge={expertiseBadge} />
         <span className="rounded-full border border-app bg-surface px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-600">{authorTier}</span>
         <span className="rounded-full border border-app bg-surface px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
           {Math.round((qualityScore ?? 0) * 100)}%
@@ -114,6 +120,11 @@ export function PostHeader({
         <span aria-hidden>·</span>
         <ForumViewCount slug={slug} initialCount={viewCount} />
       </div>
+      <LiveActivityPulse
+        baseCount={liveNowCount}
+        noun="builders discussing this now"
+        className="mb-3 text-slate-500 dark:text-white/50"
+      />
       <div className="mb-4 h-px bg-app" />
     </div>
   );

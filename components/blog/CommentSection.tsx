@@ -10,6 +10,7 @@ import { useActivityPolling } from "@/lib/activityPolling";
 import { getUserAvatar } from "@/lib/identityUI";
 import { UserProfileQuickView } from "@/components/user/UserQuickView";
 import { FollowButton } from "@/components/user/FollowButton";
+import { ExpertiseBadge } from "@/components/shared/ExpertiseBadge";
 
 type CommentSectionProps = {
   slug: string;
@@ -556,6 +557,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                   <time className="text-xs text-slate-400" dateTime={c.created_at}>
                     {formatDate(c.created_at)}
                   </time>
+                  <ExpertiseBadge badge={c.expertise_badge} />
                   {!c.is_deleted && c.identity_key && (
                     <FollowButton targetIdentityKey={c.identity_key} variant="compact" />
                   )}
@@ -683,6 +685,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                           <time className="text-xs text-slate-400" dateTime={reply.created_at}>
                             {formatDate(reply.created_at)}
                           </time>
+                          <ExpertiseBadge badge={reply.expertise_badge} />
                           {!reply.is_deleted && reply.identity_key && (
                             <FollowButton targetIdentityKey={reply.identity_key} variant="compact" />
                           )}
@@ -812,6 +815,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
                                   <time className="text-xs text-slate-400" dateTime={nested.created_at}>
                                     {formatDate(nested.created_at)}
                                   </time>
+                                  <ExpertiseBadge badge={nested.expertise_badge} />
                                   {!nested.is_deleted && nested.identity_key && (
                                     <FollowButton targetIdentityKey={nested.identity_key} variant="compact" />
                                   )}

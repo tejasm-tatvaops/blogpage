@@ -10,6 +10,8 @@ import * as whatsappChannel from "@/channels/whatsappChannel";
 import * as instagramChannel from "@/channels/instagramChannel";
 import * as threadsChannel from "@/channels/threadsChannel";
 import type { ContentPayload } from "@/channels/shared";
+import { ContextChip } from "@/components/shared/ContextChip";
+import { LiveActivityPulse } from "@/components/shared/LiveActivityPulse";
 
 const formatCount = (n: number): string => {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -311,6 +313,9 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
   const interestSignal = activePost?.category ?? activePost?.tags[0] ?? "construction";
   const activeShareCount = activePost ? (localShareCountByPostId[activePost.id] ?? 0) : 0;
   const activeShareAvatars = activePost ? (localShareAvatarsByPostId[activePost.id] ?? []) : [];
+  const activePulseCount = activePost
+    ? Math.max(3, Math.round((activePost.view_count ?? 0) / 30) + Math.round((activeShareCount ?? 0) / 2))
+    : 3;
   const visibleDotStart = Math.max(0, activeIndex - 4);
   const visibleDots = posts.slice(visibleDotStart, visibleDotStart + 9);
 
@@ -608,16 +613,17 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
 
           {/* Personalisation signal */}
           <AnimatePresence mode="wait">
-            <motion.p
+            <motion.div
               key={`${activeIndex}-${interestSignal}`}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="mb-2 text-[11px] font-medium text-white/85"
+              className="mb-2 flex flex-wrap items-center justify-between gap-2"
             >
-              Because you like <span className="font-semibold text-white">{interestSignal}</span>
-            </motion.p>
+              <ContextChip text={`Because you interacted with #${interestSignal}`} keyword={interestSignal} />
+              <LiveActivityPulse baseCount={activePulseCount} noun="builders discussing now" />
+            </motion.div>
           </AnimatePresence>
 
           <div className="mb-2 flex items-center justify-between rounded-xl border border-white/15 bg-black/30 px-3 py-2.5 backdrop-blur-md">
@@ -657,7 +663,6 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
               )}
             </div>
           </div>
-
         </div>
       </div>
 

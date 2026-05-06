@@ -8,9 +8,11 @@ import { PostHeader } from "@/components/forums/PostHeader";
 import { ReactionBar } from "@/components/forums/ReactionBar";
 import { PostBody } from "@/components/forums/PostBody";
 import { RepliesCard } from "@/components/forums/RepliesCard";
+import { ForumAiSummaryCard } from "@/components/forums/ForumAiSummaryCard";
+import { ConsensusInsightsCard } from "@/components/forums/ConsensusInsightsCard";
 import { getForumPostBySlug, getForumPosts } from "@/lib/forumService";
 import { getComments } from "@/lib/services/comment.service";
-import { getActiveUsersByTopic } from "@/lib/userProfileService";
+import { getActiveUsersByTopic, getUserProfileByIdentityKey } from "@/lib/userProfileService";
 import { ForumActiveUsersStrip } from "@/components/users/ForumActiveUsersStrip";
 import { buildForumPostJsonLd, buildForumBreadcrumbJsonLd } from "@/lib/forumSeo";
 import { generateSEO } from "@/lib/seo";
@@ -74,6 +76,9 @@ export default async function ForumThreadPage({ params }: PageProps) {
     getTutorials({ tag: primaryTag || null, limit: 4, includeUnpublished: false }).then((result) => result.tutorials).catch(() => []),
     getVideosByTags(post.tags, 4).catch(() => []),
   ]);
+  const authorProfile = post.creator_fingerprint
+    ? await getUserProfileByIdentityKey(`fp:${post.creator_fingerprint}`).catch(() => null)
+    : null;
 
   const postJsonLd = buildForumPostJsonLd(post, SITE_URL);
   const breadcrumbJsonLd = buildForumBreadcrumbJsonLd(post, SITE_URL);
@@ -104,6 +109,7 @@ export default async function ForumThreadPage({ params }: PageProps) {
               createdAt={post.created_at}
               viewCount={post.view_count}
               badges={post.badges}
+              expertiseBadge={authorProfile?.public_expertise_enabled ? (authorProfile.expertise_badge ?? null) : null}
             />
             <ReactionBar
               slug={post.slug}
@@ -118,10 +124,13 @@ export default async function ForumThreadPage({ params }: PageProps) {
             <PostBody content={post.content} />
             <RepliesCard
               slug={post.slug}
+              tags={post.tags}
               initialComments={comments}
               bestCommentId={post.best_comment_id}
               creatorFingerprint={post.creator_fingerprint}
             />
+            <ForumAiSummaryCard slug={post.slug} />
+            <ConsensusInsightsCard slug={post.slug} />
           </ForumLeftColumn>
         )}
         right={(

@@ -42,6 +42,9 @@ export type ForumPost = {
   linked_product_name: string | null;
   linked_product_brand: string | null;
   creator_fingerprint: string | null;
+  author_expertise_badge: string | null;
+  author_profession: string | null;
+  author_expertise: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -163,9 +166,39 @@ const toForumPost = (doc: ForumPostLean): ForumPost => ({
   linked_product_name: doc.linked_product_name ?? null,
   linked_product_brand: doc.linked_product_brand ?? null,
   creator_fingerprint: doc.creator_fingerprint ?? null,
+  author_expertise_badge: null,
+  author_profession: null,
+  author_expertise: null,
   created_at: doc.created_at.toISOString(),
   updated_at: doc.updated_at.toISOString(),
 });
+
+const attachAuthorExpertiseBadges = async (posts: ForumPost[]): Promise<ForumPost[]> => {
+  const keys = [...new Set(posts.map((p) => p.creator_fingerprint).filter(Boolean).map((fp) => `fp:${fp}`))];
+  if (keys.length === 0) return posts;
+  const rows = await UserProfileModel.find({
+    identity_key: { $in: keys },
+    public_expertise_enabled: true,
+  })
+    .select("identity_key expertise_badge profession expertise")
+    .lean();
+  const map = new Map<string, { badge: string | null; profession: string | null; expertise: string | null }>();
+  for (const row of rows as Array<{ identity_key?: string; expertise_badge?: string; profession?: string; expertise?: string }>) {
+    const k = String(row.identity_key ?? "").replace(/^fp:/, "");
+    if (!k) continue;
+    map.set(k, {
+      badge: String(row.expertise_badge ?? "").trim() || null,
+      profession: String(row.profession ?? "").trim() || null,
+      expertise: String(row.expertise ?? "").trim() || null,
+    });
+  }
+  return posts.map((p) => ({
+    ...p,
+    author_expertise_badge: p.creator_fingerprint ? (map.get(p.creator_fingerprint)?.badge ?? null) : null,
+    author_profession: p.creator_fingerprint ? (map.get(p.creator_fingerprint)?.profession ?? null) : null,
+    author_expertise: p.creator_fingerprint ? (map.get(p.creator_fingerprint)?.expertise ?? null) : null,
+  }));
+};
 
 const LIST_PROJECTION = "-content -creator_fingerprint";
 
@@ -515,7 +548,7 @@ export const getForumPosts = async ({
   }
 
   return {
-    posts: pagedDocs.map(toForumPost),
+    posts: await attachAuthorExpertiseBadges(pagedDocs.map(toForumPost)),
     total,
     page: safePage,
     totalPages: Math.ceil(total / safeLimit),
@@ -528,7 +561,9 @@ export const getForumPostBySlug = async (slug: string): Promise<ForumPost | null
     slug,
     ...notDeleted,
   }).lean()) as unknown as ForumPostLean | null;
-  return doc ? toForumPost(doc) : null;
+  if (!doc) return null;
+  const [enriched] = await attachAuthorExpertiseBadges([toForumPost(doc)]);
+  return enriched ?? null;
 };
 
 export const getForumPostById = async (id: string): Promise<ForumPost | null> => {

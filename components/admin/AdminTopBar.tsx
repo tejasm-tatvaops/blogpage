@@ -10,6 +10,7 @@ const ROUTE_LABELS: { pattern: RegExp; label: string; parent?: { label: string; 
   { pattern: /^\/admin\/blog/,      label: "Blogs",    parent: { label: "Content",    href: "/admin/blog"   } },
   { pattern: /^\/admin\/comments/,  label: "Comments", parent: { label: "Moderation", href: "/admin/comments" } },
   { pattern: /^\/admin\/stats/,     label: "Analytics",parent: { label: "System",     href: "/admin/stats"  } },
+  { pattern: /^\/admin\/expertise/, label: "Expertise Settings", parent: { label: "System", href: "/admin/expertise" } },
 ];
 
 export function AdminTopBar() {

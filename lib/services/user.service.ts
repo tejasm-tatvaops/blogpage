@@ -1,6 +1,13 @@
 import { connectToDatabase } from "@/lib/db/mongodb";
 import { UserProfileModel } from "@/models/UserProfile";
 import { EMAIL_REGEX, PHONE_REGEX, USERNAME_REGEX } from "@/lib/validators/user.validator";
+import {
+  EXPERIENCE_LEVELS,
+  VERIFICATION_PREFERENCES,
+  deriveExpertiseBadge,
+  hasProfessionalIdentity,
+} from "@/lib/expertiseIdentity";
+import { getExpertiseConfig } from "@/lib/expertiseConfigService";
 
 export class UsernameValidationError extends Error {}
 export class UsernameConflictError extends Error {}
@@ -65,6 +72,12 @@ export type UpdateUserProfileInput = {
   website?: string;
   email?: string;
   phone?: string;
+  profession?: string | null;
+  expertise?: string | null;
+  yearsOfExperience?: string | null;
+  companyType?: string | null;
+  verificationPreference?: string | null;
+  publicExpertiseEnabled?: boolean;
 };
 
 export type OwnPrivateProfile = {
@@ -76,6 +89,13 @@ export type OwnPrivateProfile = {
   email_verified: boolean;
   phone: string | null;
   phone_verified: boolean;
+  profession: string | null;
+  expertise: string | null;
+  yearsOfExperience: string | null;
+  companyType: string | null;
+  verificationPreference: string | null;
+  publicExpertiseEnabled: boolean;
+  expertiseBadge: string | null;
 };
 
 const normalizeOptional = (value: unknown) => {
@@ -88,7 +108,7 @@ export async function getOwnPrivateProfile(identityKey: string): Promise<OwnPriv
   const safeIdentityKey = String(identityKey ?? "").trim();
   if (!safeIdentityKey) return null;
   const profile = await UserProfileModel.findOne({ identity_key: safeIdentityKey })
-    .select("username bio location website email email_verified phone phone_verified")
+    .select("username bio location website email email_verified phone phone_verified profession expertise years_of_experience company_type verification_preference public_expertise_enabled expertise_badge")
     .lean();
   if (!profile) return null;
   return {
@@ -100,6 +120,13 @@ export async function getOwnPrivateProfile(identityKey: string): Promise<OwnPriv
     email_verified: Boolean((profile as { email_verified?: boolean }).email_verified),
     phone: normalizeOptional((profile as { phone?: string | null }).phone),
     phone_verified: Boolean((profile as { phone_verified?: boolean }).phone_verified),
+    profession: normalizeOptional((profile as { profession?: string | null }).profession),
+    expertise: normalizeOptional((profile as { expertise?: string | null }).expertise),
+    yearsOfExperience: normalizeOptional((profile as { years_of_experience?: string | null }).years_of_experience),
+    companyType: normalizeOptional((profile as { company_type?: string | null }).company_type),
+    verificationPreference: normalizeOptional((profile as { verification_preference?: string | null }).verification_preference),
+    publicExpertiseEnabled: Boolean((profile as { public_expertise_enabled?: boolean }).public_expertise_enabled),
+    expertiseBadge: normalizeOptional((profile as { expertise_badge?: string | null }).expertise_badge),
   };
 }
 
@@ -112,9 +139,10 @@ export async function updateUserProfile(
   if (!safeIdentityKey) throw new ProfileValidationError("Identity key is required.");
 
   const current = await UserProfileModel.findOne({ identity_key: safeIdentityKey })
-    .select("username username_lower email email_lower phone")
+    .select("username username_lower email email_lower phone profession expertise years_of_experience company_type verification_preference public_expertise_enabled reputation_score forum_comments blog_comments forum_posts expertise_badge_admin_override")
     .lean();
   if (!current) throw new ProfileValidationError("Profile not found.");
+  const expertiseConfig = await getExpertiseConfig();
 
   const updateSet: Record<string, string | boolean | null> = {};
 
@@ -210,6 +238,72 @@ export async function updateUserProfile(
       updateSet.phone_verified = false;
     }
   }
+
+  const normalizeChoice = (value: unknown) => normalizeOptional(value);
+  if (Object.prototype.hasOwnProperty.call(data, "profession")) {
+    const profession = normalizeChoice(data.profession);
+    const currentProfession = normalizeOptional((current as { profession?: string | null }).profession);
+    if (profession && !expertiseConfig.professions.includes(profession) && profession !== currentProfession) {
+      throw new ProfileValidationError("Invalid profession selected.");
+    }
+    updateSet.profession = profession;
+  }
+  if (Object.prototype.hasOwnProperty.call(data, "expertise")) {
+    const expertise = normalizeChoice(data.expertise);
+    const currentExpertise = normalizeOptional((current as { expertise?: string | null }).expertise);
+    if (expertise && !expertiseConfig.expertiseAreas.includes(expertise) && expertise !== currentExpertise) {
+      throw new ProfileValidationError("Invalid expertise selected.");
+    }
+    updateSet.expertise = expertise;
+  }
+  if (Object.prototype.hasOwnProperty.call(data, "yearsOfExperience")) {
+    const years = normalizeChoice(data.yearsOfExperience);
+    if (years && !EXPERIENCE_LEVELS.includes(years as (typeof EXPERIENCE_LEVELS)[number])) {
+      throw new ProfileValidationError("Invalid experience level selected.");
+    }
+    updateSet.years_of_experience = years;
+  }
+  if (Object.prototype.hasOwnProperty.call(data, "companyType")) {
+    const companyType = normalizeChoice(data.companyType);
+    updateSet.company_type = companyType;
+  }
+  if (Object.prototype.hasOwnProperty.call(data, "verificationPreference")) {
+    const verificationPreference = normalizeChoice(data.verificationPreference) ?? "none";
+    if (!VERIFICATION_PREFERENCES.includes(verificationPreference as (typeof VERIFICATION_PREFERENCES)[number])) {
+      throw new ProfileValidationError("Invalid verification preference selected.");
+    }
+    updateSet.verification_preference = verificationPreference;
+  }
+  if (Object.prototype.hasOwnProperty.call(data, "publicExpertiseEnabled")) {
+    const requested = Boolean(data.publicExpertiseEnabled);
+    const profession = (updateSet.profession as string | null | undefined) ?? normalizeOptional((current as { profession?: string | null }).profession);
+    const expertise = (updateSet.expertise as string | null | undefined) ?? normalizeOptional((current as { expertise?: string | null }).expertise);
+    if (requested && !hasProfessionalIdentity({ profession, expertise })) {
+      throw new ProfileValidationError("Complete profession and expertise before enabling public expertise.");
+    }
+    updateSet.public_expertise_enabled = requested;
+  }
+
+  const projected = {
+    profession:
+      (updateSet.profession as string | null | undefined) ??
+      normalizeOptional((current as { profession?: string | null }).profession),
+    expertise:
+      (updateSet.expertise as string | null | undefined) ??
+      normalizeOptional((current as { expertise?: string | null }).expertise),
+    yearsOfExperience:
+      (updateSet.years_of_experience as string | null | undefined) ??
+      normalizeOptional((current as { years_of_experience?: string | null }).years_of_experience),
+    publicExpertiseEnabled:
+      (updateSet.public_expertise_enabled as boolean | undefined) ??
+      Boolean((current as { public_expertise_enabled?: boolean }).public_expertise_enabled),
+    reputationScore: Number((current as { reputation_score?: number }).reputation_score ?? 0),
+    helpfulSignals: Number((current as { forum_comments?: number }).forum_comments ?? 0) +
+      Number((current as { blog_comments?: number }).blog_comments ?? 0) +
+      Number((current as { forum_posts?: number }).forum_posts ?? 0),
+    adminOverrideBadge: normalizeOptional((current as { expertise_badge_admin_override?: string | null }).expertise_badge_admin_override),
+  };
+  updateSet.expertise_badge = deriveExpertiseBadge(projected);
 
   try {
     if (Object.keys(updateSet).length > 0) {

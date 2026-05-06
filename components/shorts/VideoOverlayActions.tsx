@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import type { VideoPost } from "@/models/VideoPost";
+import { ContextChip } from "@/components/shared/ContextChip";
+import { LiveActivityPulse } from "@/components/shared/LiveActivityPulse";
 
 type VideoOverlayActionsProps = {
   post: VideoPost;
@@ -59,6 +61,12 @@ export function VideoOverlayActions({
     .map((tag) => `#${tag.replace(/\s+/g, "")}`)
     .join(" ");
   const shareText = `${post.title}\n\n${cleanCaption}\n\nWatch this short on TatvaOps: ${shortUrl}${hashtags ? `\n\n${hashtags}` : ""}`;
+  const shortContext = post.tags[0]
+    ? `Based on your interest in #${post.tags[0]}`
+    : post.sourceType === "youtube"
+    ? "Trending among video-first learners"
+    : "Popular in quick construction explainers";
+  const liveViewers = Math.max(2, Math.round(post.views / 55) + Math.round(post.likes / 8));
 
   const trackShare = (channel: string) => {
     void fetch(`/api/shorts/${encodeURIComponent(post.slug)}/share`, {
@@ -114,6 +122,13 @@ export function VideoOverlayActions({
 
   return (
     <>
+      <div className="absolute left-3 top-3 z-20">
+        <ContextChip
+          text={shortContext}
+          keyword={post.tags[0] ?? null}
+          className="border-white/10 bg-black/30 text-white/55 hover:text-white/80 backdrop-blur-sm"
+        />
+      </div>
       {/* ── Right-side action column ── */}
       <div className="absolute bottom-32 right-3 z-20 flex flex-col items-center gap-4">
         {/* Like */}
@@ -233,6 +248,7 @@ export function VideoOverlayActions({
             </svg>
           )}
         </motion.button>
+        <LiveActivityPulse baseCount={liveViewers} noun="readers active" className="max-w-[120px] text-center" />
       </div>
 
       {/* ── Bottom overlay: caption + metadata + CTA ── */}

@@ -3,6 +3,7 @@ import { ForumCommentSection } from "@/components/forums/ForumCommentSection";
 
 type RepliesCardProps = {
   slug: string;
+  tags: string[];
   initialComments: ForumCommentType[];
   bestCommentId: string | null;
   creatorFingerprint: string | null;
@@ -10,6 +11,7 @@ type RepliesCardProps = {
 
 export function RepliesCard({
   slug,
+  tags,
   initialComments,
   bestCommentId,
   creatorFingerprint,
@@ -18,6 +20,7 @@ export function RepliesCard({
     <section className="rounded-xl border border-app bg-surface p-4 shadow-sm">
       <ForumCommentSection
         slug={slug}
+        tags={tags}
         initialComments={initialComments}
         bestCommentId={bestCommentId}
         creatorFingerprint={creatorFingerprint}

@@ -6,6 +6,10 @@ import type { ForumPost } from "@/lib/forumService";
 import { getUserAvatar } from "@/lib/identityUI";
 import { UserProfileQuickView } from "@/components/user/UserQuickView";
 import { cn } from "@/lib/cn";
+import { ContextChip } from "@/components/shared/ContextChip";
+import { LiveActivityPulse } from "@/components/shared/LiveActivityPulse";
+import { ExpertiseBadge } from "@/components/shared/ExpertiseBadge";
+import { resolveContextualIdentity } from "@/lib/expertiseContext";
 
 export type ForumCardFeedUi = {
   isActive: boolean;
@@ -55,6 +59,18 @@ export const ForumCard = forwardRef<HTMLElement, ForumCardProps>(function ForumC
   const isActive = feedUi?.isActive ?? true;
   const revealed = feedUi?.revealed ?? true;
   const staggerDelayMs = isFeed ? (feedUi?.staggerDelayMs ?? Math.min(feedUi?.index ?? 0, 10) * 8) : 0;
+  const forumContextText = post.is_trending
+    ? `Trending among ${post.tags[0] ?? "construction"} builders`
+    : post.tags[0]
+    ? `Based on interest in #${post.tags[0]}`
+    : null;
+  const liveNowCount = Math.max(3, Math.round(post.comment_count / 2) + Math.round(post.view_count / 45));
+  const contextualIdentity = resolveContextualIdentity({
+    baseBadge: post.author_expertise_badge,
+    profession: post.author_profession,
+    expertise: post.author_expertise,
+    contextTags: post.tags,
+  });
 
   const articleMotion = isFeed
     ? cn(
@@ -151,6 +167,7 @@ export const ForumCard = forwardRef<HTMLElement, ForumCardProps>(function ForumC
             >
               {post.author_reputation_tier}
             </span>
+            <ExpertiseBadge badge={contextualIdentity.label} className={contextualIdentity.contextual ? "text-[10px]" : "text-[10px] opacity-80"} />
             {(post.badges ?? []).slice(0, 2).map((badge) => (
               <span
                 key={badge}
@@ -165,6 +182,15 @@ export const ForumCard = forwardRef<HTMLElement, ForumCardProps>(function ForumC
           <h2 className="line-clamp-2 text-[0.88rem] font-semibold leading-tight text-black dark:text-white">
             {post.title}
           </h2>
+
+          {forumContextText ? (
+            <div className="mt-2">
+              <ContextChip
+                text={forumContextText}
+                keyword={post.tags[0] ?? "construction"}
+              />
+            </div>
+          ) : null}
 
           {/* Excerpt */}
           <p className="mt-1 line-clamp-2 font-sans text-[0.75rem] font-normal leading-[1.5] text-gray-500 dark:text-white/60">
@@ -217,6 +243,13 @@ export const ForumCard = forwardRef<HTMLElement, ForumCardProps>(function ForumC
                 {formatCount(post.view_count)}
               </span>
             </div>
+          </div>
+          <div className="mt-2">
+            <LiveActivityPulse
+              baseCount={liveNowCount}
+              noun="builders discussing now"
+              className="text-gray-500 dark:text-white/50"
+            />
           </div>
         </Link>
       </div>

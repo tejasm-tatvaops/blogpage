@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { UserProfile } from "@/lib/userProfileService";
 import { getUserAvatar } from "@/lib/identityUI";
+import { ExpertiseBadge } from "@/components/shared/ExpertiseBadge";
 
 type UserProfileQuickViewProps = {
   identityKey: string;
@@ -39,6 +40,10 @@ export function UserProfileQuickView({ displayName, identityKey, trigger }: User
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminBusy, setAdminBusy] = useState(false);
+  const [adminOverrideBadge, setAdminOverrideBadge] = useState("");
+  const [adminBadgeOptions, setAdminBadgeOptions] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -63,6 +68,53 @@ export function UserProfileQuickView({ displayName, identityKey, trigger }: User
       cancelled = true;
     };
   }, [identityKey, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const response = await fetch("/api/admin/session", { cache: "no-store" });
+        const payload = (await response.json()) as { isAdmin?: boolean };
+        const adminState = Boolean(payload.isAdmin);
+        if (!cancelled) setIsAdmin(adminState);
+        if (adminState) {
+          const cfg = await fetch("/api/admin/expertise-config", { cache: "no-store" });
+          const cfgPayload = (await cfg.json().catch(() => ({}))) as { badgeLabels?: string[] };
+          if (!cancelled) setAdminBadgeOptions(Array.isArray(cfgPayload.badgeLabels) ? cfgPayload.badgeLabels : []);
+        }
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    setAdminOverrideBadge(user?.expertise_badge ?? "");
+  }, [user?.expertise_badge]);
+
+  const trendLabel = (() => {
+    if (!user) return null;
+    const helpful = user.forum_comments + user.blog_comments + user.forum_posts;
+    if (helpful >= 30) return "↗ Trusted contributor";
+    if (helpful >= 12) return "Consistently helpful this month";
+    return null;
+  })();
+
+  const badgeReasonLines = user?.expertise_badge
+    ? [
+      user.profession ? `${user.profession} identity configured` : null,
+      user.expertise ? `${user.expertise} specialization selected` : null,
+      user.reputation_score > 0 ? `Reputation score ${user.reputation_score}` : null,
+      user.forum_comments + user.blog_comments > 0
+        ? `${user.forum_comments + user.blog_comments} community discussion contributions`
+        : null,
+    ].filter(Boolean) as string[]
+    : [];
 
   return (
     <>
@@ -131,6 +183,14 @@ export function UserProfileQuickView({ displayName, identityKey, trigger }: User
                     </Link>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       <UserTypeBadge userType={user.user_type} />
+                      <span title={badgeReasonLines.length > 0 ? `Based on:\n• ${badgeReasonLines.join("\n• ")}` : undefined}>
+                        <ExpertiseBadge badge={user.expertise_badge} />
+                      </span>
+                      {trendLabel ? (
+                        <span className="rounded-full border border-emerald-200/70 bg-emerald-50/80 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                          {trendLabel}
+                        </span>
+                      ) : null}
                       {user.is_active_now ? (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                           Active now
@@ -160,6 +220,84 @@ export function UserProfileQuickView({ displayName, identityKey, trigger }: User
                     <p className="text-sm font-semibold text-app">{formatNumber(user.forum_comments)}</p>
                   </div>
                 </div>
+                {isAdmin ? (
+                  <div className="mt-4 rounded-xl border border-app bg-subtle p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-app">Admin Controls</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={adminBusy || !user.identity_key}
+                        onClick={async () => {
+                          if (!user.identity_key || adminBusy) return;
+                          setAdminBusy(true);
+                          try {
+                            await fetch("/api/admin/users/expertise", {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ identityKey: user.identity_key, disabled: true }),
+                            });
+                            setUser((prev) => (prev ? { ...prev, public_expertise_enabled: false, expertise_badge: null } : prev));
+                          } finally {
+                            setAdminBusy(false);
+                          }
+                        }}
+                        className="rounded-md border border-app px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                      >
+                        Disable Public Expertise
+                      </button>
+                      <button
+                        type="button"
+                        disabled={adminBusy || !user.identity_key}
+                        onClick={async () => {
+                          if (!user.identity_key || adminBusy) return;
+                          setAdminBusy(true);
+                          try {
+                            await fetch("/api/admin/users/expertise", {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ identityKey: user.identity_key, disabled: false }),
+                            });
+                            setUser((prev) => (prev ? { ...prev, public_expertise_enabled: true } : prev));
+                          } finally {
+                            setAdminBusy(false);
+                          }
+                        }}
+                        className="rounded-md border border-app px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                      >
+                        Enable Public Expertise
+                      </button>
+                      <select
+                        value={adminOverrideBadge}
+                        onChange={(event) => setAdminOverrideBadge(event.target.value)}
+                        className="rounded-md border border-app bg-surface px-2 py-1 text-[11px] text-app"
+                      >
+                        <option value="">No override badge</option>
+                        {adminBadgeOptions.map((badge) => <option key={badge} value={badge}>{badge}</option>)}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={adminBusy || !user.identity_key}
+                        onClick={async () => {
+                          if (!user.identity_key || adminBusy) return;
+                          setAdminBusy(true);
+                          try {
+                            await fetch("/api/admin/users/expertise", {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ identityKey: user.identity_key, adminOverrideBadge: adminOverrideBadge || null }),
+                            });
+                            setUser((prev) => (prev ? { ...prev, expertise_badge: adminOverrideBadge || prev.expertise_badge } : prev));
+                          } finally {
+                            setAdminBusy(false);
+                          }
+                        }}
+                        className="rounded-md border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-medium text-orange-700 hover:bg-orange-100 disabled:opacity-50"
+                      >
+                        Apply Override
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </>
             )}
           </div>

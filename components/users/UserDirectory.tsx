@@ -7,6 +7,7 @@ import { getUserAvatar } from "@/lib/identityUI";
 import { getLevelFromReputationScore, getLevelMeta } from "@/lib/level";
 import type { UserProfile } from "@/lib/userProfileService";
 import { deriveProfileContext, getBehaviorSegment, getRecentActions } from "@/lib/userProfileHelpers";
+import { ExpertiseBadge } from "@/components/shared/ExpertiseBadge";
 
 type BreakdownData = {
   total: number;
@@ -508,6 +509,7 @@ export function UserDirectory({ users, totals, userTotals, nowMs }: UserDirector
                       </span>
                     ) : null}
                     <ReputationBadge tier={user.reputation_tier} score={user.reputation_score} />
+                    <ExpertiseBadge badge={user.expertise_badge} />
                     <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${levelMeta.color}`}>
                       {levelMeta.icon} {levelMeta.label}
                     </span>
@@ -523,7 +525,7 @@ export function UserDirectory({ users, totals, userTotals, nowMs }: UserDirector
                   </div>
                   <p className="mt-1 text-sm leading-5 text-slate-500 line-clamp-2">{user.about}</p>
                   <p className="mt-1 text-xs text-slate-400">
-                    {context.role} • {context.city} • {context.years} yrs exp
+                    {user.profession || context.role} • {context.city} • {(user.years_of_experience || `${context.years} yrs exp`)}
                   </p>
                   <div className="mt-2 flex items-center gap-2">
                     <div className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">

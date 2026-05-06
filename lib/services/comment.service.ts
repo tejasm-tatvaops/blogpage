@@ -12,6 +12,9 @@ export type Comment = {
   id: string;
   identity_key: string | null;
   username?: string | null;
+  expertise_badge?: string | null;
+  profession?: string | null;
+  expertise?: string | null;
   parent_comment_id: string | null;
   author_name: string;
   persona_name: string | null;
@@ -103,17 +106,35 @@ export const getComments = async (postId: string): Promise<Comment[]> => {
   const identityKeys = [...new Set(mapped.map((comment) => comment.identity_key).filter(Boolean))] as string[];
   if (identityKeys.length > 0) {
     const profileDocs = await UserProfileModel.find({ identity_key: { $in: identityKeys } })
-      .select("identity_key username")
+      .select("identity_key username profession expertise public_expertise_enabled expertise_badge")
       .lean();
     const usernameByIdentity = new Map<string, string>();
+    const expertiseByIdentity = new Map<string, { badge: string | null; profession: string | null; expertise: string | null }>();
     for (const doc of profileDocs as Array<{ identity_key?: string; username?: string | null }>) {
       const key = String(doc.identity_key ?? "").trim();
       const username = String(doc.username ?? "").trim();
       if (key && username) usernameByIdentity.set(key, username);
+      const rawDoc = doc as {
+        public_expertise_enabled?: boolean;
+        expertise_badge?: string | null;
+        profession?: string | null;
+        expertise?: string | null;
+      };
+      if (key && rawDoc.public_expertise_enabled) {
+        expertiseByIdentity.set(key, {
+          badge: String(rawDoc.expertise_badge ?? "").trim() || null,
+          profession: String(rawDoc.profession ?? "").trim() || null,
+          expertise: String(rawDoc.expertise ?? "").trim() || null,
+        });
+      }
     }
     for (const comment of mapped) {
       const key = String(comment.identity_key ?? "").trim();
       comment.username = key ? (usernameByIdentity.get(key) ?? null) : null;
+      const expertise = key ? expertiseByIdentity.get(key) : null;
+      comment.expertise_badge = expertise?.badge ?? null;
+      comment.profession = expertise?.profession ?? null;
+      comment.expertise = expertise?.expertise ?? null;
     }
   }
 

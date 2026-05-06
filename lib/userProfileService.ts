@@ -27,6 +27,13 @@ export type UserProfile = {
   bio?: string | null;
   location?: string | null;
   website?: string | null;
+  profession?: string | null;
+  expertise?: string | null;
+  years_of_experience?: string | null;
+  company_type?: string | null;
+  verification_preference?: string | null;
+  public_expertise_enabled?: boolean;
+  expertise_badge?: string | null;
   email?: string | null;
   email_verified?: boolean;
   phone?: string | null;
@@ -131,6 +138,13 @@ const toUserProfile = (doc: {
   bio?: string | null;
   location?: string | null;
   website?: string | null;
+  profession?: string | null;
+  expertise?: string | null;
+  years_of_experience?: string | null;
+  company_type?: string | null;
+  verification_preference?: string | null;
+  public_expertise_enabled?: boolean;
+  expertise_badge?: string | null;
   email?: string | null;
   email_verified?: boolean;
   phone?: string | null;
@@ -176,6 +190,19 @@ const toUserProfile = (doc: {
   bio: typeof doc.bio === "string" && doc.bio.trim() ? doc.bio.trim() : null,
   location: typeof doc.location === "string" && doc.location.trim() ? doc.location.trim() : null,
   website: typeof doc.website === "string" && doc.website.trim() ? doc.website.trim() : null,
+  profession: typeof doc.profession === "string" && doc.profession.trim() ? doc.profession.trim() : null,
+  expertise: typeof doc.expertise === "string" && doc.expertise.trim() ? doc.expertise.trim() : null,
+  years_of_experience:
+    typeof doc.years_of_experience === "string" && doc.years_of_experience.trim()
+      ? doc.years_of_experience.trim()
+      : null,
+  company_type: typeof doc.company_type === "string" && doc.company_type.trim() ? doc.company_type.trim() : null,
+  verification_preference:
+    typeof doc.verification_preference === "string" && doc.verification_preference.trim()
+      ? doc.verification_preference.trim()
+      : null,
+  public_expertise_enabled: Boolean(doc.public_expertise_enabled ?? false),
+  expertise_badge: typeof doc.expertise_badge === "string" && doc.expertise_badge.trim() ? doc.expertise_badge.trim() : null,
   email: typeof doc.email === "string" && doc.email.trim() ? doc.email.trim() : null,
   email_verified: Boolean(doc.email_verified ?? false),
   phone: typeof doc.phone === "string" && doc.phone.trim() ? doc.phone.trim() : null,
@@ -231,6 +258,11 @@ export const toPublicUserProfile = (profile: UserProfile): UserProfile => ({
   phone_masked: maskPhone(profile.phone),
   email: null,
   phone: null,
+  expertise_badge: profile.public_expertise_enabled ? profile.expertise_badge ?? null : null,
+  profession: profile.public_expertise_enabled ? profile.profession ?? null : null,
+  expertise: profile.public_expertise_enabled ? profile.expertise ?? null : null,
+  years_of_experience: profile.public_expertise_enabled ? profile.years_of_experience ?? null : null,
+  company_type: profile.public_expertise_enabled ? profile.company_type ?? null : null,
 });
 
 export const resolveUserIdentities = async (profiles: UserProfile[]): Promise<UserProfile[]> => {

@@ -19,6 +19,8 @@ import type { EngagedUserProfile } from "@/lib/userProfileService";
 import { BlogActiveUsersStrip } from "@/components/users/BlogActiveUsersStrip";
 import { UserProfileQuickView } from "@/components/user/UserQuickView";
 import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
+import { LiveActivityPulse } from "@/components/shared/LiveActivityPulse";
+import { ContextChip } from "@/components/shared/ContextChip";
 
 type BlogDetailProps = {
   post: BlogPost;
@@ -135,6 +137,7 @@ export function BlogDetail({
   const readingTimeMinutes = calculateReadingTime(post.content);
   const imageUrl = post.cover_image || "";
   const { mainContent, faqs, references } = parseContentSections(post.content);
+  const liveReadersNow = Math.max(6, Math.round(post.view_count / 24) + Math.round(comments.length / 2));
 
   const authorInitial = post.author.charAt(0).toUpperCase();
   const authorIdentityKey = `legacy:blog-author:${post.author.trim().toLowerCase()}`;
@@ -200,6 +203,11 @@ export function BlogDetail({
 
                 <ViewCount slug={post.slug} initialCount={post.view_count} />
               </div>
+              <LiveActivityPulse
+                baseCount={liveReadersNow}
+                noun="readers active"
+                className="mt-2 text-slate-500 dark:text-white/50"
+              />
 
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <BookmarkButton slug={post.slug} title={post.title} excerpt={post.excerpt} />
@@ -364,6 +372,15 @@ export function BlogDetail({
                           <p className="text-sm font-semibold leading-snug text-slate-800 transition group-hover:text-indigo-700 line-clamp-2">
                             {thread.title}
                           </p>
+                          {thread.tags[0] ? (
+                            <div className="mt-1">
+                              <ContextChip
+                                text={`Popular in ${thread.tags[0]} discussions`}
+                                keyword={thread.tags[0]}
+                                className="border-indigo-100/60 bg-indigo-100/30 text-slate-600 hover:text-slate-700"
+                              />
+                            </div>
+                          ) : null}
                           <p className="mt-0.5 text-xs text-slate-400">
                             {thread.comment_count} {thread.comment_count === 1 ? "reply" : "replies"}
                           </p>

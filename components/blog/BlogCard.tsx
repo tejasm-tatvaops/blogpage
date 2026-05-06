@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { BlogPost } from "@/lib/blogService";
 import { CoverImage } from "./CoverImage";
+import { ContextChip } from "@/components/shared/ContextChip";
+import { LiveActivityPulse } from "@/components/shared/LiveActivityPulse";
 
 type BlogCardProps = {
   post: BlogPost;
@@ -77,6 +79,15 @@ export function BlogCard({
       : intelligence?.bucket === "exploration"
       ? "✨ Discover"
       : null;
+  const compactReason =
+    intelligence?.bucket === "personalized"
+      ? `Because you interacted with #${intelligence.reasonTag ?? post.tags[0] ?? post.category}`
+      : intelligence?.bucket === "trending"
+      ? `Trending among ${post.tags[0] ?? post.category} readers`
+      : intelligence?.bucket === "exploration"
+      ? `Popular in ${post.category} discussions`
+      : null;
+  const liveReaders = Math.max(4, Math.round(post.view_count / 14) + Math.round(replyCount / 2));
 
   // variantTone kept for API compatibility but no longer applied as a card-wide tint
   void variantTone;
@@ -138,10 +149,22 @@ export function BlogCard({
         </div>
 
         {/* ── Excerpt + tags ── */}
-        <div className="flex flex-1 flex-col justify-between gap-3 bg-white px-3.5 py-3 dark:bg-[#0d1128]">
+        <div className="flex flex-1 flex-col justify-between gap-2 bg-white px-3.5 py-3 dark:bg-[#0d1128]">
+          {compactReason ? (
+            <ContextChip
+              text={compactReason}
+              keyword={intelligence?.reasonTag ?? post.tags[0] ?? post.category}
+              className="w-fit"
+            />
+          ) : null}
           <p className="line-clamp-2 text-[11px] leading-[1.55] text-slate-500 dark:text-[#8b92a8]">
             {post.excerpt}
           </p>
+          <LiveActivityPulse
+            baseCount={liveReaders}
+            noun="readers active"
+            className="text-slate-500 dark:text-white/50"
+          />
           <div className="flex flex-wrap items-center gap-1.5">
             {post.tags.slice(0, 3).map((tag) => (
               <span

@@ -5,6 +5,12 @@ import { useSession } from "next-auth/react";
 import { getUserAvatar } from "@/lib/identityUI";
 import type { UserProfile } from "@/lib/userProfileService";
 import { FollowButton } from "@/components/user/FollowButton";
+import {
+  COMPANY_TYPES,
+  EXPERIENCE_LEVELS,
+  VERIFICATION_PREFERENCES,
+} from "@/lib/expertiseIdentity";
+import { ExpertiseBadge } from "@/components/shared/ExpertiseBadge";
 
 type PublicUserProfileProps = {
   user: UserProfile;
@@ -41,6 +47,10 @@ export function PublicUserProfile({
   initialFollowing,
 }: PublicUserProfileProps) {
   const [followers, setFollowers] = useState(initialFollowers);
+  const [identityOptions, setIdentityOptions] = useState<{ professions: string[]; expertiseAreas: string[] }>({
+    professions: [],
+    expertiseAreas: [],
+  });
   const [profileData, setProfileData] = useState({
     username: user.username ?? "",
     bio: user.bio ?? "",
@@ -50,6 +60,13 @@ export function PublicUserProfile({
     email_verified: false,
     phone: "",
     phone_verified: false,
+    profession: user.profession ?? "",
+    expertise: user.expertise ?? "",
+    yearsOfExperience: user.years_of_experience ?? "",
+    companyType: user.company_type ?? "",
+    verificationPreference: user.verification_preference ?? "none",
+    publicExpertiseEnabled: Boolean(user.public_expertise_enabled),
+    expertiseBadge: user.expertise_badge ?? "",
   });
   const [editMode, setEditMode] = useState(false);
   const [draft, setDraft] = useState(profileData);
@@ -93,6 +110,13 @@ export function PublicUserProfile({
             email_verified?: boolean;
             phone?: string | null;
             phone_verified?: boolean;
+            profession?: string | null;
+            expertise?: string | null;
+            yearsOfExperience?: string | null;
+            companyType?: string | null;
+            verificationPreference?: string | null;
+            publicExpertiseEnabled?: boolean;
+            expertiseBadge?: string | null;
           };
         };
         const profile = payload.profile;
@@ -106,6 +130,13 @@ export function PublicUserProfile({
           email_verified: Boolean(profile.email_verified),
           phone: String(profile.phone ?? ""),
           phone_verified: Boolean(profile.phone_verified),
+          profession: String(profile.profession ?? ""),
+          expertise: String(profile.expertise ?? ""),
+          yearsOfExperience: String(profile.yearsOfExperience ?? ""),
+          companyType: String(profile.companyType ?? ""),
+          verificationPreference: String(profile.verificationPreference ?? "none"),
+          publicExpertiseEnabled: Boolean(profile.publicExpertiseEnabled),
+          expertiseBadge: String(profile.expertiseBadge ?? ""),
         };
         setProfileData(next);
         setDraft(next);
@@ -119,6 +150,30 @@ export function PublicUserProfile({
     };
   }, [isOwnProfile, user.bio, user.location, user.username, user.website]);
 
+  useEffect(() => {
+    if (!isOwnProfile) return;
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const response = await fetch("/api/expertise-config", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { professions?: string[]; expertiseAreas?: string[] };
+        if (!cancelled) {
+          setIdentityOptions({
+            professions: Array.isArray(payload.professions) ? payload.professions : [],
+            expertiseAreas: Array.isArray(payload.expertiseAreas) ? payload.expertiseAreas : [],
+          });
+        }
+      } catch {
+        // noop
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOwnProfile]);
+
   const emailBadgeClass = useMemo(
     () => (profileData.email_verified
       ? "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -131,6 +186,18 @@ export function PublicUserProfile({
       : "border-slate-200 bg-slate-100 text-slate-600"),
     [profileData.phone_verified],
   );
+  const professionOptions = useMemo(() => {
+    const list = [...identityOptions.professions];
+    const legacy = draft.profession.trim();
+    if (legacy && !list.includes(legacy)) list.unshift(`Current (legacy): ${legacy}`);
+    return list;
+  }, [identityOptions.professions, draft.profession]);
+  const expertiseOptions = useMemo(() => {
+    const list = [...identityOptions.expertiseAreas];
+    const legacy = draft.expertise.trim();
+    if (legacy && !list.includes(legacy)) list.unshift(`Current (legacy): ${legacy}`);
+    return list;
+  }, [identityOptions.expertiseAreas, draft.expertise]);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -185,6 +252,7 @@ export function PublicUserProfile({
                   </span>
                   {isOwnProfile ? (
                     <>
+                      <ExpertiseBadge badge={profileData.expertiseBadge} />
                       <span className={`rounded-full px-3 py-1 ${emailBadgeClass}`}>
                         Email: {profileData.email_verified ? "Verified" : "Unverified"}
                       </span>
@@ -257,6 +325,12 @@ export function PublicUserProfile({
                               website: draft.website,
                               email: draft.email,
                               phone: draft.phone,
+                              profession: draft.profession,
+                              expertise: draft.expertise,
+                              yearsOfExperience: draft.yearsOfExperience,
+                              companyType: draft.companyType,
+                              verificationPreference: draft.verificationPreference,
+                              publicExpertiseEnabled: draft.publicExpertiseEnabled,
                             }),
                           });
                           const payload = (await response.json().catch(() => ({}))) as {
@@ -354,6 +428,75 @@ export function PublicUserProfile({
                     placeholder="Location"
                     className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-app outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                </div>
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Professional Identity</h2>
+                <p className="mt-2 text-xs text-slate-500">
+                  Configure your role and expertise to display credible professional identity across discussions.
+                </p>
+                <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <select
+                    value={draft.profession}
+                    onChange={(event) => setDraft((prev) => ({ ...prev, profession: event.target.value }))}
+                    className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-app outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">Select profession</option>
+                    {professionOptions.map((item) => (
+                      <option
+                        key={item}
+                        value={item.startsWith("Current (legacy): ") ? item.replace("Current (legacy): ", "") : item}
+                      >
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={draft.expertise}
+                    onChange={(event) => setDraft((prev) => ({ ...prev, expertise: event.target.value }))}
+                    className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-app outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">Select expertise</option>
+                    {expertiseOptions.map((item) => (
+                      <option
+                        key={item}
+                        value={item.startsWith("Current (legacy): ") ? item.replace("Current (legacy): ", "") : item}
+                      >
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={draft.yearsOfExperience}
+                    onChange={(event) => setDraft((prev) => ({ ...prev, yearsOfExperience: event.target.value }))}
+                    className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-app outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">Experience level</option>
+                    {EXPERIENCE_LEVELS.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                  <select
+                    value={draft.companyType}
+                    onChange={(event) => setDraft((prev) => ({ ...prev, companyType: event.target.value }))}
+                    className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-app outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">Company type</option>
+                    {COMPANY_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                  <select
+                    value={draft.verificationPreference}
+                    onChange={(event) => setDraft((prev) => ({ ...prev, verificationPreference: event.target.value }))}
+                    className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-app outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    {VERIFICATION_PREFERENCES.map((item) => <option key={item} value={item}>{item.replace(/_/g, " ")}</option>)}
+                  </select>
+                  <label className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-app">
+                    <span>Public Expertise</span>
+                    <input
+                      type="checkbox"
+                      checked={draft.publicExpertiseEnabled}
+                      onChange={(event) => setDraft((prev) => ({ ...prev, publicExpertiseEnabled: event.target.checked }))}
+                    />
+                  </label>
                 </div>
               </div>
             </div>

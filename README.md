@@ -11,6 +11,9 @@ It combines:
 - admin controls for moderation and system behavior
 - simulation realism controls for social activity feel
 - SEO content engine with internal linking, keyword optimization, and tag hub pages
+- immersive Inshorts + Shorts experiences with motion-first UI
+- global Ask AI floating assistant entrypoint (non-admin pages)
+- per-identity comment vote deduplication for blog + forum threads
 
 This README is intentionally exhaustive and implementation-heavy. It is meant to serve as:
 
@@ -178,6 +181,41 @@ TatvaOps is designed to feel like a real social content platform, not just a sta
   - behavior hints (active now, topic contributor, familiarity hints)
   - identity context chips (role, city, experience)
   - weekly activity sparkline and activity snippets
+
+---
+
+## Inshorts Experience *(updated)*
+
+- route: `/inshorts`
+- layout tuned to coexist with global sidebar + floating header
+- hashtag rail supports controlled carousel-like movement with arrow navigation
+- auto-scroll pauses on hover/touch interaction and resumes smoothly
+- active-context row combines recommendation signal + share status
+- card strip is one-slide-at-a-time with centered arrows and bottom dot pagination
+
+## Shorts Experience *(new UI)*
+
+- route: `/shorts`
+- immersive vertical full-screen feed
+- modularized UI components:
+  - `ShortsTopBar`
+  - `VideoCard`
+  - `ActionColumn`
+  - `ShortSlide`
+  - `ShortsPage`
+- `VerticalVideoPlayer` includes unsupported-source fallback hardening
+
+## Global Ask AI Entry *(updated)*
+
+- floating Ask AI action is rendered globally through shared layout
+- intentionally hidden on `/admin` routes
+- component: `components/layout/AskAiFab.tsx`
+
+## Comment Vote Integrity *(new hardening)*
+
+- one vote per identity per comment enforced for blog + forum comments
+- backed by `CommentVote` model with unique compound index
+- vote routes pass resolved actor identity to service layer for dedupe checks
 
 ---
 
@@ -836,6 +874,7 @@ All heavy work is rate-limited in request path and guarded by timeout waiting.
 - `ForumVote`
 - `BlogLike`
 - `ViewEvent`
+- `CommentVote`
 
 ---
 
@@ -924,6 +963,8 @@ All heavy work is rate-limited in request path and guarded by timeout waiting.
 - `app/forums/page.tsx` — forum listing, client-side
 - `app/forums/[slug]/page.tsx` — forum thread, SSR with static params (top 50 threads)
 - `app/tags/[tag]/page.tsx` — tag hub, SSR with static params (all tags, 600s revalidation) *(new)*
+- `app/inshorts/page.tsx` — inshorts immersive horizontal card feed
+- `app/shorts/page.tsx` + `app/shorts/[slug]/page.tsx` — vertical full-height shorts experience
 - `app/sitemap.ts` — XML sitemap including static, category, tag, blog, and forum routes
 - `app/robots.ts` — blocks `/admin/`, `/api/`
 
@@ -962,21 +1003,30 @@ All heavy work is rate-limited in request path and guarded by timeout waiting.
 ## Required
 
 - `MONGODB_URI`
-- `GROQ_API_KEY`
-- `OPENAI_API_KEY`
+- `OPENAI_API_KEY` *(or `GROQ_API_KEY`; keep at least one AI provider configured)*
 - `ADMIN_BLOG_ENABLED`
 - `ADMIN_BLOG_SECRET`
 - `SESSION_SECRET`
 - `NEXT_PUBLIC_SITE_URL`
+- `NEXTAUTH_URL` *(required in production)*
+- `NEXTAUTH_SECRET`
+- `GOOGLE_CLIENT_ID` *(if Google sign-in is enabled)*
+- `GOOGLE_CLIENT_SECRET` *(if Google sign-in is enabled)*
 
 ## Optional
 
+- `GROQ_API_KEY`
 - `GROQ_MODEL`
 - `OPENAI_MODEL`
 - `LOG_LEVEL`
 - `REDIS_URL`
 - `DAILY_AUTO_BLOGS_ENABLED`
 - `DAILY_AUTO_BLOGS_RUN_ON_START`
+- `UNSPLASH_ACCESS_KEY`
+- `RESEND_API_KEY`
+- `NEWSLETTER_FROM`
+- `IMAGE_STORAGE_DRIVER`
+- `IMAGE_LOCALIZE_REMOTE`
 - `DEV_DISABLE_AUTOMATION` (set `true` in local dev to disable background automation loop startup)
 
 ## Notes
@@ -1046,9 +1096,11 @@ vercel deploy --prod --yes --force
 ## Recommended deploy checks
 
 - verify build includes `/users`, `/blog`, `/forums`, `/tags` routes
+- verify immersive surfaces render correctly: `/inshorts`, `/shorts`
 - smoke-test API endpoints (`/api/health`, `/api/blog/feed`)
 - admin login and one privileged endpoint check
 - verify `/sitemap.xml` contains tag hub entries
+- verify repeated vote attempts do not increment the same comment multiple times per identity
 
 ---
 
@@ -1137,6 +1189,18 @@ Checks:
 - both sections require at least one matching document; empty arrays render nothing (no broken UI)
 - confirm the post has tags set — `getRelatedForumPosts` returns empty when `tags` array is empty
 - for forum → blog: `getPostsByTag` uses the first tag only (`post.tags[0]`); posts without tags produce no results
+
+## Inshorts card area clips at bottom
+
+- confirm inshort strip height still leaves room for top context and dot row
+- keep dot progress row outside the card strip block (`order-3` layout position)
+- if recently adjusted, recheck `h-[calc(...)]` classes in `components/inshorts/InshortsView.tsx`
+
+## Repeated comment votes still increase counts
+
+- ensure `CommentVote` unique compound index is present in MongoDB
+- verify vote API routes pass actor identity into `voteComment(...)`
+- check local DB for stale schema/index state if behavior differs between local and production
 
 ---
 

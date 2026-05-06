@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ContextChip } from "@/components/shared/ContextChip";
 
 type Item = {
   title: string;
@@ -38,9 +39,13 @@ function SectionList({ title, items }: { title: string; items: Item[] }) {
               </p>
               {item.subtitle && <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">{item.subtitle}</p>}
               {item.reason && (
-                <span className="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
-                  {item.reason}
-                </span>
+                <div className="mt-1">
+                  <ContextChip
+                    text={item.reason}
+                    keyword={item.title.split(" ").slice(0, 1).join(" ")}
+                    className="border-sky-200/60 bg-sky-100/70 text-sky-800 hover:text-sky-900"
+                  />
+                </div>
               )}
             </Link>
           </li>
