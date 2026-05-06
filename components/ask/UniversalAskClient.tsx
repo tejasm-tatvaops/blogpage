@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type AskOption = {
   slug: string;
@@ -9,9 +9,17 @@ type AskOption = {
   category: string;
 };
 
-export function UniversalAskClient({ options }: { options: AskOption[] }) {
-  const [query, setQuery] = useState("");
-  const [selectedSlug, setSelectedSlug] = useState(options[0]?.slug ?? "");
+export function UniversalAskClient({
+  options,
+  initialQuery = "",
+  initialSlug = "",
+}: {
+  options: AskOption[];
+  initialQuery?: string;
+  initialSlug?: string;
+}) {
+  const [query, setQuery] = useState(initialQuery);
+  const [selectedSlug, setSelectedSlug] = useState(initialSlug || options[0]?.slug || "");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +28,13 @@ export function UniversalAskClient({ options }: { options: AskOption[] }) {
     () => options.find((item) => item.slug === selectedSlug) ?? options[0],
     [options, selectedSlug],
   );
+
+  useEffect(() => {
+    if (!options.length) return;
+    if (!selectedSlug || !options.some((item) => item.slug === selectedSlug)) {
+      setSelectedSlug(options[0].slug);
+    }
+  }, [options, selectedSlug]);
 
   async function ask() {
     if (!query.trim() || !selected?.slug) return;

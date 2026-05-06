@@ -7,7 +7,11 @@ export const metadata: Metadata = {
   description: "Ask AI across TatvaOps platform knowledge with grounded citations.",
 };
 
-export default async function AskPage() {
+type AskPageProps = {
+  searchParams?: Promise<{ prompt?: string; anchor?: string }>;
+};
+
+export default async function AskPage({ searchParams }: AskPageProps) {
   const posts = await getAllPosts({ limit: 60 }).catch(() => []);
   const options = posts.map((post) => ({
     slug: post.slug,
@@ -15,6 +19,9 @@ export default async function AskPage() {
     tags: post.tags ?? [],
     category: post.category,
   }));
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const initialQuery = typeof resolvedSearchParams?.prompt === "string" ? resolvedSearchParams.prompt : "";
+  const initialSlug = typeof resolvedSearchParams?.anchor === "string" ? resolvedSearchParams.anchor : "";
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
@@ -30,7 +37,7 @@ export default async function AskPage() {
         </p>
       </div>
 
-      <UniversalAskClient options={options} />
+      <UniversalAskClient options={options} initialQuery={initialQuery} initialSlug={initialSlug} />
     </section>
   );
 }
