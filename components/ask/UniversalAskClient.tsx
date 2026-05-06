@@ -7,16 +7,27 @@ type AskOption = {
   title: string;
   tags: string[];
   category: string;
+  sourceType: "blog" | "siteJournal";
 };
 
 export function UniversalAskClient({
   options,
   initialQuery = "",
   initialSlug = "",
+  ecosystemContext,
 }: {
   options: AskOption[];
   initialQuery?: string;
   initialSlug?: string;
+  ecosystemContext?: {
+    currentSiteJournal?: string;
+    timelineWeek?: string;
+    city?: string;
+    activeRisks?: string;
+    tags?: string;
+    relatedDiscussions?: string;
+    contributorExpertise?: string;
+  };
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [selectedSlug, setSelectedSlug] = useState(initialSlug || options[0]?.slug || "");
@@ -42,10 +53,16 @@ export function UniversalAskClient({
     setError(null);
     setAnswer("");
     try {
-      const res = await fetch(`/api/blog/${selected.slug}/ask-ai`, {
+      const targetSlug = selected.slug.startsWith("sj:") ? selected.slug.slice(3) : selected.slug;
+      const res = await fetch(`/api/blog/${targetSlug}/ask-ai`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "ask", question: query.trim() }),
+        body: JSON.stringify({
+          mode: "ask",
+          question: query.trim(),
+          anchorType: selected.sourceType,
+          ecosystemContext,
+        }),
       });
       if (!res.ok || !res.body) throw new Error("Ask AI is unavailable right now.");
       const reader = res.body.getReader();
@@ -93,7 +110,7 @@ export function UniversalAskClient({
           >
             {options.map((item) => (
               <option key={item.slug} value={item.slug}>
-                {item.title}
+                {item.sourceType === "siteJournal" ? `Site Journal: ${item.title}` : item.title}
               </option>
             ))}
           </select>

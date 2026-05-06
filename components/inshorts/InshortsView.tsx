@@ -959,7 +959,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                   </div>
 
                   {/* Bottom content */}
-                  <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-10 pt-4 md:px-10">
+                  <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-10 pt-4 md:pl-20 md:pr-10">
                     {/* Badges */}
                     <div className="mb-2 flex flex-wrap items-center gap-1.5">
                       {(post.view_count >= 80 || post.upvote_count >= 12) && (
@@ -1009,6 +1009,13 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
                       className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/25"
                     >
                       Read full article →
+                    </a>
+                    <a
+                      href={`/projects?q=${encodeURIComponent(post.tags[0] ?? post.category)}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="ml-2 mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/25 px-3 py-1.5 text-xs font-semibold text-white/85 hover:bg-black/35"
+                    >
+                      View related Site Journal →
                     </a>
 
                   </div>

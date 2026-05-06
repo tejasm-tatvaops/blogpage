@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { href: "/shorts", label: "Shorts", exact: false },
   { href: "/inshorts", label: "Tatva Inshorts", exact: false },
   { href: "/tutorials", label: "Tutorials", exact: false },
+  { href: "/projects", label: "Site Journals", exact: false },
   { href: "/supplier", label: "Suppliers", exact: false },
   { href: "/brand-profile", label: "Brands", exact: false },
   { href: "/ask", label: "Ask AI", exact: false },

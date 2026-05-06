@@ -6,6 +6,7 @@ import { getAllVideoTags } from "@/lib/videoService";
 import RecommendedCarousel from "@/components/home/RecommendedCarousel";
 import ContinueLearningCarousel from "@/components/home/ContinueLearningCarousel";
 import { HeroSection } from "@/components/home/HeroSection";
+import { getRelatedSiteJournalsBySignalsPersistent } from "@/lib/siteJournalService";
 export default async function HomePage() {
   const [latestBlogs, trendingForumsResult, tutorialsResult, videoTags] = await Promise.all([
     getAllPosts({ limit: 10 }).catch(() => []),
@@ -46,6 +47,10 @@ export default async function HomePage() {
         .filter(Boolean),
     ),
   ).slice(0, 10);
+  const featuredSiteJournals = await getRelatedSiteJournalsBySignalsPersistent(
+    [...topicHubs, ...popularDiscussions.map((forum) => forum.title), ...carouselBlogs.flatMap((post) => post.tags ?? [])],
+    3,
+  );
 
 
   return (
@@ -211,6 +216,22 @@ export default async function HomePage() {
               <p className="mt-3 text-[12.5px] text-[#8b92a8]">No topics yet.</p>
             )}
           </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-black/5 bg-white/70 p-4 backdrop-blur-xl dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.5)]">
+          <h3 className="mb-3 text-[13.5px] font-semibold text-black dark:text-white">Recommended Site Journals</h3>
+          {featuredSiteJournals.length ? (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              {featuredSiteJournals.map((journal) => (
+                <Link key={journal.id} href={`/projects/${journal.slug}`} className="rounded-xl border border-black/5 bg-surface p-3 transition hover:shadow-sm dark:border-[#1e2440]">
+                  <p className="line-clamp-2 text-[13px] font-semibold text-black dark:text-white">{journal.title}</p>
+                  <p className="mt-1 text-[11px] text-[#8b92a8]">{journal.city} · Week {journal.timeline.week}</p>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[12.5px] text-[#8b92a8]">No site journals yet.</p>
+          )}
         </div>
 
         {/* ProductHub removed from home for now — re-add: import ProductHub + <ProductHub /> */}

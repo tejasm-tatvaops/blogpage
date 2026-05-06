@@ -6,6 +6,7 @@ import { getVideoPostBySlug, getAllVideoSlugs } from "@/lib/videoService";
 import { getForumPosts } from "@/lib/forumService";
 import { getTutorials } from "@/lib/tutorialService";
 import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
+import { getRelatedSiteJournalsBySignalsPersistent } from "@/lib/siteJournalService";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 
@@ -91,9 +92,10 @@ export default async function ShortDetailPage({
 
   const jsonLd = buildVideoJsonLd(post);
   const primaryTag = post.tags[0] ?? "";
-  const [relatedForums, relatedTutorials] = await Promise.all([
+  const [relatedForums, relatedTutorials, relatedSiteJournals] = await Promise.all([
     getForumPosts({ tag: primaryTag || undefined, sort: "hot", limit: 4 }).then((result) => result.posts).catch(() => []),
     getTutorials({ tag: primaryTag || null, limit: 4, includeUnpublished: false }).then((result) => result.tutorials).catch(() => []),
+    getRelatedSiteJournalsBySignalsPersistent([post.title, post.shortCaption, ...post.tags], 4),
   ]);
 
   const embedSrc =
@@ -223,6 +225,12 @@ export default async function ShortDetailPage({
                 reason: "Live thread",
               }))}
               relatedShorts={[]}
+              relatedSiteJournals={relatedSiteJournals.map((journal) => ({
+                title: journal.title,
+                href: `/projects/${journal.slug}`,
+                subtitle: `${journal.city}, ${journal.region}`,
+                reason: "Site timeline",
+              }))}
               topicHubs={post.tags.slice(0, 3).map((tag) => ({
                 title: `Topic hub: ${tag}`,
                 href: `/tags/${encodeURIComponent(tag)}`,

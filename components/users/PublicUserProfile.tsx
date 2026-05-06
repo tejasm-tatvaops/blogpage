@@ -12,6 +12,7 @@ import {
   VERIFICATION_PREFERENCES,
 } from "@/lib/expertiseIdentity";
 import { ExpertiseBadge } from "@/components/shared/ExpertiseBadge";
+import type { SiteJournalProject } from "@/data/siteJournals";
 
 type PublicUserProfileProps = {
   user: UserProfile;
@@ -84,6 +85,7 @@ export function PublicUserProfile({
   const [editMode, setEditMode] = useState(false);
   const [draft, setDraft] = useState(profileData);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [siteJournalContributions, setSiteJournalContributions] = useState<SiteJournalProject[]>([]);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
   const [verifyState, setVerifyState] = useState<{
@@ -235,15 +237,51 @@ export function PublicUserProfile({
     user.blog_comments,
   ]);
 
+  const siteJournalSpecialties = useMemo(() => {
+    const tags = siteJournalContributions.flatMap((journal) => journal.tags);
+    const counts = new Map<string, number>();
+    tags.forEach((tag) => counts.set(tag, (counts.get(tag) ?? 0) + 1));
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([tag]) => toTitleCase(tag.replace(/[-_]/g, " ")));
+  }, [siteJournalContributions]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const params = new URLSearchParams({
+          ownerId: user.identity_key,
+          includeUnpublished: "true",
+        });
+        const response = await fetch(`/api/site-journals?${params.toString()}`, { cache: "no-store" });
+        const payload = (await response.json().catch(() => ({}))) as { journals?: SiteJournalProject[] };
+        if (!response.ok || !Array.isArray(payload.journals)) return;
+        if (!cancelled) setSiteJournalContributions(payload.journals.slice(0, 5));
+      } catch {
+        // keep empty fallback
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [user.identity_key]);
+
   const activityTimeline = useMemo(() => {
     const timeline: Array<{ label: string; meta: string }> = [];
+    if (siteJournalContributions.length > 0) {
+      timeline.push({ label: "Published a Site Journal", meta: siteJournalContributions[0]?.title ?? "Site Journal update" });
+      timeline.push({ label: "Added procurement field note", meta: siteJournalContributions[0]?.aiRiskPulse ?? "Operational execution signal" });
+    }
     if (user.last_forum_slug) timeline.push({ label: "Answered in a forum discussion", meta: toTitleCase(user.last_forum_slug.replace(/-/g, " ")) });
     if (user.last_blog_slug) timeline.push({ label: "Contributed to construction knowledge thread", meta: toTitleCase(user.last_blog_slug.replace(/-/g, " ")) });
     if (user.forum_quality_streak_days > 0) timeline.push({ label: "Maintained helpful contribution streak", meta: `${user.forum_quality_streak_days} day quality streak` });
     if (followers > 0) timeline.push({ label: "Gained trusted followers", meta: `${formatNumber(followers)} professionals following` });
     timeline.push({ label: "Active in TatvaOps ecosystem", meta: `Last seen ${new Date(user.last_seen_at).toLocaleDateString()}` });
     return timeline.slice(0, 5);
-  }, [followers, user.forum_quality_streak_days, user.last_blog_slug, user.last_forum_slug, user.last_seen_at]);
+  }, [followers, siteJournalContributions, user.forum_quality_streak_days, user.last_blog_slug, user.last_forum_slug, user.last_seen_at]);
 
   const aiActionPrompts = useMemo(() => {
     const identity = profileData.profession || "construction professional";
@@ -789,6 +827,39 @@ export function PublicUserProfile({
               </Link>
             ))}
           </div>
+        </section>
+
+        <section className="rounded-2xl border border-app bg-surface p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold text-app">Site Journal Contributions</h2>
+            <span className="text-xs text-muted">{siteJournalContributions.length} active sites</span>
+          </div>
+          {siteJournalContributions.length ? (
+            <>
+              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                {siteJournalContributions.map((journal) => (
+                  <Link
+                    key={journal.id}
+                    href={`/projects/${journal.slug}`}
+                    className="rounded-xl border border-app bg-white p-4 transition hover:bg-subtle"
+                  >
+                    <p className="text-sm font-semibold text-app">{journal.title}</p>
+                    <p className="mt-1 text-xs text-muted">{journal.city}, {journal.region} - Week {journal.timeline.week}</p>
+                    <p className="mt-2 text-xs text-app/80 line-clamp-2">{journal.aiRiskPulse}</p>
+                  </Link>
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(siteJournalSpecialties.length ? siteJournalSpecialties : ["Execution planning"]).map((specialty) => (
+                  <span key={specialty} className="rounded-full border border-app bg-subtle px-3 py-1 text-xs text-app/80">
+                    {specialty}
+                  </span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="mt-3 text-sm text-muted">No linked site journal contributions yet.</p>
+          )}
         </section>
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">

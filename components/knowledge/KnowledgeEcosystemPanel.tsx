@@ -16,6 +16,7 @@ type Props = {
   nextLearn?: Item[];
   relatedDiscussions?: Item[];
   relatedShorts?: Item[];
+  relatedSiteJournals?: Item[];
   topicHubs?: Item[];
 };
 
@@ -63,6 +64,7 @@ export function KnowledgeEcosystemPanel({
   nextLearn = [],
   relatedDiscussions = [],
   relatedShorts = [],
+  relatedSiteJournals = [],
   topicHubs = [],
 }: Props) {
   const confidenceTone =
@@ -105,6 +107,7 @@ export function KnowledgeEcosystemPanel({
         <SectionList title="Next learn" items={nextLearn} />
         <SectionList title="Related discussions" items={relatedDiscussions} />
         <SectionList title="Related shorts" items={relatedShorts} />
+        <SectionList title="Related site journals" items={relatedSiteJournals} />
         <SectionList title="Topic hubs" items={topicHubs} />
       </div>
     </section>

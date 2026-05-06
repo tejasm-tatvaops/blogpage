@@ -19,6 +19,8 @@ import { generateSEO } from "@/lib/seo";
 import { getTutorials } from "@/lib/tutorialService";
 import { getVideosByTags } from "@/lib/videoService";
 import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
+import { RelatedSiteJournalsCard } from "@/components/forums/RelatedSiteJournalsCard";
+import { getRelatedSiteJournalsForForumPersistent } from "@/lib/siteJournalService";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com").replace(/\/+$/, "");
 
@@ -70,11 +72,17 @@ export default async function ForumThreadPage({ params }: PageProps) {
 
   const primaryTag = post.tags[0] ?? "";
 
-  const [comments, topicUsers, relatedTutorials, relatedShorts] = await Promise.all([
+  const [comments, topicUsers, relatedTutorials, relatedShorts, relatedSiteJournals] = await Promise.all([
     getComments(post.id),
     getActiveUsersByTopic([...post.tags, post.title], 5).catch(() => []),
     getTutorials({ tag: primaryTag || null, limit: 4, includeUnpublished: false }).then((result) => result.tutorials).catch(() => []),
     getVideosByTags(post.tags, 4).catch(() => []),
+    getRelatedSiteJournalsForForumPersistent({
+      title: post.title,
+      excerpt: post.excerpt,
+      content: post.content,
+      tags: post.tags,
+    }, 3),
   ]);
   const authorProfile = post.creator_fingerprint
     ? await getUserProfileByIdentityKey(`fp:${post.creator_fingerprint}`).catch(() => null)
@@ -122,6 +130,9 @@ export default async function ForumThreadPage({ params }: PageProps) {
               commentCount={post.comment_count}
             />
             <PostBody content={post.content} />
+            <ForumAiSummaryCard slug={post.slug} />
+            <ConsensusInsightsCard slug={post.slug} />
+            <RelatedSiteJournalsCard journals={relatedSiteJournals} />
             <RepliesCard
               slug={post.slug}
               tags={post.tags}
@@ -129,8 +140,6 @@ export default async function ForumThreadPage({ params }: PageProps) {
               bestCommentId={post.best_comment_id}
               creatorFingerprint={post.creator_fingerprint}
             />
-            <ForumAiSummaryCard slug={post.slug} />
-            <ConsensusInsightsCard slug={post.slug} />
           </ForumLeftColumn>
         )}
         right={(
@@ -150,7 +159,12 @@ export default async function ForumThreadPage({ params }: PageProps) {
                   subtitle: tutorial.excerpt,
                   reason: tutorial.difficulty ? `Level ${tutorial.difficulty}` : "Next learn",
                 }))}
-                relatedDiscussions={[]}
+                relatedDiscussions={relatedSiteJournals.map((journal) => ({
+                  title: journal.title,
+                  href: `/projects/${journal.slug}`,
+                  subtitle: `${journal.city}, ${journal.region}`,
+                  reason: "Site Journal",
+                }))}
                 relatedShorts={relatedShorts.slice(0, 4).map((video) => ({
                   title: video.title,
                   href: `/shorts/${video.slug}`,

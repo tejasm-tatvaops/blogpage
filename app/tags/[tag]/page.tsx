@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllTags, getPostsByTag } from "@/lib/blogService";
 import { getAllForumTags, getForumPosts } from "@/lib/forumService";
+import { getSiteJournalsByTagPersistent } from "@/lib/siteJournalService";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com").replace(/\/+$/, "");
 
@@ -28,14 +29,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const canonicalUrl = `${SITE_URL}/tags/${encodeURIComponent(decoded)}`;
 
   return {
-    title: `#${decoded} — Articles & Discussions | TatvaOps`,
-    description: `Explore all blog posts and forum discussions tagged with "${decoded}" on TatvaOps — construction tech, BOQ workflows, estimation, and procurement intelligence.`,
+    title: `#${decoded} — Articles, Discussions & Site Journals | TatvaOps`,
+    description: `Explore all blogs, forum discussions, and site journals tagged with "${decoded}" on TatvaOps.`,
     alternates: { canonical: canonicalUrl },
     openGraph: {
       type: "website",
       url: canonicalUrl,
       title: `#${decoded} | TatvaOps`,
-      description: `All content tagged "${decoded}" — articles, guides, and community discussions.`,
+      description: `All content tagged "${decoded}" — articles, discussions, and site journals.`,
       siteName: "TatvaOps",
     },
   };
@@ -50,14 +51,15 @@ export default async function TagHubPage({ params }: PageProps) {
   const { tag } = await params;
   const decoded = decodeURIComponent(tag);
 
-  const [blogs, forumResult] = await Promise.all([
+  const [blogs, forumResult, siteJournals] = await Promise.all([
     getPostsByTag(decoded, 20).catch(() => []),
     getForumPosts({ tag: decoded, sort: "hot", limit: 20 }).catch(() => ({ posts: [] })),
+    getSiteJournalsByTagPersistent(decoded, 12),
   ]);
 
   const forums = forumResult.posts ?? [];
 
-  if (blogs.length === 0 && forums.length === 0) notFound();
+  if (blogs.length === 0 && forums.length === 0 && siteJournals.length === 0) notFound();
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-10">
@@ -84,7 +86,8 @@ export default async function TagHubPage({ params }: PageProps) {
         </h1>
         <p className="mt-2 text-slate-500">
           {blogs.length} article{blogs.length !== 1 ? "s" : ""} &middot;{" "}
-          {forums.length} discussion{forums.length !== 1 ? "s" : ""}
+          {forums.length} discussion{forums.length !== 1 ? "s" : ""} &middot;{" "}
+          {siteJournals.length} site journal{siteJournals.length !== 1 ? "s" : ""}
         </p>
       </header>
 
@@ -170,6 +173,35 @@ export default async function TagHubPage({ params }: PageProps) {
           </div>
         </section>
       </div>
+      <section aria-labelledby="site-journals-heading" className="mt-10">
+        <h2 id="site-journals-heading" className="mb-5 text-lg font-bold text-app">
+          Site Journals
+        </h2>
+        {siteJournals.length === 0 ? (
+          <p className="text-sm text-slate-400">No site journals with this tag yet.</p>
+        ) : (
+          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {siteJournals.map((journal) => (
+              <li key={journal.id}>
+                <Link
+                  href={`/projects/${journal.slug}`}
+                  className="group block rounded-xl border border-slate-100 bg-surface p-4 shadow-sm transition hover:shadow-md"
+                >
+                  <h3 className="text-sm font-semibold leading-snug text-slate-800 transition group-hover:text-indigo-700 line-clamp-2">
+                    {journal.title}
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-400 line-clamp-2">{journal.updatePreview}</p>
+                  <div className="mt-1.5 flex items-center gap-3 text-[11px] text-slate-400">
+                    <span>{journal.city}</span>
+                    <span aria-hidden>·</span>
+                    <span>Week {journal.timeline.week}</span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   );
 }

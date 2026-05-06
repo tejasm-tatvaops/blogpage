@@ -72,6 +72,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Blogs",    href: "/admin/blog",     icon: <IconBlogs /> },
       { label: "Forums",   href: "/admin/forums",   icon: <IconForums /> },
+      { label: "Site Journals", href: "/admin/site-journals", icon: <IconBlogs /> },
       { label: "Comments", href: "/admin/comments", icon: <IconComments /> },
       { label: "Videos",         href: "/admin/videos",   icon: <IconVideos /> },
       { label: "Tatva Inshorts", href: "/admin/inshorts", icon: <IconVideos /> },

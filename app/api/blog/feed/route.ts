@@ -41,6 +41,7 @@ import type { FeedResult } from "@/lib/feedService";
 import { getAllPosts } from "@/lib/blogService";
 import { startReconciliationWorker } from "@/lib/reconciliationService";
 import { recordLatency } from "@/lib/perfMetrics";
+import { getRelatedSiteJournalsBySignalsPersistent } from "@/lib/siteJournalService";
 
 export const dynamic = "force-dynamic";
 
@@ -101,9 +102,14 @@ export async function GET(request: Request) {
       const totalMs = Date.now() - startedAt;
       recordLatency("feed.request.total", totalMs);
       recordLatency("feed.stage.dev_bypass", totalMs);
+      const siteJournalRecommendations = await getRelatedSiteJournalsBySignalsPersistent(
+        posts.flatMap((post) => [post.category, ...post.tags]).slice(0, 12),
+        4,
+      );
       return NextResponse.json(
         {
           posts,
+          site_journals: siteJournalRecommendations,
           page,
           has_persona: false,
           top_interests: [],
@@ -120,8 +126,12 @@ export async function GET(request: Request) {
     markStage("cache_read");
     recordLatency("feed.stage.cache_read", stageTimings.cache_read ?? 0);
     if (cached) {
+      const siteJournalRecommendations = await getRelatedSiteJournalsBySignalsPersistent(
+        [...(cached.top_interests ?? []), ...(cached.posts ?? []).flatMap((post) => [post.category, ...(post.tags ?? [])]).slice(0, 10)],
+        4,
+      );
       const response = NextResponse.json(
-        { ...cached, _cache: "hit", request_id: requestId, experiment_id: variant.experimentId, variant_id: variant.variantId },
+        { ...cached, site_journals: siteJournalRecommendations, _cache: "hit", request_id: requestId, experiment_id: variant.experimentId, variant_id: variant.variantId },
         { status: 200, headers: { "Cache-Control": "private, no-store" } },
       );
       response.cookies.set(
@@ -204,8 +214,12 @@ export async function GET(request: Request) {
     recordLatency("feed.stage.event_enqueue", stageTimings.event_enqueue ?? 0);
 
     // ── 6. Respond ────────────────────────────────────────────────────────────
+    const siteJournalRecommendations = await getRelatedSiteJournalsBySignalsPersistent(
+      [...result.top_interests, ...result.posts.flatMap((post) => [post.category, ...(post.tags ?? [])]).slice(0, 10)],
+      4,
+    );
     const response = NextResponse.json(
-      { ...result, _cache: "miss", request_id: requestId, experiment_id: variant.experimentId, variant_id: variant.variantId },
+      { ...result, site_journals: siteJournalRecommendations, _cache: "miss", request_id: requestId, experiment_id: variant.experimentId, variant_id: variant.variantId },
       { status: 200, headers: { "Cache-Control": "private, no-store" } },
     );
     response.cookies.set(

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getAllPosts } from "@/lib/blogService";
 import { UniversalAskClient } from "@/components/ask/UniversalAskClient";
+import { getProjectJournalsPersistent } from "@/lib/siteJournalService";
 
 export const metadata: Metadata = {
   title: "Ask AI | TatvaOps",
@@ -8,20 +9,51 @@ export const metadata: Metadata = {
 };
 
 type AskPageProps = {
-  searchParams?: Promise<{ prompt?: string; anchor?: string }>;
+  searchParams?: Promise<{
+    prompt?: string;
+    anchor?: string;
+    journal?: string;
+    week?: string;
+    city?: string;
+    risks?: string;
+    tags?: string;
+    discussions?: string;
+    expertise?: string;
+  }>;
 };
 
 export default async function AskPage({ searchParams }: AskPageProps) {
-  const posts = await getAllPosts({ limit: 60 }).catch(() => []);
-  const options = posts.map((post) => ({
+  const [posts, journals] = await Promise.all([
+    getAllPosts({ limit: 60 }).catch(() => []),
+    getProjectJournalsPersistent().then((items) => items.slice(0, 30)),
+  ]);
+  const blogOptions = posts.map((post) => ({
     slug: post.slug,
     title: post.title,
     tags: post.tags ?? [],
     category: post.category,
+    sourceType: "blog" as const,
   }));
+  const journalOptions = journals.map((journal) => ({
+    slug: `sj:${journal.slug}`,
+    title: journal.title,
+    tags: journal.tags ?? [],
+    category: `Site Journal • ${journal.city}`,
+    sourceType: "siteJournal" as const,
+  }));
+  const options = [...journalOptions, ...blogOptions];
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const initialQuery = typeof resolvedSearchParams?.prompt === "string" ? resolvedSearchParams.prompt : "";
   const initialSlug = typeof resolvedSearchParams?.anchor === "string" ? resolvedSearchParams.anchor : "";
+  const ecosystemContext = {
+    currentSiteJournal: typeof resolvedSearchParams?.journal === "string" ? resolvedSearchParams.journal : "",
+    timelineWeek: typeof resolvedSearchParams?.week === "string" ? resolvedSearchParams.week : "",
+    city: typeof resolvedSearchParams?.city === "string" ? resolvedSearchParams.city : "",
+    activeRisks: typeof resolvedSearchParams?.risks === "string" ? resolvedSearchParams.risks : "",
+    tags: typeof resolvedSearchParams?.tags === "string" ? resolvedSearchParams.tags : "",
+    relatedDiscussions: typeof resolvedSearchParams?.discussions === "string" ? resolvedSearchParams.discussions : "",
+    contributorExpertise: typeof resolvedSearchParams?.expertise === "string" ? resolvedSearchParams.expertise : "",
+  };
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
@@ -37,7 +69,12 @@ export default async function AskPage({ searchParams }: AskPageProps) {
         </p>
       </div>
 
-      <UniversalAskClient options={options} initialQuery={initialQuery} initialSlug={initialSlug} />
+      <UniversalAskClient
+        options={options}
+        initialQuery={initialQuery}
+        initialSlug={initialSlug}
+        ecosystemContext={ecosystemContext}
+      />
     </section>
   );
 }

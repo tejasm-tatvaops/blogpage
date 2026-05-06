@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPostBySlug } from "@/lib/blogService";
 import { createRateLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { buildAskAiGraphContextWithQuery, buildSourceAppendix } from "@/lib/askAiGraph";
+import { getProjectBySlugPersistent } from "@/lib/siteJournalService";
 import { getSystemToggles } from "@/lib/systemToggles";
 import { recordMetric } from "@/lib/observability";
 import { recordAskAiQualitySample } from "@/lib/askAiQualityMetrics";
@@ -164,10 +165,34 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
   let question = "";
   let mode: Mode = "ask";
+  let extraContext = "";
   try {
-    const body = (await req.json()) as { question?: string; mode?: string };
+    const body = (await req.json()) as {
+      question?: string;
+      mode?: string;
+      anchorType?: "blog" | "siteJournal";
+      ecosystemContext?: {
+        currentSiteJournal?: string;
+        timelineWeek?: string;
+        city?: string;
+        activeRisks?: string;
+        tags?: string;
+        relatedDiscussions?: string;
+        contributorExpertise?: string;
+      };
+    };
     question = String(body.question ?? "").trim().slice(0, 500);
     if (body.mode === "summarize" || body.mode === "eli5") mode = body.mode;
+    const anchorType = body.anchorType === "siteJournal" ? "siteJournal" : "blog";
+    const journal = anchorType === "siteJournal" ? await getProjectBySlugPersistent(slug, true) : null;
+    const journalContext = journal
+      ? `\n\nSite Journal context:\n- Journal: ${journal.title}\n- City/Region: ${journal.city}, ${journal.region}\n- Timeline week: ${journal.timeline.week}\n- Stage: ${journal.timeline.stage}\n- Risks: ${journal.aiRiskPulse}\n- Procurement: ${journal.procurementSignal}\n- Related discussions: ${journal.timelineEntries.map((entry) => entry.linkedDiscussion?.title).filter(Boolean).join("; ") || "None"}\n`
+      : "";
+    const ecosystem = body.ecosystemContext;
+    const ecosystemContext = ecosystem
+      ? `\n\nEcosystem context:\n- Current site journal: ${ecosystem.currentSiteJournal ?? ""}\n- Timeline week: ${ecosystem.timelineWeek ?? ""}\n- Region/city: ${ecosystem.city ?? ""}\n- Active risks: ${ecosystem.activeRisks ?? ""}\n- Related discussions: ${ecosystem.relatedDiscussions ?? ""}\n- Contributor expertise: ${ecosystem.contributorExpertise ?? ""}\n- Tags: ${ecosystem.tags ?? ""}\n`
+      : "";
+    extraContext = `${journalContext}${ecosystemContext}`;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
@@ -195,8 +220,8 @@ export async function POST(req: NextRequest, context: RouteContext) {
   const systemPrompt = SYSTEM_PROMPTS[mode];
   const userPrompt =
     mode === "ask"
-      ? `Platform knowledge pack:\n\n${articleContext}\n\nQuestion:\n${question}\n\nReturn concise answer and cite references like [S1], [S2].`
-      : `Platform knowledge pack:\n\n${articleContext}\n\nProvide concise output with [S#] citations.`;
+      ? `Platform knowledge pack:\n\n${articleContext}${extraContext}\n\nQuestion:\n${question}\n\nReturn concise answer and cite references like [S1], [S2].`
+      : `Platform knowledge pack:\n\n${articleContext}${extraContext}\n\nProvide concise output with [S#] citations.`;
   const maxSourceIndex = graphContext?.sources.length ?? 1;
 
   const firstAnswer = await completeWithFallback(systemPrompt, userPrompt);

@@ -73,6 +73,19 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    href: "/projects",
+    label: "SITE JOURNALS",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 7h18" />
+        <path d="M6 7V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2" />
+        <path d="M13 7V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2" />
+        <rect x="3" y="7" width="18" height="13" rx="2" />
+        <path d="M8 12h8M8 16h5" />
+      </svg>
+    ),
+  },
 ];
 
 function SidebarItem({
