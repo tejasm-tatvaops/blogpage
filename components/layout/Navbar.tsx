@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/layout/NotificationBell";
@@ -37,10 +38,10 @@ export function Navbar() {
 
   const linkClass = (href: string, exact: boolean) =>
     [
-      "rounded-lg px-[8px] py-[5px] text-[0.72rem] font-medium leading-none transition-all duration-200 whitespace-nowrap",
+      "rounded-lg px-[6px] py-[6px] text-[0.68rem] font-medium leading-none transition-all duration-200 whitespace-nowrap",
       isActive(href, exact)
-        ? "bg-orange-500 !text-white shadow-[0_0_12px_rgba(234,88,12,0.35)]"
-        : "text-muted hover:text-app hover:bg-black/[0.05] dark:hover:bg-white/4",
+        ? "bg-orange-500 !text-white shadow-[0_0_12px_rgba(234,88,12,0.3)]"
+        : "text-muted hover:text-app hover:bg-black/[0.045] dark:hover:bg-white/5",
     ].join(" ");
 
   return (
@@ -60,11 +61,20 @@ export function Navbar() {
             : "md:left-[calc(50%+64px)] md:-translate-x-1/2",
         )}
       >
-        <div className="flex h-[50px] w-full items-center gap-[10px] px-[14px] leading-none md:px-0">
-          <div className="flex min-w-0 flex-1 items-center justify-start gap-2">
-            {/* Logo (optional): place before <nav>, e.g. <Link href="/" className="hdr-logo shrink-0" aria-label="Home"><Image src="/tatvaops-logo-transparent.png" alt="" width={430} height={108} className="h-9 w-auto object-contain" priority /></Link> */}
+        <div className="grid h-[50px] w-full grid-cols-1 items-center gap-[10px] px-[14px] leading-none md:grid-cols-[auto_1fr_auto] md:px-0">
+          <Link href="/" className="hidden shrink-0 md:block" aria-label="TatvaOps home">
+            <Image
+              src="/tatvaops-logo-transparent.png"
+              alt="TatvaOps"
+              width={430}
+              height={108}
+              className="h-7 w-auto object-contain"
+              priority
+            />
+          </Link>
+          <div className="hidden min-w-0 items-center justify-center md:flex">
             <nav
-              className="hidden min-w-0 flex flex-wrap items-center justify-start gap-px md:flex"
+              className="flex min-w-0 flex-nowrap items-center justify-center gap-0.5 px-1 py-1"
               aria-label="Main"
             >
               {NAV_LINKS.map(({ href, label, exact }) => (
@@ -76,7 +86,7 @@ export function Navbar() {
               <Link
                 href="/saved"
                 aria-label="Saved articles"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-black/[0.05] hover:text-app dark:hover:bg-white/4"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-black/[0.045] hover:text-app dark:hover:bg-white/5"
               >
                 <svg
                   width="15"
@@ -95,7 +105,7 @@ export function Navbar() {
             </nav>
           </div>
 
-          <div className="hdr-right ml-auto flex h-full shrink-0 items-center gap-1.5">
+          <div className="hdr-right ml-auto flex h-full shrink-0 items-center gap-1">
             <UserStatsBadge />
             <NotificationBell />
             <NavbarAuthButton

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { ProjectTimeline } from "@/components/projects/ProjectTimeline";
 import { OwnerJournalComposerLauncher } from "@/components/projects/OwnerJournalComposerLauncher";
+import { WeeklyExecutiveBriefCard } from "@/components/projects/WeeklyExecutiveBriefCard";
 import { SITE_JOURNALS } from "@/data/siteJournals";
 import { getProjectBySlugPersistent, getSiteJournalMemoryInsights } from "@/lib/siteJournalService";
 import { authOptions } from "@/lib/auth";
@@ -51,11 +52,46 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
     `${project.procurementSignal}.`,
     project.recommendations[0] ?? "Maintain close monitoring on upcoming execution dependencies.",
   ];
-  const healthHistory = [
-    { week: "Week 10", state: "Stable", tone: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    { week: "Week 12", state: "Watch Procurement", tone: "bg-amber-50 text-amber-700 border-amber-200" },
-    { week: "Week 13", state: "Delay Risk", tone: "bg-rose-50 text-rose-700 border-rose-200" },
-    { week: "Week 15", state: "Stabilized", tone: "bg-sky-50 text-sky-700 border-sky-200" },
+  const healthHistory = [...project.timelineEntries]
+    .sort((a, b) => {
+      const aw = Number(a.weekLabel.replace(/[^\d]/g, "")) || 0;
+      const bw = Number(b.weekLabel.replace(/[^\d]/g, "")) || 0;
+      return bw - aw;
+    })
+    .slice(0, 4)
+    .map((entry) => {
+      const tone =
+        entry.type === "Issue Report" || entry.type === "Cost Change"
+          ? "bg-rose-50 text-rose-700 border-rose-200"
+          : entry.type === "Procurement Decision" || entry.type === "Vendor Note" || entry.type === "Labor Update"
+            ? "bg-amber-50 text-amber-700 border-amber-200"
+            : "bg-emerald-50 text-emerald-700 border-emerald-200";
+      const state =
+        entry.type === "Issue Report" || entry.type === "Cost Change"
+          ? "Delay Risk"
+          : entry.type === "Procurement Decision" || entry.type === "Vendor Note"
+            ? "Watch Procurement"
+            : entry.type === "Labor Update"
+              ? "Labor Watch"
+              : "Stable";
+      return { week: entry.weekLabel, state, tone };
+    });
+  const mostRecentEntry = project.timelineEntries[0];
+  const priorEntry = project.timelineEntries[1];
+  const laborCondition =
+    project.aiRiskPulse.toLowerCase().includes("labor") || project.executionStatus.toLowerCase().includes("labor")
+      ? "Labor sensitivity detected in active cycle."
+      : "No major labor disruption signal detected in current cycle.";
+  const nextWeekForecast =
+    project.health === "risk"
+      ? "High probability of schedule pressure unless vendor and sequencing mitigation is executed this week."
+      : project.health === "watch"
+        ? "Moderate pressure likely; procurement stabilization can prevent spillover into execution milestones."
+        : "Execution likely to remain stable if current controls and sequencing discipline hold.";
+  const briefActions = [
+    project.recommendations[0] ?? "Reconfirm vendor sequence and delivery commitments before next cycle.",
+    project.recommendations[1] ?? "Track labor allocation and remove overlaps that can cause rework.",
+    project.recommendations[2] ?? "Keep weekly risk review cadence with documented corrective actions.",
   ];
 
   return (
@@ -70,17 +106,6 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           <p className="mt-1 text-xs text-muted">
             Week {project.timeline.week} active • Last field update {project.timelineEntries[0]?.createdAtLabel ?? "recently"}
           </p>
-          <div className="mt-4 flex flex-wrap gap-2 text-[11px]">
-            <span className="rounded-full border border-app bg-subtle px-3 py-1 text-app">
-              Execution: {project.executionStatus}
-            </span>
-            <span className="rounded-full border border-app bg-subtle px-3 py-1 text-app">
-              Delay Risk: {project.health === "risk" ? "High" : project.health === "watch" ? "Medium" : "Low"}
-            </span>
-            <span className="rounded-full border border-app bg-subtle px-3 py-1 text-app">
-              Procurement: {project.procurementSignal}
-            </span>
-          </div>
         </div>
       </section>
 
@@ -117,17 +142,48 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               {item}
             </p>
           ))}
+          {priorEntry ? (
+            <p className="text-xs uppercase tracking-[0.14em] text-muted">
+              Continuity: previously observed in {priorEntry.weekLabel} during {priorEntry.type.toLowerCase()} signals.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="mb-8">
+          <WeeklyExecutiveBriefCard
+            projectTitle={project.title}
+            week={project.timeline.week}
+            changed={mostRecentEntry?.title ?? project.updatePreview}
+            risk={project.aiRiskPulse}
+            procurement={project.procurementSignal}
+            executionHealth={project.executionStatus}
+            laborCondition={laborCondition}
+            nextWeekForecast={nextWeekForecast}
+            actions={briefActions}
+          />
         </div>
 
         <ProjectTimeline
           entries={project.timelineEntries}
           todayWeekLabel={`Week ${project.timeline.week}`}
+          totalWeeks={project.timeline.week}
+          timelineStarted={project.timeline.started}
           siteConditions={[
             { label: "Weather", value: project.weatherRisk },
             { label: "Material Watch", value: project.procurementSignal },
             { label: "Discussion", value: `${project.activeDiscussionCount} notes active` },
             { label: "Site Mood", value: project.health === "risk" ? "Under pressure" : project.health === "watch" ? "Tightening windows" : "Steady" },
           ]}
+          askContextBase={{
+            projectSlug: project.slug,
+            journalTitle: project.title,
+            cityRegion: `${project.city}, ${project.region}`,
+            risks: project.aiRiskPulse,
+            tags: project.tags.join(", "),
+            discussions: project.timelineEntries.map((entry) => entry.linkedDiscussion?.title).filter(Boolean).join("; "),
+            expertise: project.contributors.map((member) => member.badge).join(", "),
+            similarProjects: project.similarProjects,
+          }}
         />
 
         <div className="mt-14 rounded-2xl border border-dashed border-app/70 bg-subtle/30 p-6">
@@ -240,6 +296,9 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               const askParams = new URLSearchParams({
                 prompt,
                 anchor: `sj:${project.slug}`,
+                sourceType: "siteJournal",
+                aiMode: "site_analyst",
+                page: "site_journal",
                 journal: project.title,
                 week: String(project.timeline.week),
                 city: `${project.city}, ${project.region}`,
@@ -247,6 +306,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 tags: project.tags.join(", "),
                 discussions: project.timelineEntries.map((entry) => entry.linkedDiscussion?.title).filter(Boolean).join("; "),
                 expertise: project.contributors.map((member) => member.badge).join(", "),
+                intent: prompt,
               });
               return (
                 <Link key={prompt} href={`/ask?${askParams.toString()}`} className="rounded-full border border-app bg-surface px-3 py-1.5 text-xs text-app transition hover:bg-subtle">

@@ -21,6 +21,7 @@ import { UserProfileQuickView } from "@/components/user/UserQuickView";
 import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
 import { LiveActivityPulse } from "@/components/shared/LiveActivityPulse";
 import { ContextChip } from "@/components/shared/ContextChip";
+import { InlineIntelligenceChips } from "@/components/ask/InlineIntelligenceChips";
 
 type BlogDetailProps = {
   post: BlogPost;
@@ -310,9 +311,66 @@ export function BlogDetail({
             </div>
 
             {/* ── Article body ── */}
+            <InlineIntelligenceChips
+              title="Inline Intelligence"
+              anchor={post.slug}
+              sourceType="blog"
+              page="blog_intro"
+              context={{
+                tags: post.tags.join(", "),
+                discussions: relatedForumPosts.map((thread) => thread.title).join("; "),
+                city: post.tags.join(", "),
+              }}
+              prompts={[
+                {
+                  label: "Convert to procurement actions",
+                  prompt: "Convert this article into practical procurement actions for current site execution.",
+                  aiMode: "cost_strategist",
+                },
+                {
+                  label: "Summarize operational risks",
+                  prompt: "Summarize the key operational risks and why they matter on site.",
+                  aiMode: "site_analyst",
+                },
+                {
+                  label: "Explain execution impact",
+                  prompt: "Explain how these insights impact execution sequencing on site.",
+                  aiMode: "planning_engineer",
+                },
+              ]}
+            />
             <div className="prose prose-base sm:prose-lg max-w-none prose-slate prose-headings:font-bold prose-headings:tracking-tight prose-p:leading-[1.8] sm:prose-p:leading-[1.85] prose-a:text-sky-700 prose-a:no-underline prose-a:font-medium hover:prose-a:underline prose-code:rounded-md prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:text-sm prose-code:text-slate-800 prose-pre:overflow-x-auto prose-pre:rounded-2xl prose-pre:bg-slate-950 prose-pre:p-4 sm:prose-pre:p-5 prose-pre:text-slate-100 prose-blockquote:not-italic prose-blockquote:border-l-4 prose-blockquote:border-sky-300 prose-blockquote:bg-sky-50/60 prose-blockquote:rounded-r-xl prose-blockquote:py-1 prose-blockquote:text-slate-700 prose-img:rounded-xl prose-img:shadow-md prose-table:text-sm prose-th:bg-subtle prose-thead:border-app prose-tr:border-slate-100">
               <MarkdownRenderer content={mainContent} />
             </div>
+
+            <InlineIntelligenceChips
+              title="Key Insight Actions"
+              anchor={post.slug}
+              sourceType="blog"
+              page="blog_key_insights"
+              compact
+              context={{
+                tags: post.tags.join(", "),
+                discussions: relatedForumPosts.map((thread) => thread.title).join("; "),
+              }}
+              prompts={[
+                {
+                  label: "Generate BOQ checklist",
+                  prompt: "Generate a BOQ-focused checklist from this article for implementation on site.",
+                  aiMode: "cost_strategist",
+                },
+                {
+                  label: "Planning engineer focus",
+                  prompt: "What would a planning engineer prioritize from this article in the next 2 weeks?",
+                  aiMode: "planning_engineer",
+                },
+                {
+                  label: "Actionable next steps",
+                  prompt: "Provide concise actionable next steps from these insights for field teams.",
+                  aiMode: "site_analyst",
+                },
+              ]}
+            />
 
             <ReadingTracker slug={post.slug} readingTimeMinutes={readingTimeMinutes} tags={post.tags} category={post.category} />
             <AiAssistant slug={post.slug} />
@@ -348,6 +406,35 @@ export function BlogDetail({
               }))}
             />
             </div>
+
+            <InlineIntelligenceChips
+              title="Conclusion Intelligence"
+              anchor={post.slug}
+              sourceType="blog"
+              page="blog_conclusion"
+              compact
+              context={{
+                tags: post.tags.join(", "),
+                discussions: relatedForumPosts.map((thread) => thread.title).join("; "),
+              }}
+              prompts={[
+                {
+                  label: "Implementation summary",
+                  prompt: "Summarize this article into a concise implementation plan for site teams.",
+                  aiMode: "site_analyst",
+                },
+                {
+                  label: "Safety audit pass",
+                  prompt: "Identify any implied safety risks and suggest preventive controls.",
+                  aiMode: "safety_auditor",
+                },
+                {
+                  label: "Debate-ready talking points",
+                  prompt: "Create balanced talking points for discussing this topic in contractor forums.",
+                  aiMode: "debate_synthesizer",
+                },
+              ]}
+            />
 
             {/* ── Related Discussions ── */}
             {relatedForumPosts.length > 0 && (

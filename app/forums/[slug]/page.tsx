@@ -21,6 +21,7 @@ import { getVideosByTags } from "@/lib/videoService";
 import { KnowledgeEcosystemPanel } from "@/components/knowledge/KnowledgeEcosystemPanel";
 import { RelatedSiteJournalsCard } from "@/components/forums/RelatedSiteJournalsCard";
 import { getRelatedSiteJournalsForForumPersistent } from "@/lib/siteJournalService";
+import { InlineIntelligenceChips } from "@/components/ask/InlineIntelligenceChips";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com").replace(/\/+$/, "");
 
@@ -130,6 +131,46 @@ export default async function ForumThreadPage({ params }: PageProps) {
               commentCount={post.comment_count}
             />
             <PostBody content={post.content} />
+            <InlineIntelligenceChips
+              title="Discussion Intelligence"
+              anchor={`fr:${post.slug}`}
+              sourceType="forum"
+              page="forum_opening_post"
+              compact
+              context={{
+                tags: post.tags.join(", "),
+                discussions: post.title,
+                risks: post.excerpt,
+                expertise: [post.author_expertise, post.author_profession].filter(Boolean).join(", "),
+              }}
+              prompts={[
+                {
+                  label: "Summarize consensus",
+                  prompt: "Summarize consensus from this discussion thread.",
+                  aiMode: "debate_synthesizer",
+                },
+                {
+                  label: "Strongest contractor insight",
+                  prompt: "Identify the strongest contractor insight and explain why it matters.",
+                  aiMode: "debate_synthesizer",
+                },
+                {
+                  label: "Conflicting opinions",
+                  prompt: "Detect key conflicting opinions in this thread and where they diverge.",
+                  aiMode: "debate_synthesizer",
+                },
+                {
+                  label: "Actionable next steps",
+                  prompt: "Generate actionable next steps based on this discussion.",
+                  aiMode: "debate_synthesizer",
+                },
+                {
+                  label: "Repeated risks",
+                  prompt: "What risks are repeatedly mentioned in this thread?",
+                  aiMode: "debate_synthesizer",
+                },
+              ]}
+            />
             <ForumAiSummaryCard slug={post.slug} />
             <ConsensusInsightsCard slug={post.slug} />
             <RelatedSiteJournalsCard journals={relatedSiteJournals} />

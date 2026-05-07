@@ -25,26 +25,26 @@ function SectionList({ title, items }: { title: string; items: Item[] }) {
   const isTopicHubs = title === "Topic hubs";
   return (
     <section className={`rounded-xl border border-app bg-surface p-4 ${isTopicHubs ? "lg:col-span-2" : ""}`}>
-      <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{title}</h3>
+      <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-muted">{title}</h3>
       <ul className={isTopicHubs ? "mt-3 grid grid-cols-2 gap-2.5" : "mt-3 space-y-2.5"}>
         {items.map((item) => (
           <li key={`${title}:${item.href}`}>
             <Link
               href={item.href}
-              className={`group block rounded-lg border border-app bg-subtle px-3 py-2 transition hover:border-sky-300 hover:bg-sky-50 ${
+              className={`group block rounded-lg border border-app bg-subtle px-3 py-2 transition hover:border-orange-200 hover:bg-orange-50/40 ${
                 isTopicHubs ? "h-full" : ""
               }`}
             >
-              <p className="text-sm font-semibold text-app transition group-hover:text-sky-700 line-clamp-2">
+              <p className="text-sm font-semibold text-app transition group-hover:text-app line-clamp-2">
                 {item.title}
               </p>
-              {item.subtitle && <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">{item.subtitle}</p>}
+              {item.subtitle && <p className="mt-0.5 text-xs text-muted line-clamp-1">{item.subtitle}</p>}
               {item.reason && (
                 <div className="mt-1">
                   <ContextChip
                     text={item.reason}
                     keyword={item.title.split(" ").slice(0, 1).join(" ")}
-                    className="border-sky-200/60 bg-sky-100/70 text-sky-800 hover:text-sky-900"
+                    className="border-orange-200/50 bg-orange-50/60 text-orange-700 hover:text-orange-800"
                   />
                 </div>
               )}
@@ -69,21 +69,21 @@ export function KnowledgeEcosystemPanel({
 }: Props) {
   const confidenceTone =
     confidence === "high"
-      ? "bg-emerald-100 text-emerald-700"
+      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
       : confidence === "low"
-        ? "bg-amber-100 text-amber-700"
-        : "bg-sky-100 text-sky-700";
+        ? "bg-amber-50 text-amber-700 border border-amber-200"
+        : "bg-orange-50 text-orange-700 border border-orange-200";
 
   return (
-    <section className="mt-10 rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-indigo-50 p-5">
+    <section className="mt-10 rounded-2xl border border-app bg-surface p-5">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+        <span className="inline-flex rounded-full border border-app bg-subtle px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-app">
           Knowledge Ecosystem
         </span>
         <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${confidenceTone}`}>
           Confidence {confidence}
         </span>
-        <span className="inline-flex rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-700">
+        <span className="inline-flex rounded-full border border-app bg-subtle px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
           {freshnessLabel}
         </span>
       </div>
@@ -91,12 +91,12 @@ export function KnowledgeEcosystemPanel({
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-app">Connected knowledge for {topicLabel}</h2>
-          <p className="text-sm text-slate-600">Move between tutorials, discussions, shorts, and hubs without losing context.</p>
+          <p className="text-sm text-muted">Move between tutorials, discussions, shorts, and hubs without losing context.</p>
         </div>
         {askAiHref && (
           <Link
             href={askAiHref}
-            className="inline-flex items-center rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-400"
+            className="inline-flex items-center rounded-full border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-100"
           >
             Ask AI about this topic
           </Link>

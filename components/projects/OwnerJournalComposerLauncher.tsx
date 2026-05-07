@@ -75,7 +75,7 @@ export function OwnerJournalComposerLauncher({
               </div>
               <div className="mt-4 rounded-xl border border-app bg-surface px-3 py-2 text-xs text-app/75">
                 <p>Last update: Week {Math.max(1, currentWeek)} • Procurement Decision</p>
-                <p className="mt-1 text-muted">AI continuity: Supplier volatility previously detected in steel sourcing.</p>
+                <p className="mt-1 text-muted">From recent logs: supplier volatility was noted in earlier steel sourcing updates.</p>
               </div>
               </div>
               <SiteJournalEntryComposer

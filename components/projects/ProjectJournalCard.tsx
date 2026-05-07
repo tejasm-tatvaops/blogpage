@@ -2,16 +2,14 @@
 
 import Link from "next/link";
 import type { SiteJournalProject } from "@/data/siteJournals";
-import { cn } from "@/lib/cn";
-
-const healthMap: Record<SiteJournalProject["health"], { label: string; className: string }> = {
-  stable: { label: "Stable", className: "text-emerald-700 border-emerald-200 bg-emerald-50" },
-  watch: { label: "Watch Procurement", className: "text-amber-700 border-amber-200 bg-amber-50" },
-  risk: { label: "Delay Risk", className: "text-rose-700 border-rose-200 bg-rose-50" },
-};
 
 export function ProjectJournalCard({ project }: { project: SiteJournalProject }) {
-  const health = healthMap[project.health];
+  const contextualCover =
+    project.timelineEntries
+      .flatMap((entry) => entry.media)
+      .find((asset) => asset.type === "image")
+      ?.url ?? project.mediaCover;
+
   return (
     <Link
       href={`/projects/${project.slug}`}
@@ -19,7 +17,7 @@ export function ProjectJournalCard({ project }: { project: SiteJournalProject })
     >
       <div className="relative h-44 w-full overflow-hidden bg-subtle">
         <img
-          src={project.mediaCover}
+          src={contextualCover}
           alt={project.title}
           className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
           onError={(event) => {
@@ -27,10 +25,7 @@ export function ProjectJournalCard({ project }: { project: SiteJournalProject })
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
-        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
-          <span className={cn("rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide", health.className)}>
-            {health.label}
-          </span>
+        <div className="absolute bottom-3 right-3 flex items-center justify-end gap-2">
           <span className="rounded-full border border-white/30 bg-black/40 px-2.5 py-1 text-[10px] text-white">
             Week {project.timeline.week}
           </span>

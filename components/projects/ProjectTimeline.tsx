@@ -4,6 +4,7 @@
 import Link from "next/link";
 import type { ProjectTimelineEntry } from "@/data/siteJournals";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { buildAskHref } from "@/lib/askContext";
 
 const typeToneMap: Record<ProjectTimelineEntry["type"], string> = {
   "Progress Update": "text-emerald-700 border-emerald-200 bg-emerald-50",
@@ -29,10 +30,137 @@ const toneFxMap: Record<ProjectTimelineEntry["type"], { tint: string; glow: stri
   "Media Log": { tint: "rgba(34,211,238,0.05)", glow: "rgba(34,211,238,0.55)" },
 };
 
+function normalizeRiskFromEntryType(type: ProjectTimelineEntry["type"]): "low" | "medium" | "high" {
+  if (type === "Issue Report" || type === "Cost Change") return "high";
+  if (type === "Procurement Decision" || type === "Labor Update" || type === "Vendor Note") return "medium";
+  return "low";
+}
+
+function rankValue(risk: "low" | "medium" | "high"): number {
+  if (risk === "high") return 3;
+  if (risk === "medium") return 2;
+  return 1;
+}
+
+function confidenceForRisk(risk: "low" | "medium" | "high"): "high" | "medium" | "low" {
+  if (risk === "high") return "high";
+  if (risk === "medium") return "medium";
+  return "low";
+}
+
 function parseWeekNumber(label: string) {
   const match = label.match(/\b(\d{1,3})\b/);
   return match ? Number(match[1]) : 0;
 }
+
+function parseTimelineStart(start?: string): Date | null {
+  if (!start) return null;
+  const parsed = Date.parse(`01 ${start}`);
+  if (Number.isNaN(parsed)) return null;
+  return new Date(parsed);
+}
+
+function formatWeekDateLabel(week: number, timelineStarted?: string): string | null {
+  const startDate = parseTimelineStart(timelineStarted);
+  if (!startDate) return null;
+  const labelDate = new Date(startDate);
+  labelDate.setDate(startDate.getDate() + Math.max(0, week - 1) * 7);
+  return labelDate.toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function continuityTypeForWeek(week: number, maxWeek: number): ProjectTimelineEntry["type"] {
+  if (maxWeek <= 1) return "AI Insight";
+  const progress = week / maxWeek;
+  if (progress > 0.75) return week % 2 === 0 ? "Site Milestone" : "Progress Update";
+  if (progress > 0.45) return week % 3 === 0 ? "Procurement Decision" : "Labor Update";
+  if (progress > 0.2) return week % 2 === 0 ? "Vendor Note" : "Issue Report";
+  return week % 2 === 0 ? "Progress Update" : "AI Insight";
+}
+
+function continuityTitle(type: ProjectTimelineEntry["type"], week: number): string {
+  const titleByType: Record<ProjectTimelineEntry["type"], string[]> = {
+    "Progress Update": [
+      "Execution rhythm held steady through routine sequencing checks",
+      "Field progress remained aligned with planned handoff windows",
+    ],
+    "Procurement Decision": [
+      "Procurement follow-ups prioritized to protect next cycle",
+      "Material coordination decisions maintained supply continuity",
+    ],
+    "Cost Change": [
+      "Cost watch tightened as allocation assumptions shifted slightly",
+      "Minor commercial variation flagged for weekly review",
+    ],
+    "Issue Report": [
+      "Localized execution friction observed and contained on site",
+      "Short-cycle disruption surfaced and was handled in sequence",
+    ],
+    "Site Milestone": [
+      "Micro milestone logged to preserve execution continuity",
+      "Phase checkpoint recorded without major deviation",
+    ],
+    "Labor Update": [
+      "Crew coordination balanced to reduce overlap rework",
+      "Labor deployment adjusted to sustain workflow continuity",
+    ],
+    "Vendor Note": [
+      "Vendor alignment check completed for upcoming dependencies",
+      "Supplier communication cadence held stable this week",
+    ],
+    "AI Insight": [
+      "Weekly field review recorded from site notes and supervisor updates",
+      "Execution remained steady with routine monitoring on active fronts",
+    ],
+    "Media Log": ["Field documentation checkpoint recorded for site records"],
+  };
+  const options = titleByType[type];
+  return options[week % options.length] ?? `Week ${week} site record`;
+}
+
+function continuityNote(input: {
+  week: number;
+  maxWeek: number;
+  type: ProjectTimelineEntry["type"];
+  previousLogged?: ProjectTimelineEntry;
+  nextLogged?: ProjectTimelineEntry;
+}): string {
+  const { week, maxWeek, type, previousLogged, nextLogged } = input;
+  const previousPhrase = previousLogged
+    ? `carried forward signals last seen in ${previousLogged.weekLabel.toLowerCase()}`
+    : "maintained baseline sequencing discipline";
+  const nextPhrase = nextLogged
+    ? `while preparing for dependencies captured in ${nextLogged.weekLabel.toLowerCase()}`
+    : "while keeping upcoming execution windows protected";
+  const phase =
+    week / Math.max(1, maxWeek) > 0.66
+      ? "Early-cycle momentum remained structured"
+      : week / Math.max(1, maxWeek) > 0.33
+        ? "Mid-cycle pressure stayed manageable"
+        : "Late-cycle control checks remained active";
+
+  if (type === "Procurement Decision") {
+    return `${phase}; procurement follow-ups ${previousPhrase} ${nextPhrase}.`;
+  }
+  if (type === "Labor Update") {
+    return `${phase}; labor allocation stayed coordinated, ${previousPhrase} ${nextPhrase}.`;
+  }
+  if (type === "Vendor Note") {
+    return `${phase}; vendor communication remained stable and ${previousPhrase} ${nextPhrase}.`;
+  }
+  if (type === "Issue Report") {
+    return `${phase}; a small execution friction point was observed, then contained, and ${previousPhrase} ${nextPhrase}.`;
+  }
+  if (type === "Site Milestone") {
+    return `${phase}; a checkpoint was logged to maintain chronology, ${previousPhrase} ${nextPhrase}.`;
+  }
+  return `${phase}; execution remained under monitored continuity with teams applying routine controls, ${previousPhrase} ${nextPhrase}.`;
+}
+
 
 function PressureArc({
   segments,
@@ -86,10 +214,25 @@ export function ProjectTimeline({
   entries,
   todayWeekLabel,
   siteConditions,
+  askContextBase,
+  totalWeeks,
+  timelineStarted,
 }: {
   entries: ProjectTimelineEntry[];
   todayWeekLabel?: string;
   siteConditions?: Array<{ label: string; value: string }>;
+  askContextBase?: {
+    projectSlug: string;
+    journalTitle: string;
+    cityRegion: string;
+    risks: string;
+    tags: string;
+    discussions: string;
+    expertise: string;
+    similarProjects?: string[];
+  };
+  totalWeeks?: number;
+  timelineStarted?: string;
 }) {
   if (entries.length === 0) {
     return (
@@ -105,10 +248,102 @@ export function ProjectTimeline({
     list.sort((a, b) => parseWeekNumber(b.weekLabel) - parseWeekNumber(a.weekLabel));
     return list;
   }, [entries]);
+  const loggedWeeks = useMemo(
+    () => new Set(sortedEntries.map((entry) => parseWeekNumber(entry.weekLabel)).filter((week) => week > 0)),
+    [sortedEntries],
+  );
+  const entryByWeek = useMemo(() => {
+    const map = new Map<number, ProjectTimelineEntry>();
+    for (const entry of sortedEntries) {
+      const week = parseWeekNumber(entry.weekLabel);
+      if (week > 0 && !map.has(week)) map.set(week, entry);
+    }
+    return map;
+  }, [sortedEntries]);
+  const maxTimelineWeek = useMemo(() => {
+    const fromEntries = Math.max(0, ...sortedEntries.map((entry) => parseWeekNumber(entry.weekLabel)));
+    return Math.max(totalWeeks ?? 0, fromEntries);
+  }, [sortedEntries, totalWeeks]);
+  const continuityEntryByWeek = useMemo(() => {
+    const map = new Map<number, ProjectTimelineEntry>();
+    for (let week = maxTimelineWeek; week >= 1; week -= 1) {
+      const existing = entryByWeek.get(week);
+      if (existing) {
+        map.set(week, existing);
+        continue;
+      }
+      const previousLogged = (() => {
+        for (let w = week + 1; w <= maxTimelineWeek; w += 1) {
+          const candidate = entryByWeek.get(w);
+          if (candidate) return candidate;
+        }
+        return undefined;
+      })();
+      const nextLogged = (() => {
+        for (let w = week - 1; w >= 1; w -= 1) {
+          const candidate = entryByWeek.get(w);
+          if (candidate) return candidate;
+        }
+        return undefined;
+      })();
+      const entryType = continuityTypeForWeek(week, maxTimelineWeek);
+      map.set(week, {
+        id: `continuity-week-${week}`,
+        weekLabel: `Week ${week}`,
+        type: entryType,
+        title: continuityTitle(entryType, week),
+        note: continuityNote({
+          week,
+          maxWeek: maxTimelineWeek,
+          type: entryType,
+          previousLogged,
+          nextLogged,
+        }),
+        contributorName: "Field Documentation Desk",
+        contributorBadge: "Operational Memory",
+        createdAtLabel: `${formatWeekDateLabel(week, timelineStarted) ?? `Week ${week}`} • ${
+          week % 2 === 0 ? "Backfilled from weekly records" : "Compiled from field logs"
+        }`,
+        tags:
+          entryType === "Procurement Decision"
+            ? ["procurement-watch", "supply-followup"]
+            : entryType === "Labor Update"
+              ? ["labor-coordination", "crew-balance"]
+              : entryType === "Vendor Note"
+                ? ["vendor-sequence", "dispatch-check"]
+                : entryType === "Issue Report"
+                  ? ["field-friction", "site-monitoring"]
+                  : ["weekly-log", "site-record"],
+        media: [],
+        aiSummary:
+          entryType === "Issue Report"
+            ? "Operational note: minor friction signal inferred from supervisor and crew logs."
+            : "Operational note: week summary compiled from site records to maintain chronology.",
+        commentsCount: 0,
+      });
+    }
+    return map;
+  }, [entryByWeek, maxTimelineWeek, timelineStarted]);
+  const timelineRows = useMemo(
+    () =>
+      Array.from({ length: maxTimelineWeek }, (_, idx) => {
+        const week = maxTimelineWeek - idx;
+        const entry = continuityEntryByWeek.get(week);
+        return {
+          week,
+          entry,
+          isMissing: !entryByWeek.get(week),
+        };
+      }),
+    [continuityEntryByWeek, entryByWeek, maxTimelineWeek],
+  );
 
   const initialActiveWeek = parseWeekNumber(todayWeekLabel ?? sortedEntries[0]?.weekLabel ?? "0");
   const [activeIndex, setActiveIndex] = useState(0);
-  const activeEntry = sortedEntries[activeIndex] ?? sortedEntries[0];
+  const activeEntry =
+    timelineRows[activeIndex]?.entry ??
+    timelineRows.find((row) => row.entry)?.entry ??
+    sortedEntries[0];
   const activeFx = toneFxMap[activeEntry.type] ?? toneFxMap["Procurement Decision"];
   const activeWeekNum = parseWeekNumber(activeEntry.weekLabel) || initialActiveWeek || parseWeekNumber(sortedEntries[0].weekLabel);
 
@@ -134,7 +369,7 @@ export function ProjectTimeline({
   }, [activeEntry.type, activeWeekNum, sortedEntries]);
 
   useEffect(() => {
-    sectionRefs.current = sectionRefs.current.slice(0, sortedEntries.length);
+    sectionRefs.current = sectionRefs.current.slice(0, timelineRows.length);
     const els = sectionRefs.current.filter(Boolean) as HTMLElement[];
     if (els.length === 0) return;
     const io = new IntersectionObserver(
@@ -150,7 +385,7 @@ export function ProjectTimeline({
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [sortedEntries.length]);
+  }, [timelineRows.length]);
 
   useEffect(() => {
     // Subtle parallax only for media blocks that exist.
@@ -195,12 +430,104 @@ export function ProjectTimeline({
         </div>
       ) : null}
 
+      {maxTimelineWeek > 0 ? (
+        <div className="mb-8 rounded-xl border border-app/70 bg-subtle/40 p-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Week ledger</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {Array.from({ length: maxTimelineWeek }, (_, idx) => maxTimelineWeek - idx).map((week) => (
+              <span
+                key={`week-ledger-${week}`}
+                className={
+                  loggedWeeks.has(week)
+                    ? "rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] text-orange-700"
+                    : "rounded-full border border-app bg-surface px-2.5 py-1 text-[11px] text-muted"
+                }
+              >
+                Week {week} {loggedWeeks.has(week) ? "• recorded on site" : "• backfilled from weekly records"}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="relative space-y-16 pl-12">
         <div
           className="pointer-events-none absolute bottom-0 left-4 top-2 w-px bg-gradient-to-b from-orange-300/70 via-orange-400 to-amber-300/60 transition-all duration-700"
           style={{ boxShadow: `0 0 18px var(--sj-glow)` }}
         />
-        {sortedEntries.map((entry, index) => {
+        {timelineRows.map((row, index) => {
+          const entry = row.entry;
+          if (!entry) return null;
+          const previousEntry = (() => {
+            for (let week = row.week - 1; week >= 1; week -= 1) {
+              const prior = entryByWeek.get(week);
+              if (prior) return prior;
+            }
+            return undefined;
+          })();
+          const currentRisk = normalizeRiskFromEntryType(entry.type);
+          const previousRisk = previousEntry ? normalizeRiskFromEntryType(previousEntry.type) : currentRisk;
+          const confidence = confidenceForRisk(currentRisk);
+          const consecutiveRiskWeeks = (() => {
+            let count = 0;
+            for (let i = index; i < timelineRows.length; i += 1) {
+              const candidate = timelineRows[i]?.entry;
+              if (!candidate) break;
+              const risk = normalizeRiskFromEntryType(candidate.type);
+              if (risk === currentRisk && rankValue(risk) >= 2) count += 1;
+              else break;
+            }
+            return count;
+          })();
+          const patternDetection =
+            rankValue(currentRisk) >= 2 && consecutiveRiskWeeks >= 2
+              ? `${entry.type} signal is persisting for ${consecutiveRiskWeeks} consecutive logged weeks.`
+              : rankValue(currentRisk) >= 2
+                ? `${entry.type} signal appears this week and needs close tracking in the next cycle.`
+                : "Execution signal remains comparatively stable against recent entries.";
+          const changeDetection = previousEntry
+            ? rankValue(currentRisk) > rankValue(previousRisk)
+              ? `Risk intensity increased from ${previousEntry.type} to ${entry.type} this week.`
+              : rankValue(currentRisk) < rankValue(previousRisk)
+                ? `Risk intensity reduced relative to ${previousEntry.type}; this indicates partial stabilization.`
+                : `Signal profile remains in the same band as ${previousEntry.type}, suggesting continuity in site pressure.`
+            : "Baseline entry established for ongoing signal comparison.";
+          const forecast = rankValue(currentRisk) >= 3
+            ? "At current pace, next 2 weeks may see schedule compression and procurement spillover unless mitigation starts immediately."
+            : rankValue(currentRisk) === 2
+              ? "If this pattern persists, next 2 weeks are likely to show moderate execution drag with localized delays."
+              : "Next 2 weeks are likely to remain stable if current controls and sequencing discipline continue.";
+          const similarHistorical =
+            rankValue(currentRisk) >= 2
+              ? "Similar pressure signatures have appeared in parallel residential journals during vendor transition windows."
+              : "Comparable journals show stable progression when this signal remains in the low-risk band.";
+          const previousObserved = (() => {
+            if (!previousEntry) return "";
+            const prevWeek = previousEntry.weekLabel;
+            if (rankValue(currentRisk) >= 2) {
+              return `Previously observed in ${prevWeek} during ${previousEntry.type.toLowerCase()} pressure.`;
+            }
+            return `Previously observed in ${prevWeek} under relatively stable execution conditions.`;
+          })();
+          const contradictionNote =
+            previousEntry && rankValue(currentRisk) - rankValue(previousRisk) >= 2
+              ? `Execution narrative shifted significantly after ${previousEntry.type.toLowerCase()} signals.`
+              : "";
+          const crossJournalMemory = askContextBase?.similarProjects?.[0]
+            ? `Pattern resemblance noted in ${askContextBase.similarProjects[0]}.`
+            : "";
+          const confidenceLine =
+            confidence === "high"
+              ? "Repeated procurement pressure detected."
+              : confidence === "medium"
+                ? "Potential labor or sequencing instability pattern emerging."
+                : "Possible sequencing disruption inferred from current signals.";
+          const confidenceTone =
+            confidence === "high"
+              ? "text-app/90"
+              : confidence === "medium"
+                ? "text-app/75"
+                : "text-muted";
           const density = entry.media.length >= 2 || entry.commentsCount >= 12 ? "dense" : entry.media.length ? "image" : "calm";
           const shouldStamp = entry.type === "Issue Report" || entry.type === "Cost Change";
           const shouldMarker = entry.type === "Procurement Decision" || entry.type === "Issue Report";
@@ -308,6 +635,66 @@ export function ProjectTimeline({
               <p>{entry.commentsCount} discussion notes</p>
               {entry.linkedDiscussion ? <p>Related discussion: <Link href={entry.linkedDiscussion.href} className="text-orange-700 hover:text-orange-800">{entry.linkedDiscussion.title}</Link></p> : null}
             </div>
+            <div className="space-y-2 text-xs">
+              <p className={`rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 ${confidenceTone}`}>
+                <span className="font-semibold text-app/85">Operational Note</span> {confidenceLine}
+              </p>
+              <p className="rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 text-muted">
+                <span className="font-semibold text-app/85">Pattern:</span> {patternDetection}
+              </p>
+              <p className="rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 text-muted">
+                <span className="font-semibold text-app/85">Change:</span> {changeDetection}
+              </p>
+              <p className="rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 text-muted">
+                <span className="font-semibold text-app/85">Forecast:</span> {forecast}
+              </p>
+              <p className="rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 text-muted">
+                <span className="font-semibold text-app/85">Previously observed:</span> {previousObserved || "No prior recurrence signal captured yet."}
+              </p>
+              {crossJournalMemory ? (
+                <p className="rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 text-muted">
+                  <span className="font-semibold text-app/85">Cross-journal memory:</span> {crossJournalMemory}
+                </p>
+              ) : null}
+              {contradictionNote ? (
+                <p className="rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 text-app/80">
+                  <span className="font-semibold text-app/90">Narrative shift:</span> {contradictionNote}
+                </p>
+              ) : null}
+            </div>
+            {askContextBase ? (
+              <div className="flex flex-wrap gap-1.5 border-l border-app/60 pl-3 text-[11px]">
+                {[
+                  { label: "Explain impact", prompt: `Explain operational impact for ${entry.weekLabel} (${entry.type}) in ${askContextBase.journalTitle}.`, aiMode: "site_analyst" as const },
+                  { label: "Predict next issue", prompt: `Predict the next likely issue after ${entry.weekLabel} entry: ${entry.title}.`, aiMode: "planning_engineer" as const },
+                  { label: "Mitigation plan", prompt: `Generate a mitigation plan for this entry: ${entry.title}.`, aiMode: "site_analyst" as const },
+                  { label: "Compare similar", prompt: `Compare this situation with similar site patterns for ${askContextBase.cityRegion}.`, aiMode: "debate_synthesizer" as const },
+                  { label: "Forecast 2 weeks", prompt: `Forecast the next 2 weeks after this entry and key risks to watch.`, aiMode: "planning_engineer" as const },
+                ].map((chip) => (
+                  <Link
+                    key={`${entry.id}-${chip.label}`}
+                    href={buildAskHref({
+                      prompt: chip.prompt,
+                      anchor: `sj:${askContextBase.projectSlug}`,
+                      sourceType: "siteJournal",
+                      aiMode: chip.aiMode,
+                      page: "site_journal_entry",
+                      intent: chip.prompt,
+                      journal: askContextBase.journalTitle,
+                      week: entry.weekLabel,
+                      city: askContextBase.cityRegion,
+                      risks: askContextBase.risks,
+                      tags: askContextBase.tags,
+                      discussions: askContextBase.discussions,
+                      expertise: askContextBase.expertise,
+                    })}
+                    className="rounded-full border border-app/60 bg-subtle/70 px-2 py-0.5 text-[10px] tracking-wide text-muted transition hover:border-orange-200 hover:text-app hover:underline hover:decoration-orange-300 hover:shadow-[0_0_8px_rgba(251,146,60,0.14)]"
+                  >
+                    {chip.label}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
           </article>
         </section>
           );

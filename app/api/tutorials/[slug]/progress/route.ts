@@ -12,6 +12,18 @@ const schema = z.object({
   step_key: z.string().trim().min(1).max(200).optional(),
 });
 
+async function safeParseJsonBody(request: Request): Promise<unknown> {
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) return null;
+  const raw = await request.text().catch(() => "");
+  if (!raw.trim()) return null;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+}
+
 function identityFromRequest(request: Request): string {
   const fp = getFingerprintFromRequest(request);
   if (fp) return `fp:${fp}`;
@@ -39,7 +51,7 @@ export async function POST(
 ) {
   const { slug } = await params;
   const identityKey = identityFromRequest(request);
-  const parsed = schema.safeParse(await request.json().catch(() => null));
+  const parsed = schema.safeParse(await safeParseJsonBody(request));
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
 
   if (parsed.data.action === "complete") {

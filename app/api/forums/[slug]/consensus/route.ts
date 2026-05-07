@@ -48,6 +48,8 @@ const extractJson = (text: string): string => {
 
 const memoryCache = new Map<string, { expiresAt: number; payload: unknown }>();
 
+const DEGRADED_RETRY_AFTER_SECONDS = 90;
+
 function flattenComments(comments: Comment[]): Comment[] {
   const result: Comment[] = [];
   const stack = [...comments];
@@ -112,6 +114,49 @@ function deriveInteractionCount(post: {
   return Math.max(0, Math.round(base));
 }
 
+function isRateLimitedError(message: string): boolean {
+  return /\b429\b|rate limit|too many requests/i.test(message);
+}
+
+function buildDegradedConsensus(input: {
+  analyzedComments: number;
+  analyzedInteractions: number;
+}): z.infer<typeof consensusSchema> {
+  return {
+    consensusLevel: 50,
+    consensusLabel: "Mixed Opinions",
+    agreements: [
+      "Discussion shows useful operational signals but AI consensus generation is temporarily constrained.",
+      "Use the current thread context and recent comments to guide next field actions.",
+    ],
+    debate: {
+      question: "What should be prioritized until full AI consensus is available again?",
+      sideA: {
+        title: "Act on latest signals",
+        points: [
+          "Prioritize comments with repeated risk or procurement references.",
+          "Document immediate mitigation choices in the next site update.",
+        ],
+      },
+      sideB: {
+        title: "Wait for fuller synthesis",
+        points: [
+          "Review additional incoming comments before locking decisions.",
+          "Re-run consensus shortly to include broader discussion context.",
+        ],
+      },
+    },
+    recommendations: [
+      "Review the top-voted comments and capture one action item per theme.",
+      "Cross-check this thread with related Site Journals and tags.",
+      "Retry AI consensus in a few minutes for a fuller synthesis.",
+    ],
+    confidence: "Low",
+    analyzedComments: input.analyzedComments,
+    analyzedInteractions: input.analyzedInteractions,
+  };
+}
+
 export async function GET(req: Request, context: RouteContext) {
   const { slug } = await context.params;
   const post = await getForumPostBySlug(decodeURIComponent(slug));
@@ -134,9 +179,7 @@ export async function GET(req: Request, context: RouteContext) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 28);
 
-  if (flattened.length < 5) {
-    return NextResponse.json({}, { status: 204 });
-  }
+  if (flattened.length < 5) return new Response(null, { status: 204 });
 
   const analyzedInteractions = deriveInteractionCount(post);
   const commentPack = flattened
@@ -195,6 +238,7 @@ ${commentPack}`;
     },
   ].filter(Boolean) as Array<{ url: string; apiKey: string; model: string; supportsResponseFormat: boolean }>;
 
+  let sawRateLimit = false;
   for (const provider of providers) {
     try {
       const raw = await callAiProvider({
@@ -213,8 +257,25 @@ ${commentPack}`;
         headers: { "Cache-Control": "public, max-age=300, s-maxage=900, stale-while-revalidate=1800" },
       });
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (isRateLimitedError(message)) sawRateLimit = true;
       logger.warn({ error: err }, "Forum consensus provider failed, trying fallback");
     }
+  }
+
+  if (sawRateLimit) {
+    const degraded = buildDegradedConsensus({
+      analyzedComments: flattened.length,
+      analyzedInteractions,
+    });
+    return NextResponse.json(degraded, {
+      status: 200,
+      headers: {
+        "Retry-After": String(DEGRADED_RETRY_AFTER_SECONDS),
+        "X-AI-Degraded": "rate-limited",
+        "Cache-Control": "public, max-age=60, s-maxage=120, stale-while-revalidate=300",
+      },
+    });
   }
 
   return NextResponse.json({ error: "Consensus extraction failed." }, { status: 503 });

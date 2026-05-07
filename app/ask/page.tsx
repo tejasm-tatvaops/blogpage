@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getAllPosts } from "@/lib/blogService";
 import { UniversalAskClient } from "@/components/ask/UniversalAskClient";
 import { getProjectJournalsPersistent } from "@/lib/siteJournalService";
+import { getForumPosts } from "@/lib/forumService";
 
 export const metadata: Metadata = {
   title: "Ask AI | TatvaOps",
@@ -12,6 +13,8 @@ type AskPageProps = {
   searchParams?: Promise<{
     prompt?: string;
     anchor?: string;
+    sourceType?: "blog" | "siteJournal" | "forum";
+    aiMode?: "site_analyst" | "cost_strategist" | "planning_engineer" | "safety_auditor" | "debate_synthesizer";
     journal?: string;
     week?: string;
     city?: string;
@@ -19,13 +22,16 @@ type AskPageProps = {
     tags?: string;
     discussions?: string;
     expertise?: string;
+    intent?: string;
+    page?: string;
   }>;
 };
 
 export default async function AskPage({ searchParams }: AskPageProps) {
-  const [posts, journals] = await Promise.all([
+  const [posts, journals, forumsResult] = await Promise.all([
     getAllPosts({ limit: 60 }).catch(() => []),
     getProjectJournalsPersistent().then((items) => items.slice(0, 30)),
+    getForumPosts({ sort: "hot", limit: 30, page: 1 }).catch(() => ({ posts: [] })),
   ]);
   const blogOptions = posts.map((post) => ({
     slug: post.slug,
@@ -41,11 +47,26 @@ export default async function AskPage({ searchParams }: AskPageProps) {
     category: `Site Journal • ${journal.city}`,
     sourceType: "siteJournal" as const,
   }));
-  const options = [...journalOptions, ...blogOptions];
+  const forumOptions = forumsResult.posts.map((thread) => ({
+    slug: `fr:${thread.slug}`,
+    title: thread.title,
+    tags: thread.tags ?? [],
+    category: "Forum Discussion",
+    sourceType: "forum" as const,
+  }));
+  const options = [...journalOptions, ...forumOptions, ...blogOptions];
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const initialQuery = typeof resolvedSearchParams?.prompt === "string" ? resolvedSearchParams.prompt : "";
   const initialSlug = typeof resolvedSearchParams?.anchor === "string" ? resolvedSearchParams.anchor : "";
+  const initialMode =
+    resolvedSearchParams?.aiMode === "cost_strategist" ||
+    resolvedSearchParams?.aiMode === "planning_engineer" ||
+    resolvedSearchParams?.aiMode === "safety_auditor" ||
+    resolvedSearchParams?.aiMode === "debate_synthesizer"
+      ? resolvedSearchParams.aiMode
+      : "site_analyst";
   const ecosystemContext = {
+    currentPage: typeof resolvedSearchParams?.page === "string" ? resolvedSearchParams.page : "",
     currentSiteJournal: typeof resolvedSearchParams?.journal === "string" ? resolvedSearchParams.journal : "",
     timelineWeek: typeof resolvedSearchParams?.week === "string" ? resolvedSearchParams.week : "",
     city: typeof resolvedSearchParams?.city === "string" ? resolvedSearchParams.city : "",
@@ -53,19 +74,20 @@ export default async function AskPage({ searchParams }: AskPageProps) {
     tags: typeof resolvedSearchParams?.tags === "string" ? resolvedSearchParams.tags : "",
     relatedDiscussions: typeof resolvedSearchParams?.discussions === "string" ? resolvedSearchParams.discussions : "",
     contributorExpertise: typeof resolvedSearchParams?.expertise === "string" ? resolvedSearchParams.expertise : "",
+    userIntent: typeof resolvedSearchParams?.intent === "string" ? resolvedSearchParams.intent : "",
   };
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
-      <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-indigo-50 p-6">
-        <p className="inline-flex rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+      <div className="rounded-2xl border border-app bg-surface p-6 shadow-sm">
+        <p className="inline-flex rounded-full bg-subtle px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-app">
           Platform AI
         </p>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-app sm:text-4xl">
-          Ask AI anything on this platform
+          Construction Intelligence Layer
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
-          Grounded in platform blogs, tutorials, forums, and shorts through the connected knowledge graph.
+        <p className="mt-2 max-w-3xl text-sm leading-7 text-muted sm:text-base">
+          Ask contextual, mode-aware intelligence across Site Journals, forums, and blogs with grounded citations and operational continuity.
         </p>
       </div>
 
@@ -73,6 +95,7 @@ export default async function AskPage({ searchParams }: AskPageProps) {
         options={options}
         initialQuery={initialQuery}
         initialSlug={initialSlug}
+        initialAiMode={initialMode}
         ecosystemContext={ecosystemContext}
       />
     </section>

@@ -3,6 +3,7 @@ import { getPostBySlug } from "@/lib/blogService";
 import { createRateLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rateLimit";
 import { buildAskAiGraphContextWithQuery, buildSourceAppendix } from "@/lib/askAiGraph";
 import { getProjectBySlugPersistent } from "@/lib/siteJournalService";
+import { getForumPostBySlug } from "@/lib/forumService";
 import { getSystemToggles } from "@/lib/systemToggles";
 import { recordMetric } from "@/lib/observability";
 import { recordAskAiQualitySample } from "@/lib/askAiQualityMetrics";
@@ -10,6 +11,7 @@ import { recordAskAiQualitySample } from "@/lib/askAiQualityMetrics";
 const askAiLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 
 type Mode = "ask" | "summarize" | "eli5";
+type AiMode = "site_analyst" | "cost_strategist" | "planning_engineer" | "safety_auditor" | "debate_synthesizer";
 type RouteContext = { params: Promise<{ slug: string }> };
 
 const SYSTEM_PROMPTS: Record<Mode, string> = {
@@ -17,6 +19,19 @@ const SYSTEM_PROMPTS: Record<Mode, string> = {
   summarize:
     "Summarize the provided platform knowledge pack in under 220 words with key points and useful numbers/facts. Include [S#] citations.",
   eli5: "Explain the provided platform knowledge pack in very simple language for a beginner. Keep it short and clear. Include [S#] citations.",
+};
+
+const AI_MODE_PROMPTS: Record<AiMode, string> = {
+  site_analyst:
+    "You are a Site Analyst. Focus on execution state, operational risks, recurring patterns, and immediate site actions grounded in source evidence.",
+  cost_strategist:
+    "You are a Cost Strategist. Focus on budget pressure, procurement volatility, and financially practical mitigation options grounded in source evidence.",
+  planning_engineer:
+    "You are a Planning Engineer. Focus on sequence dependencies, likely bottlenecks, and next-cycle execution planning grounded in source evidence.",
+  safety_auditor:
+    "You are a Safety Auditor. Focus on hazard cues, compliance gaps, and preventive controls grounded in source evidence. Do not invent incidents.",
+  debate_synthesizer:
+    "You are a Debate Synthesizer. Focus on consensus points, strongest conflicting viewpoints, and practical decision framing grounded in source evidence.",
 };
 
 const truncateContent = (content: string, maxWords = 3000): string => {
@@ -165,13 +180,20 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
   let question = "";
   let mode: Mode = "ask";
+  let aiMode: AiMode = "site_analyst";
   let extraContext = "";
+  let anchorType: "blog" | "siteJournal" | "forum" = "blog";
+  let sourceContext = "";
+  let sourceAppendixFallback = "";
   try {
     const body = (await req.json()) as {
       question?: string;
       mode?: string;
-      anchorType?: "blog" | "siteJournal";
+      aiMode?: AiMode;
+      anchorType?: "blog" | "siteJournal" | "forum";
+      attachedContext?: string;
       ecosystemContext?: {
+        currentPage?: string;
         currentSiteJournal?: string;
         timelineWeek?: string;
         city?: string;
@@ -179,20 +201,41 @@ export async function POST(req: NextRequest, context: RouteContext) {
         tags?: string;
         relatedDiscussions?: string;
         contributorExpertise?: string;
+        userIntent?: string;
       };
     };
     question = String(body.question ?? "").trim().slice(0, 500);
     if (body.mode === "summarize" || body.mode === "eli5") mode = body.mode;
-    const anchorType = body.anchorType === "siteJournal" ? "siteJournal" : "blog";
+    if (body.aiMode && AI_MODE_PROMPTS[body.aiMode]) aiMode = body.aiMode;
+    anchorType = body.anchorType === "siteJournal" || body.anchorType === "forum" ? body.anchorType : "blog";
     const journal = anchorType === "siteJournal" ? await getProjectBySlugPersistent(slug, true) : null;
+    const forum = anchorType === "forum" ? await getForumPostBySlug(decodeURIComponent(slug)) : null;
+    if (anchorType === "siteJournal" && !journal) {
+      return NextResponse.json({ error: "Site Journal not found." }, { status: 404 });
+    }
+    if (anchorType === "forum" && !forum) {
+      return NextResponse.json({ error: "Forum thread not found." }, { status: 404 });
+    }
     const journalContext = journal
-      ? `\n\nSite Journal context:\n- Journal: ${journal.title}\n- City/Region: ${journal.city}, ${journal.region}\n- Timeline week: ${journal.timeline.week}\n- Stage: ${journal.timeline.stage}\n- Risks: ${journal.aiRiskPulse}\n- Procurement: ${journal.procurementSignal}\n- Related discussions: ${journal.timelineEntries.map((entry) => entry.linkedDiscussion?.title).filter(Boolean).join("; ") || "None"}\n`
+      ? `Site Journal context:\n- Journal: ${journal.title}\n- City/Region: ${journal.city}, ${journal.region}\n- Timeline week: ${journal.timeline.week}\n- Stage: ${journal.timeline.stage}\n- Risks: ${journal.aiRiskPulse}\n- Procurement: ${journal.procurementSignal}\n- Recent entries: ${journal.timelineEntries.slice(0, 4).map((entry) => `${entry.weekLabel} ${entry.type}: ${entry.title} (${entry.note.slice(0, 120)})`).join(" | ")}\n`
       : "";
+    const forumContext = forum
+      ? `Forum thread context:\n- Thread: ${forum.title}\n- Tags: ${forum.tags.join(", ")}\n- Excerpt: ${forum.excerpt}\n- Opening post: ${truncateContent(forum.content, 1200)}\n- Comment count: ${forum.comment_count}\n- Linked blog: ${forum.linked_blog_slug ?? "None"}\n`
+      : "";
+    sourceContext = anchorType === "siteJournal" ? journalContext : anchorType === "forum" ? forumContext : "";
+    sourceAppendixFallback =
+      anchorType === "siteJournal"
+        ? `\n\nSources:\n[S1] Site Journal: ${journal?.title ?? slug}`
+        : anchorType === "forum"
+          ? `\n\nSources:\n[S1] Forum thread: ${forum?.title ?? slug}`
+          : "";
     const ecosystem = body.ecosystemContext;
+    const attachedContext = String(body.attachedContext ?? "").trim().slice(0, 5000);
     const ecosystemContext = ecosystem
-      ? `\n\nEcosystem context:\n- Current site journal: ${ecosystem.currentSiteJournal ?? ""}\n- Timeline week: ${ecosystem.timelineWeek ?? ""}\n- Region/city: ${ecosystem.city ?? ""}\n- Active risks: ${ecosystem.activeRisks ?? ""}\n- Related discussions: ${ecosystem.relatedDiscussions ?? ""}\n- Contributor expertise: ${ecosystem.contributorExpertise ?? ""}\n- Tags: ${ecosystem.tags ?? ""}\n`
+      ? `\n\nEcosystem context:\n- Current page: ${ecosystem.currentPage ?? ""}\n- Current site journal: ${ecosystem.currentSiteJournal ?? ""}\n- Timeline week: ${ecosystem.timelineWeek ?? ""}\n- Region/city: ${ecosystem.city ?? ""}\n- Active risks: ${ecosystem.activeRisks ?? ""}\n- Related discussions: ${ecosystem.relatedDiscussions ?? ""}\n- Contributor expertise: ${ecosystem.contributorExpertise ?? ""}\n- Tags: ${ecosystem.tags ?? ""}\n- User intent: ${ecosystem.userIntent ?? ""}\n`
       : "";
-    extraContext = `${journalContext}${ecosystemContext}`;
+    const documentContext = attachedContext ? `\n\nAttached document excerpt:\n${attachedContext}\n` : "";
+    extraContext = `${sourceContext}${ecosystemContext}${documentContext}`;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
@@ -201,8 +244,8 @@ export async function POST(req: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "question is required for ask mode." }, { status: 400 });
   }
 
-  const post = await getPostBySlug(slug);
-  if (!post) {
+  const post = anchorType === "blog" ? await getPostBySlug(slug) : null;
+  if (anchorType === "blog" && !post) {
     return NextResponse.json({ error: "Article not found." }, { status: 404 });
   }
 
@@ -210,18 +253,26 @@ export async function POST(req: NextRequest, context: RouteContext) {
   const toggles = getSystemToggles();
   let graphContext = null;
   try {
-    graphContext = graphEnabled ? await buildAskAiGraphContextWithQuery(post, question || mode) : null;
+    graphContext = graphEnabled && post ? await buildAskAiGraphContextWithQuery(post, question || mode) : null;
   } catch (e) {
     console.error("buildAskAiGraphContext failed:", e);
   }
   const articleContext = graphContext
     ? graphContext.contextText
-    : truncateContent(post.content);
-  const systemPrompt = SYSTEM_PROMPTS[mode];
+    : post
+      ? truncateContent(post.content)
+      : sourceContext;
+  const systemPrompt = `${SYSTEM_PROMPTS[mode]} ${AI_MODE_PROMPTS[aiMode]}`;
+  const surfaceFormatInstruction =
+    anchorType === "siteJournal"
+      ? "Response format: operational and predictive. Include timeline-aware implications, near-term risks, and 2-5 concrete actions."
+      : anchorType === "forum"
+        ? "Response format: consensus-oriented and contradiction-aware. Separate agreement points, disagreement points, and practical decision steps."
+        : "Response format: educational + actionable. Be concise and implementation-oriented with practical checklists where helpful.";
   const userPrompt =
     mode === "ask"
-      ? `Platform knowledge pack:\n\n${articleContext}${extraContext}\n\nQuestion:\n${question}\n\nReturn concise answer and cite references like [S1], [S2].`
-      : `Platform knowledge pack:\n\n${articleContext}${extraContext}\n\nProvide concise output with [S#] citations.`;
+      ? `Platform knowledge pack:\n\n${articleContext}${extraContext}\n\nQuestion:\n${question}\n\n${surfaceFormatInstruction}\n\nReturn concise answer and cite references like [S1], [S2].`
+      : `Platform knowledge pack:\n\n${articleContext}${extraContext}\n\n${surfaceFormatInstruction}\n\nProvide concise output with [S#] citations.`;
   const maxSourceIndex = graphContext?.sources.length ?? 1;
 
   const firstAnswer = await completeWithFallback(systemPrompt, userPrompt);
@@ -308,7 +359,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     console.error("Metrics failed:", e);
   }
 
-  const sourceAppendix = graphContext ? buildSourceAppendix(graphContext.sources) : "";
+  const sourceAppendix = graphContext ? buildSourceAppendix(graphContext.sources) : sourceAppendixFallback;
   const finalText = `${answer.trim()}${confidenceLine}${conflictLine}${sourceAppendix}`.trim();
   const responseStream = streamTextAsSse(finalText);
 
