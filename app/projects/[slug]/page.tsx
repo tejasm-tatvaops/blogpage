@@ -9,6 +9,8 @@ import { SITE_JOURNALS } from "@/data/siteJournals";
 import { getProjectBySlugPersistent, getSiteJournalMemoryInsights } from "@/lib/siteJournalService";
 import { authOptions } from "@/lib/auth";
 
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com").replace(/\/+$/, "");
+
 type ProjectDetailPageProps = {
   params: Promise<{ slug: string }>;
   searchParams?: Promise<{ startFieldNote?: string }>;
@@ -18,9 +20,32 @@ export async function generateMetadata({ params }: ProjectDetailPageProps): Prom
   const { slug } = await params;
   const project = await getProjectBySlugPersistent(slug, true);
   if (!project) return { title: "Site Journal not found | TatvaOps" };
+  const canonicalUrl = `${SITE_URL}/projects/${project.slug}`;
+  const socialImage =
+    project.mediaCover && (project.mediaCover.startsWith("http://") || project.mediaCover.startsWith("https://"))
+      ? project.mediaCover
+      : project.mediaCover
+        ? `${SITE_URL}${project.mediaCover.startsWith("/") ? project.mediaCover : `/${project.mediaCover}`}`
+        : undefined;
   return {
     title: `${project.title} | Site Journal | TatvaOps`,
     description: project.aiSummary,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      type: "article",
+      url: canonicalUrl,
+      title: `${project.title} | Site Journal`,
+      description: project.aiSummary,
+      siteName: "TatvaOps",
+      ...(socialImage ? { images: [{ url: socialImage, alt: project.title }] } : {}),
+    },
+    twitter: {
+      card: socialImage ? "summary_large_image" : "summary",
+      title: `${project.title} | Site Journal`,
+      description: project.aiSummary,
+      ...(socialImage ? { images: [socialImage] } : {}),
+      site: "@tatvaops",
+    },
   };
 }
 

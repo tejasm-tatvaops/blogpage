@@ -4,9 +4,26 @@ import Link from "next/link";
 import { getTutorials, getLearningPaths } from "@/lib/tutorialService";
 import { extractVideoSource, getTutorialVideoSource, getYoutubeThumbnailUrlFromSourceUrl } from "@/lib/tutorialVideo";
 
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com").replace(/\/+$/, "");
+const TUTORIALS_URL = `${SITE_URL}/tutorials`;
+
 export const metadata: Metadata = {
   title: "Tutorials",
   description: "Step-by-step tutorials, onboarding guides, and learning paths for TatvaOps users.",
+  alternates: { canonical: TUTORIALS_URL },
+  openGraph: {
+    type: "website",
+    url: TUTORIALS_URL,
+    title: "Tutorials & Guides | TatvaOps",
+    description: "Step-by-step tutorials and practical learning paths for construction workflows and estimation.",
+    siteName: "TatvaOps",
+  },
+  twitter: {
+    card: "summary",
+    title: "Tutorials & Guides | TatvaOps",
+    description: "Learn construction estimation and execution workflows with practical TatvaOps tutorials.",
+    site: "@tatvaops",
+  },
 };
 
 const DIFFICULTY_STYLES: Record<string, { pill: string; label: string }> = {

@@ -2,17 +2,21 @@ import type { MetadataRoute } from "next";
 import { getAllPublishedPosts, getCategories, getAllTags } from "@/lib/blogService";
 import { getForumPosts, getAllForumTags } from "@/lib/forumService";
 import { getAllVideoSlugs } from "@/lib/videoService";
+import { getTutorials } from "@/lib/tutorialService";
+import { getProjectJournalsPersistent } from "@/lib/siteJournalService";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [posts, categories, forumResult, blogTags, forumTags, videoSlugs] = await Promise.all([
+  const [posts, categories, forumResult, blogTags, forumTags, videoSlugs, tutorialsResult, siteJournals] = await Promise.all([
     getAllPublishedPosts({ limit: 1000 }).catch(() => []),
     getCategories().catch(() => []),
     getForumPosts({ sort: "new", limit: 50, page: 1 }).catch(() => ({ posts: [] })),
     getAllTags().catch(() => [] as string[]),
     getAllForumTags().catch(() => [] as string[]),
     getAllVideoSlugs().catch(() => [] as string[]),
+    getTutorials({ limit: 1000, includeUnpublished: false }).catch(() => ({ tutorials: [] })),
+    getProjectJournalsPersistent().catch(() => []),
   ]);
 
   const forumPosts = forumResult.posts ?? [];
@@ -35,6 +39,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/projects`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/tutorials`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/ask`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.65,
+    },
+    {
+      url: `${siteUrl}/supplier`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.6,
     },
   ];
 
@@ -89,5 +117,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...tagRoutes, ...shortsStaticRoute, ...postRoutes, ...forumRoutes, ...videoRoutes];
+  const tutorialRoutes: MetadataRoute.Sitemap = (tutorialsResult.tutorials ?? [])
+    .map((tutorial) => {
+      const slug = typeof tutorial.slug === "string" ? tutorial.slug : "";
+      if (!slug) return null;
+      return {
+        url: `${siteUrl}/tutorials/${slug}`,
+        lastModified: tutorial.created_at ? new Date(tutorial.created_at) : new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.72,
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+
+  const projectRoutes: MetadataRoute.Sitemap = siteJournals.map((project) => ({
+    url: `${siteUrl}/projects/${project.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.78,
+  }));
+
+  return [
+    ...staticRoutes,
+    ...categoryRoutes,
+    ...tagRoutes,
+    ...shortsStaticRoute,
+    ...postRoutes,
+    ...forumRoutes,
+    ...videoRoutes,
+    ...tutorialRoutes,
+    ...projectRoutes,
+  ];
 }

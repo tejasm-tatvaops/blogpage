@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { getAllPosts } from "@/lib/blogService";
 import { getForumPosts } from "@/lib/forumService";
 import { getTutorials } from "@/lib/tutorialService";
@@ -7,6 +8,32 @@ import RecommendedCarousel from "@/components/home/RecommendedCarousel";
 import ContinueLearningCarousel from "@/components/home/ContinueLearningCarousel";
 import { HeroSection } from "@/components/home/HeroSection";
 import { getRelatedSiteJournalsBySignalsPersistent } from "@/lib/siteJournalService";
+
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com").replace(/\/+$/, "");
+
+export const metadata: Metadata = {
+  title: "TatvaOps | AI-Powered Construction Content and Intelligence",
+  description:
+    "TatvaOps unifies construction blogs, forums, tutorials, site journals, and AI insights for estimation, procurement, and execution intelligence.",
+  alternates: {
+    canonical: SITE_URL,
+  },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    title: "TatvaOps | AI-Powered Construction Content and Intelligence",
+    description:
+      "A connected construction intelligence platform for practical learning, discussion, and operational execution.",
+    siteName: "TatvaOps",
+  },
+  twitter: {
+    card: "summary",
+    title: "TatvaOps | Construction Intelligence Platform",
+    description: "AI-powered construction blogs, forums, tutorials, and site journals in one ecosystem.",
+    site: "@tatvaops",
+  },
+};
+
 export default async function HomePage() {
   const [latestBlogs, trendingForumsResult, tutorialsResult, videoTags] = await Promise.all([
     getAllPosts({ limit: 10 }).catch(() => []),

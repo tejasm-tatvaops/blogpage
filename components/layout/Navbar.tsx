@@ -61,7 +61,17 @@ export function Navbar() {
             : "md:left-[calc(50%+64px)] md:-translate-x-1/2",
         )}
       >
-        <div className="grid h-[50px] w-full grid-cols-1 items-center gap-[10px] px-[14px] leading-none md:grid-cols-[auto_1fr_auto] md:px-0">
+        <div className="flex h-[50px] w-full items-center gap-[10px] px-[14px] leading-none md:grid md:grid-cols-[auto_1fr_auto] md:px-0">
+          <Link href="/" className="shrink-0 md:hidden" aria-label="TatvaOps home">
+            <Image
+              src="/tatvaops-logo-transparent.png"
+              alt="TatvaOps"
+              width={430}
+              height={108}
+              className="h-6 w-auto object-contain"
+              priority
+            />
+          </Link>
           <Link href="/" className="hidden shrink-0 md:block" aria-label="TatvaOps home">
             <Image
               src="/tatvaops-logo-transparent.png"

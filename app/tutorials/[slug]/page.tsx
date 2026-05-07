@@ -19,14 +19,39 @@ import { extractInlineVideoSource, getTutorialVideoSource } from "@/lib/tutorial
 import { LearningExperience } from "@/components/tutorial/LearningExperience";
 
 type Params = { slug: string };
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com").replace(/\/+$/, "");
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   const tutorial = await getTutorialBySlug(decodeURIComponent(slug)).catch(() => null);
   if (!tutorial) return { title: "Tutorial Not Found" };
+  const t = tutorial as unknown as { title: string; excerpt: string; slug: string; cover_image?: string | null };
+  const canonicalUrl = `${SITE_URL}/tutorials/${t.slug}`;
+  const socialImage =
+    t.cover_image && (t.cover_image.startsWith("http://") || t.cover_image.startsWith("https://"))
+      ? t.cover_image
+      : t.cover_image
+        ? `${SITE_URL}${t.cover_image.startsWith("/") ? t.cover_image : `/${t.cover_image}`}`
+        : undefined;
   return {
-    title: (tutorial as unknown as { title: string }).title,
-    description: (tutorial as unknown as { excerpt: string }).excerpt,
+    title: t.title,
+    description: t.excerpt,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      type: "article",
+      url: canonicalUrl,
+      title: t.title,
+      description: t.excerpt,
+      siteName: "TatvaOps",
+      ...(socialImage ? { images: [{ url: socialImage, alt: t.title }] } : {}),
+    },
+    twitter: {
+      card: socialImage ? "summary_large_image" : "summary",
+      title: t.title,
+      description: t.excerpt,
+      ...(socialImage ? { images: [socialImage] } : {}),
+      site: "@tatvaops",
+    },
   };
 }
 

@@ -4,9 +4,26 @@ import { UniversalAskClient } from "@/components/ask/UniversalAskClient";
 import { getProjectJournalsPersistent } from "@/lib/siteJournalService";
 import { getForumPosts } from "@/lib/forumService";
 
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com").replace(/\/+$/, "");
+const ASK_URL = `${SITE_URL}/ask`;
+
 export const metadata: Metadata = {
   title: "Ask AI | TatvaOps",
   description: "Ask AI across TatvaOps platform knowledge with grounded citations.",
+  alternates: { canonical: ASK_URL },
+  openGraph: {
+    type: "website",
+    url: ASK_URL,
+    title: "Ask AI | TatvaOps",
+    description: "Get contextual construction intelligence across blogs, forums, and site journals.",
+    siteName: "TatvaOps",
+  },
+  twitter: {
+    card: "summary",
+    title: "Ask AI | TatvaOps",
+    description: "Context-aware construction AI for execution, procurement, and planning decisions.",
+    site: "@tatvaops",
+  },
 };
 
 type AskPageProps = {
