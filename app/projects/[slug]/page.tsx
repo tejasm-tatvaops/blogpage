@@ -43,14 +43,14 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
     `Predict budget and site timeline risk for ${project.title} using current journal signals.`,
     `Suggest vendor diversification and labor mitigation actions for ${project.title}.`,
   ];
-
+  const linkedDiscussion = project.timelineEntries.find((entry) => entry.linkedDiscussion)?.linkedDiscussion;
+  const inlineNotes = memoryInsights.length ? memoryInsights.slice(0, 3) : project.recommendations.slice(0, 3);
   const weeklySummary = [
     project.aiRiskPulse,
     `${project.executionStatus}.`,
     `${project.procurementSignal}.`,
     project.recommendations[0] ?? "Maintain close monitoring on upcoming execution dependencies.",
   ];
-
   const healthHistory = [
     { week: "Week 10", state: "Stable", tone: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     { week: "Week 12", state: "Watch Procurement", tone: "bg-amber-50 text-amber-700 border-amber-200" },
@@ -59,181 +59,203 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   ];
 
   return (
-    <main className="mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8">
-      <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/85 p-6">
-        <img
-          src={project.mediaCover}
-          alt={project.title}
-          className="absolute inset-0 h-full w-full object-cover opacity-20"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/80 via-slate-900/55 to-slate-950/85" />
-        <div className="relative grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-          <div>
-            <p className="text-xs uppercase tracking-[0.13em] text-orange-200">Site Journal</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">{project.title}</h1>
-            <p className="mt-2 text-sm text-white/75">
-              {project.projectType} - {project.city}, {project.region} ({project.marketType})
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full border border-white/15 bg-black/25 px-3 py-1 text-white/80">Started {project.timeline.started}</span>
-              <span className="rounded-full border border-white/15 bg-black/25 px-3 py-1 text-white/80">{project.timeline.week} weeks active</span>
-              <span className="rounded-full border border-orange-300/40 bg-orange-500/10 px-3 py-1 text-orange-100">{project.leadContributor.badge}</span>
-            </div>
-            <p className="mt-3 text-xs text-white/70">
-              Maintained by {project.leadContributor.name} • {project.leadContributor.badge} • Tracking since {project.timeline.started}
-            </p>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-white/80">{project.aiSummary}</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {project.contributors.map((contributor) => (
-                <span key={`${contributor.name}-${contributor.badge}`} className="rounded-full border border-white/15 bg-black/25 px-3 py-1 text-xs text-white/80">
-                  {contributor.name} - {contributor.badge}
-                </span>
-              ))}
-            </div>
+    <main className="mx-auto w-full max-w-[1280px] px-3 pb-16 pt-4 sm:px-4 lg:px-6">
+      <section className="rounded-3xl border border-app bg-surface px-3 py-5 shadow-sm sm:px-4 sm:py-6 lg:px-6">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-orange-500">Living Site Journal</p>
+          <h1 className="mt-2 max-w-3xl text-3xl font-semibold tracking-tight text-app sm:text-4xl md:text-5xl">{project.title}</h1>
+          <p className="mt-3 text-xs text-muted">
+            Maintained by {project.leadContributor.name} • {project.leadContributor.badge} • Tracking since {project.timeline.started}
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            Week {project.timeline.week} active • Last field update {project.timelineEntries[0]?.createdAtLabel ?? "recently"}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2 text-[11px]">
+            <span className="rounded-full border border-app bg-subtle px-3 py-1 text-app">
+              Execution: {project.executionStatus}
+            </span>
+            <span className="rounded-full border border-app bg-subtle px-3 py-1 text-app">
+              Delay Risk: {project.health === "risk" ? "High" : project.health === "watch" ? "Medium" : "Low"}
+            </span>
+            <span className="rounded-full border border-app bg-subtle px-3 py-1 text-app">
+              Procurement: {project.procurementSignal}
+            </span>
           </div>
-          <aside className="space-y-3 rounded-2xl border border-white/15 bg-slate-900/70 p-4 backdrop-blur">
-            <h2 className="text-sm font-semibold text-white">Site Intelligence</h2>
-            <p className="text-xs text-white/80">Budget: {project.budgetRange}</p>
-            <p className="text-xs text-white/80">Procurement: {project.procurementSignal}</p>
-            <p className="text-xs text-white/80">Execution: {project.executionStatus}</p>
-            <p className="text-xs text-white/80">Weather/Risk: {project.weatherRisk}</p>
-            <div>
-              <div className="mb-1 flex items-center justify-between text-[11px] text-white/75">
-                <span>{project.timeline.stage}</span>
-                <span>{project.timeline.progressPercent}%</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-white/20">
-                <div className="h-1.5 rounded-full bg-gradient-to-r from-orange-300 via-orange-400 to-amber-300" style={{ width: `${project.timeline.progressPercent}%` }} />
-              </div>
-            </div>
-            <div className="space-y-2 pt-1">
-              {askPrompts.map((prompt) => (
-                (() => {
-                  const askParams = new URLSearchParams({
-                    prompt,
-                    anchor: `sj:${project.slug}`,
-                    journal: project.title,
-                    week: String(project.timeline.week),
-                    city: `${project.city}, ${project.region}`,
-                    risks: project.aiRiskPulse,
-                    tags: project.tags.join(", "),
-                    discussions: project.timelineEntries
-                      .map((entry) => entry.linkedDiscussion?.title)
-                      .filter(Boolean)
-                      .join("; "),
-                    expertise: project.contributors.map((member) => member.badge).join(", "),
-                  });
-                  return (
-                <Link
-                  key={prompt}
-                  href={`/ask?${askParams.toString()}`}
-                  className="block rounded-lg border border-white/30 bg-white/95 px-2.5 py-2 text-xs font-medium text-slate-900 transition hover:bg-white"
-                >
-                  {prompt}
-                </Link>
-                  );
-                })()
-              ))}
-            </div>
-          </aside>
         </div>
       </section>
 
-      <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
-        <div>
-          <div className="sticky top-20 z-10 mb-8 rounded-2xl border border-orange-200 bg-orange-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-orange-700">AI Weekly Site Summary</p>
-            <ul className="mt-2 space-y-1 text-sm text-orange-900">
-              {weeklySummary.map((line) => <li key={line}>- {line}</li>)}
-            </ul>
-          </div>
-
-          <section className="mb-6 rounded-2xl border border-app/70 bg-surface p-4">
-            <h3 className="text-sm font-semibold text-app">Execution Health History</h3>
-            <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
-              {healthHistory.map((item) => (
-                <div key={item.week} className={`rounded-xl border p-2 text-xs ${item.tone}`}>
-                  <p className="font-semibold">{item.week}</p>
-                  <p className="mt-1">{item.state}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <h2 className="mb-4 text-xl font-semibold text-app">Site Timeline</h2>
-          <ProjectTimeline entries={project.timelineEntries} todayWeekLabel={`Week ${project.timeline.week}`} />
-          {isOwner ? (
-            <div className="mt-6 rounded-2xl border border-app bg-surface p-4">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Next Chronicle</p>
-              <p className="mt-1 text-sm text-app">Document the next execution update to continue this living site diary.</p>
-              <div className="mt-3">
-                <OwnerJournalComposerLauncher
-                  slug={project.slug}
-                  currentWeek={project.timeline.week}
-                  currentSummary={project.aiRiskPulse}
-                  showFirstNoteHint={startFieldNote || project.timelineEntries.length === 0}
-                />
-              </div>
-            </div>
-          ) : null}
+      <section className="mt-8 max-w-4xl">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-orange-600">Chronicle Intro</p>
+        <p className="mt-3 text-base leading-8 text-app/85">
+          This journal documents the evolving execution realities, procurement decisions, labor coordination, and site-level risks across the {project.title} build. Each weekly note captures what shifted on site, what pressure emerged, and how the team responded in real time.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2 text-xs">
+          {project.contributors.map((c) => (
+            <span key={`${c.name}-${c.badge}`} className="rounded-full border border-app bg-surface px-3 py-1 text-muted">
+              {c.name} • {c.badge}
+            </span>
+          ))}
         </div>
-        <aside className="space-y-3">
-          {isOwner ? (
-            <div className="rounded-2xl border border-orange-200 bg-gradient-to-b from-orange-50 to-orange-100/70 p-4">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700">Owner Actions</h3>
-              <div className="mt-2 space-y-2">
-                <OwnerJournalComposerLauncher
-                  slug={project.slug}
-                  currentWeek={project.timeline.week}
-                  currentSummary={project.aiRiskPulse}
-                  showFirstNoteHint={startFieldNote || project.timelineEntries.length === 0}
-                />
-              </div>
-            </div>
+      </section>
+
+      <section className="mt-10 max-w-5xl">
+        <div className="mb-10 space-y-4 border-l border-orange-200/70 pl-6">
+          <p className="text-sm leading-7 text-app/85">{project.aiRiskPulse}</p>
+          <p className="text-sm leading-7 text-app/85">
+            Execution pattern: {project.executionStatus}. Similar sequencing pressure appeared in {project.similarProjects[0] ?? "related regional journals"}.
+          </p>
+          {linkedDiscussion ? (
+            <p className="text-sm leading-7 text-app/85">
+              Related discussion:{" "}
+              <Link href={linkedDiscussion.href} className="text-orange-700 hover:text-orange-800">
+                {linkedDiscussion.title}
+              </Link>
+            </p>
           ) : null}
-          <div className="rounded-2xl border border-app/70 bg-surface p-4">
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Active Risks</h3>
-            <p className="mt-2 text-xs text-muted">{project.aiRiskPulse}</p>
+          {inlineNotes.map((item) => (
+            <p key={item} className="text-sm leading-7 text-muted">
+              {item}
+            </p>
+          ))}
+        </div>
+
+        <ProjectTimeline
+          entries={project.timelineEntries}
+          todayWeekLabel={`Week ${project.timeline.week}`}
+          siteConditions={[
+            { label: "Weather", value: project.weatherRisk },
+            { label: "Material Watch", value: project.procurementSignal },
+            { label: "Discussion", value: `${project.activeDiscussionCount} notes active` },
+            { label: "Site Mood", value: project.health === "risk" ? "Under pressure" : project.health === "watch" ? "Tightening windows" : "Steady" },
+          ]}
+        />
+
+        <div className="mt-14 rounded-2xl border border-dashed border-app/70 bg-subtle/30 p-6">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Next Unwritten Page</p>
+          <p className="mt-2 text-base text-app/85">Continue documenting this site&apos;s execution story.</p>
+          <div className="mt-4">
+            {isOwner ? (
+              <OwnerJournalComposerLauncher
+                slug={project.slug}
+                currentWeek={project.timeline.week}
+                currentSummary={project.aiRiskPulse}
+                showFirstNoteHint={startFieldNote || project.timelineEntries.length === 0}
+                tone="light"
+              />
+            ) : (
+              <p className="text-sm text-muted">Only the site journal maintainer can continue this weekly chronicle.</p>
+            )}
           </div>
-          <div className="rounded-2xl border border-app/70 bg-surface p-4">
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Related Site Journals</h3>
-            <div className="mt-2 space-y-1 text-xs text-muted">
-              {project.similarProjects.map((item) => <p key={item}>- {item}</p>)}
-            </div>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-orange-200 bg-orange-50 p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-orange-700">This Week • Field Summary</p>
+          <ul className="mt-3 space-y-1 text-sm text-orange-900">
+            {weeklySummary.map((line) => (
+              <li key={line}>- {line}</li>
+            ))}
+          </ul>
+        </div>
+
+        <details className="mt-10 rounded-2xl border border-app bg-surface p-5">
+          <summary className="cursor-pointer select-none text-sm font-semibold text-app">Field Appendix (signals, memory, and related intelligence)</summary>
+          <div className="mt-4 space-y-6">
+            <section>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Execution Health History</p>
+              <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+                {healthHistory.map((item) => (
+                  <div key={item.week} className={`rounded-xl border p-2 text-xs ${item.tone}`}>
+                    <p className="font-semibold">{item.week}</p>
+                    <p className="mt-1">{item.state}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-app/70 bg-surface p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Active Risks</p>
+                <p className="mt-2 text-sm leading-7 text-muted">{project.aiRiskPulse}</p>
+              </div>
+              <div className="rounded-2xl border border-app/70 bg-surface p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">AI Recommendations</p>
+                <div className="mt-2 space-y-1 text-sm text-muted">
+                  {project.recommendations.map((item) => (
+                    <p key={item}>- {item}</p>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-app/70 bg-surface p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Related Site Journals</p>
+                <div className="mt-2 space-y-1 text-sm text-muted">
+                  {project.similarProjects.map((item) => (
+                    <p key={item}>- {item}</p>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-app/70 bg-surface p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Relevant Experts</p>
+                <div className="mt-2 space-y-1 text-sm text-muted">
+                  {project.relatedExperts.map((item) => (
+                    <p key={item}>- {item}</p>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-app/70 bg-surface p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Site Memory</p>
+              <div className="mt-2 space-y-1 text-sm text-muted">
+                {(memoryInsights.length
+                  ? memoryInsights
+                  : [
+                      `Referenced earlier: supplier risk first surfaced in Week ${Math.max(1, project.timeline.week - 4)}.`,
+                      "Recurring pattern: labor sensitivity appears during high logistics volatility windows.",
+                      `AI continuity: similar sequence observed in ${project.similarProjects[0] ?? "related regional journals"}.`,
+                    ]
+                ).map((item) => (
+                  <p key={item}>- {item}</p>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-app/70 bg-surface p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Related Intelligence Graph</p>
+              <div className="mt-2 space-y-1 text-sm text-muted">
+                <p>- Related discussions: {project.timelineEntries.find((e) => e.linkedDiscussion)?.linkedDiscussion?.title ?? "Execution risk discussions"}</p>
+                <p>- Regional market signal: {project.city} procurement volatility watch.</p>
+                <p>- Related Inshorts: Execution quick briefs for {project.marketType.toLowerCase()}.</p>
+              </div>
+            </section>
           </div>
-          <div className="rounded-2xl border border-app/70 bg-surface p-4">
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Relevant Experts</h3>
-            <div className="mt-2 space-y-1 text-xs text-muted">
-              {project.relatedExperts.map((item) => <p key={item}>- {item}</p>)}
-            </div>
+        </details>
+
+        <div className="mt-10 space-y-3 border-l border-app/60 pl-6 text-sm text-muted">
+          <p>Explore related intelligence from this journal:</p>
+          <div className="flex flex-wrap gap-2">
+            {askPrompts.map((prompt) => {
+              const askParams = new URLSearchParams({
+                prompt,
+                anchor: `sj:${project.slug}`,
+                journal: project.title,
+                week: String(project.timeline.week),
+                city: `${project.city}, ${project.region}`,
+                risks: project.aiRiskPulse,
+                tags: project.tags.join(", "),
+                discussions: project.timelineEntries.map((entry) => entry.linkedDiscussion?.title).filter(Boolean).join("; "),
+                expertise: project.contributors.map((member) => member.badge).join(", "),
+              });
+              return (
+                <Link key={prompt} href={`/ask?${askParams.toString()}`} className="rounded-full border border-app bg-surface px-3 py-1.5 text-xs text-app transition hover:bg-subtle">
+                  {prompt}
+                </Link>
+              );
+            })}
           </div>
-          <div className="rounded-2xl border border-app/70 bg-surface p-4">
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">AI Recommendations</h3>
-            <div className="mt-2 space-y-1 text-xs text-muted">
-              {project.recommendations.map((item) => <p key={item}>- {item}</p>)}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-app/70 bg-surface p-4">
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Site Memory</h3>
-            <div className="mt-2 space-y-1 text-xs text-muted">
-              {(memoryInsights.length ? memoryInsights : [
-                `Referenced earlier: supplier risk first surfaced in Week ${Math.max(1, project.timeline.week - 4)}.`,
-                "Recurring pattern: labor sensitivity appears during high logistics volatility windows.",
-                `AI continuity: similar sequence observed in ${project.similarProjects[0] ?? "related regional journals"}.`,
-              ]).map((item) => (
-                <p key={item}>- {item}</p>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-app/70 bg-surface p-4">
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Related Intelligence Graph</h3>
-            <div className="mt-2 space-y-1 text-xs text-muted">
-              <p>- Related discussions: {project.timelineEntries.find((e) => e.linkedDiscussion)?.linkedDiscussion?.title ?? "Execution risk discussions"}</p>
-              <p>- Regional market signal: {project.city} procurement volatility watch.</p>
-              <p>- Related Inshorts: Execution quick briefs for {project.marketType.toLowerCase()}.</p>
-            </div>
-          </div>
-        </aside>
+        </div>
       </section>
     </main>
   );
