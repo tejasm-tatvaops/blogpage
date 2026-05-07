@@ -9,7 +9,6 @@ import { FollowButton } from "@/components/user/FollowButton";
 import {
   COMPANY_TYPES,
   EXPERIENCE_LEVELS,
-  VERIFICATION_PREFERENCES,
 } from "@/lib/expertiseIdentity";
 import { ExpertiseBadge } from "@/components/shared/ExpertiseBadge";
 import type { SiteJournalProject } from "@/data/siteJournals";
@@ -306,6 +305,57 @@ export function PublicUserProfile({
     };
   }, [expertiseAreas, user.forum_quality_streak_days, user.reputation_score]);
 
+  const handleSaveProfile = async () => {
+    if (savingProfile) return;
+    const previous = profileData;
+    setProfileData((prev) => ({ ...prev, ...draft }));
+    setSavingProfile(true);
+    setProfileError(null);
+    setProfileSuccess(null);
+    try {
+      const response = await fetch("/api/users/update-profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: draft.username,
+          bio: draft.bio,
+          location: draft.location,
+          website: draft.website,
+          email: draft.email,
+          phone: draft.phone,
+          profession: draft.profession,
+          expertise: draft.expertise,
+          yearsOfExperience: draft.yearsOfExperience,
+          companyType: draft.companyType,
+          verificationPreference: draft.verificationPreference,
+          publicExpertiseEnabled: draft.publicExpertiseEnabled,
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        profile?: typeof previous;
+      };
+      if (!response.ok) throw new Error(payload.error ?? "Failed to update profile.");
+      const updated = payload.profile ?? previous;
+      setProfileData(updated);
+      setDraft(updated);
+      setProfileSuccess("Profile updated.");
+      setEditMode(false);
+    } catch (error) {
+      setProfileData(previous);
+      setProfileError(error instanceof Error ? error.message : "Failed to update profile.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setDraft(profileData);
+    setProfileError(null);
+    setProfileSuccess(null);
+    setEditMode(false);
+  };
+
   useEffect(() => {
     if (!isOwnProfile) return;
     let cancelled = false;
@@ -530,62 +580,17 @@ export function PublicUserProfile({
                     <button
                       type="button"
                       disabled={savingProfile}
-                      onClick={async () => {
-                        if (savingProfile) return;
-                        const previous = profileData;
-                        setProfileData((prev) => ({ ...prev, ...draft }));
-                        setSavingProfile(true);
-                        setProfileError(null);
-                        setProfileSuccess(null);
-                        try {
-                          const response = await fetch("/api/users/update-profile", {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              username: draft.username,
-                              bio: draft.bio,
-                              location: draft.location,
-                              website: draft.website,
-                              email: draft.email,
-                              phone: draft.phone,
-                              profession: draft.profession,
-                              expertise: draft.expertise,
-                              yearsOfExperience: draft.yearsOfExperience,
-                              companyType: draft.companyType,
-                              verificationPreference: draft.verificationPreference,
-                              publicExpertiseEnabled: draft.publicExpertiseEnabled,
-                            }),
-                          });
-                          const payload = (await response.json().catch(() => ({}))) as {
-                            error?: string;
-                            profile?: typeof previous;
-                          };
-                          if (!response.ok) throw new Error(payload.error ?? "Failed to update profile.");
-                          const updated = payload.profile ?? previous;
-                          setProfileData(updated);
-                          setDraft(updated);
-                          setProfileSuccess("Profile updated.");
-                          setEditMode(false);
-                        } catch (error) {
-                          setProfileData(previous);
-                          setProfileError(error instanceof Error ? error.message : "Failed to update profile.");
-                        } finally {
-                          setSavingProfile(false);
-                        }
+                      onClick={() => {
+                        void handleSaveProfile();
                       }}
                       className="w-full rounded-lg border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition-all duration-200 hover:bg-orange-100 disabled:opacity-60 sm:w-auto"
                     >
-                      {savingProfile ? "Saving..." : "Save"}
+                      {savingProfile ? "Saving..." : "Save changes"}
                     </button>
                     <button
                       type="button"
                       disabled={savingProfile}
-                      onClick={() => {
-                        setDraft(profileData);
-                        setProfileError(null);
-                        setProfileSuccess(null);
-                        setEditMode(false);
-                      }}
+                      onClick={handleCancelEdit}
                       className="w-full rounded-lg border border-app bg-white px-4 py-2 text-sm font-semibold text-app transition-all duration-200 hover:bg-subtle disabled:opacity-60 sm:w-auto"
                     >
                       Cancel
@@ -721,13 +726,6 @@ export function PublicUserProfile({
                     <option value="">Company type</option>
                     {COMPANY_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
-                  <select
-                    value={draft.verificationPreference}
-                    onChange={(event) => setDraft((prev) => ({ ...prev, verificationPreference: event.target.value }))}
-                    className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-app outline-none focus:ring-2 focus:ring-orange-500"
-                  >
-                    {VERIFICATION_PREFERENCES.map((item) => <option key={item} value={item}>{item.replace(/_/g, " ")}</option>)}
-                  </select>
                   <label className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-app">
                     <span>Public Expertise</span>
                     <input
@@ -737,6 +735,27 @@ export function PublicUserProfile({
                     />
                   </label>
                 </div>
+              </div>
+              <div className="sticky bottom-2 z-10 mt-2 flex flex-wrap items-center justify-end gap-2 rounded-xl border border-orange-100 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
+                <button
+                  type="button"
+                  disabled={savingProfile}
+                  onClick={() => {
+                    void handleSaveProfile();
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition-all duration-200 hover:bg-orange-100 disabled:opacity-60"
+                >
+                  <span aria-hidden>💾</span>
+                  {savingProfile ? "Saving..." : "Save changes"}
+                </button>
+                <button
+                  type="button"
+                  disabled={savingProfile}
+                  onClick={handleCancelEdit}
+                  className="rounded-lg border border-app bg-white px-4 py-2 text-sm font-semibold text-app transition-all duration-200 hover:bg-subtle disabled:opacity-60"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </section>
