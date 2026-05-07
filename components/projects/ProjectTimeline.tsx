@@ -497,10 +497,6 @@ export function ProjectTimeline({
             : rankValue(currentRisk) === 2
               ? "If this pattern persists, next 2 weeks are likely to show moderate execution drag with localized delays."
               : "Next 2 weeks are likely to remain stable if current controls and sequencing discipline continue.";
-          const similarHistorical =
-            rankValue(currentRisk) >= 2
-              ? "Similar pressure signatures have appeared in parallel residential journals during vendor transition windows."
-              : "Comparable journals show stable progression when this signal remains in the low-risk band.";
           const previousObserved = (() => {
             if (!previousEntry) return "";
             const prevWeek = previousEntry.weekLabel;
