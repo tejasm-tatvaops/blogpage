@@ -3,6 +3,7 @@ import { SITE_JOURNALS, type ProjectHealth, type ProjectTimelineEntry, type Site
 import { connectToDatabase } from "@/lib/mongodb";
 import { SiteJournalEntryModel, type siteJournalEntryTypeValues } from "@/models/SiteJournalEntry";
 import { SiteJournalModel } from "@/models/SiteJournal";
+import { CommentModel } from "@/models/Comment";
 
 export type ProjectFeedFilters = {
   q?: string;
@@ -105,6 +106,7 @@ const toSiteJournalProject = (
     created_by?: string;
     created_at?: Date;
   }>,
+  fieldNotesCountByEntryId?: Map<string, number>,
 ): SiteJournalProject => {
   const sortedEntries = [...entries].sort(
     (a, b) =>
@@ -181,10 +183,23 @@ const toSiteJournalProject = (
       linkedDiscussion: entry.related_discussion_ids?.[0]
         ? { title: `Discussion ${entry.related_discussion_ids[0]}`, href: `/forums/${entry.related_discussion_ids[0]}` }
         : undefined,
-      commentsCount: entry.related_discussion_ids?.length ?? 0,
+      commentsCount: fieldNotesCountByEntryId?.get(entry._id.toString()) ?? 0,
     })),
   };
 };
+
+async function getFieldNoteCountByEntryIds(entryIds: string[]): Promise<Map<string, number>> {
+  if (entryIds.length === 0) return new Map<string, number>();
+  const counts = await CommentModel.aggregate<{ _id: string; count: number }>([
+    { $match: { post_id: { $in: entryIds }, deleted_at: null } },
+    { $group: { _id: "$post_id", count: { $sum: 1 } } },
+  ]);
+  const map = new Map<string, number>();
+  for (const item of counts) {
+    map.set(String(item._id), Number(item.count ?? 0));
+  }
+  return map;
+}
 
 export const createSiteJournalSchema = z.object({
   title: z.string().trim().min(5).max(300),
@@ -288,7 +303,10 @@ export async function getProjectJournalsPersistent(filters: ProjectFeedFilters =
       list.push(entry);
       entryMap.set(entry.journal_id, list);
     });
-    const mapped = journals.map((journal) => toSiteJournalProject(journal, entryMap.get(journal._id.toString()) ?? []));
+    const fieldNotesCountByEntryId = await getFieldNoteCountByEntryIds(entries.map((entry) => entry._id.toString()));
+    const mapped = journals.map((journal) =>
+      toSiteJournalProject(journal, entryMap.get(journal._id.toString()) ?? [], fieldNotesCountByEntryId),
+    );
     if (!query) return mapped;
     return mapped.filter((project) => normalize(`${project.title} ${project.city} ${project.projectType} ${project.updatePreview} ${project.tags.join(" ")}`).includes(query));
   } catch {
@@ -309,7 +327,8 @@ export async function getProjectBySlugPersistent(slug: string, includeUnpublishe
     }).lean();
     if (!journal) return getProjectBySlug(slug);
     const entries = await SiteJournalEntryModel.find({ journal_id: journal._id.toString() }).sort({ week_number: -1, created_at: -1 }).lean();
-    return toSiteJournalProject(journal, entries);
+    const fieldNotesCountByEntryId = await getFieldNoteCountByEntryIds(entries.map((entry) => entry._id.toString()));
+    return toSiteJournalProject(journal, entries, fieldNotesCountByEntryId);
   } catch {
     return getProjectBySlug(slug);
   }
@@ -353,7 +372,7 @@ export async function createSiteJournal(input: z.input<typeof createSiteJournalS
     contributors: [{ identity_key: ownerId, name: "Journal Owner", role: "owner", badge: "Lead Contributor" }],
   });
   const lean = created.toObject();
-  return toSiteJournalProject(lean, []);
+  return toSiteJournalProject(lean, [], new Map<string, number>());
 }
 
 export async function addSiteJournalEntry(slug: string, input: z.input<typeof createSiteJournalEntrySchema>, actorId: string) {
@@ -370,7 +389,8 @@ export async function addSiteJournalEntry(slug: string, input: z.input<typeof cr
     created_by: actorId,
   });
   const entries = await SiteJournalEntryModel.find({ journal_id: journal._id.toString() }).sort({ week_number: -1, created_at: -1 }).lean();
-  return toSiteJournalProject(journal, entries);
+  const fieldNotesCountByEntryId = await getFieldNoteCountByEntryIds(entries.map((entry) => entry._id.toString()));
+  return toSiteJournalProject(journal, entries, fieldNotesCountByEntryId);
 }
 
 export async function updateSiteJournalStatus(slug: string, status: "draft" | "pending_review" | "published" | "archived") {
@@ -378,7 +398,8 @@ export async function updateSiteJournalStatus(slug: string, status: "draft" | "p
   const updated = await SiteJournalModel.findOneAndUpdate({ slug }, { status }, { new: true }).lean();
   if (!updated) return null;
   const entries = await SiteJournalEntryModel.find({ journal_id: updated._id.toString() }).sort({ week_number: -1, created_at: -1 }).lean();
-  return toSiteJournalProject(updated, entries);
+  const fieldNotesCountByEntryId = await getFieldNoteCountByEntryIds(entries.map((entry) => entry._id.toString()));
+  return toSiteJournalProject(updated, entries, fieldNotesCountByEntryId);
 }
 
 export async function getSiteJournalsForAdmin(filters: { status?: string; q?: string } = {}) {
@@ -399,7 +420,10 @@ export async function getSiteJournalsForAdmin(filters: { status?: string; q?: st
     list.push(entry);
     entryMap.set(entry.journal_id, list);
   });
-  return journals.map((journal) => toSiteJournalProject(journal, entryMap.get(journal._id.toString()) ?? []));
+  const fieldNotesCountByEntryId = await getFieldNoteCountByEntryIds(entries.map((entry) => entry._id.toString()));
+  return journals.map((journal) =>
+    toSiteJournalProject(journal, entryMap.get(journal._id.toString()) ?? [], fieldNotesCountByEntryId),
+  );
 }
 
 export async function updateSiteJournalByIdAdmin(
@@ -415,7 +439,8 @@ export async function updateSiteJournalByIdAdmin(
   const updated = await SiteJournalModel.findByIdAndUpdate(id, patch, { new: true }).lean();
   if (!updated) return null;
   const entries = await SiteJournalEntryModel.find({ journal_id: updated._id.toString() }).sort({ week_number: -1, created_at: -1 }).lean();
-  return toSiteJournalProject(updated, entries);
+  const fieldNotesCountByEntryId = await getFieldNoteCountByEntryIds(entries.map((entry) => entry._id.toString()));
+  return toSiteJournalProject(updated, entries, fieldNotesCountByEntryId);
 }
 
 export async function updateSiteJournalEntryByIdAdmin(

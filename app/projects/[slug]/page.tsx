@@ -121,7 +121,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
 
   return (
     <main className="mx-auto w-full max-w-[1280px] px-3 pb-16 pt-4 sm:px-4 lg:px-6">
-      <section className="rounded-3xl border border-app bg-surface px-3 py-5 shadow-sm sm:px-4 sm:py-6 lg:px-6">
+      <section className="rounded-3xl bg-gradient-to-b from-white to-slate-50/75 px-3 py-5 shadow-[0_18px_46px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/60 sm:px-4 sm:py-6 lg:px-6">
         <div>
           <p className="text-[11px] uppercase tracking-[0.2em] text-orange-500">Living Site Journal</p>
           <h1 className="mt-2 max-w-3xl text-3xl font-semibold tracking-tight text-app sm:text-4xl md:text-5xl">{project.title}</h1>
@@ -136,12 +136,12 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
 
       <section className="mt-8 max-w-4xl">
         <p className="text-[11px] uppercase tracking-[0.2em] text-orange-600">Chronicle Intro</p>
-        <p className="mt-3 text-base leading-8 text-app/85">
+        <p className="mt-3 text-[15px] leading-7 text-app/85 sm:text-base sm:leading-8">
           This journal documents the evolving execution realities, procurement decisions, labor coordination, and site-level risks across the {project.title} build. Each weekly note captures what shifted on site, what pressure emerged, and how the team responded in real time.
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-xs">
           {project.contributors.map((c) => (
-            <span key={`${c.name}-${c.badge}`} className="rounded-full border border-app bg-surface px-3 py-1 text-muted">
+            <span key={`${c.name}-${c.badge}`} className="rounded-full bg-white px-3 py-1 text-muted shadow-sm ring-1 ring-slate-200/60">
               {c.name} • {c.badge}
             </span>
           ))}
@@ -149,7 +149,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
       </section>
 
       <section className="mt-10 max-w-5xl">
-        <div className="mb-10 space-y-4 border-l border-orange-200/70 pl-6">
+        <div className="mb-10 space-y-4 border-l border-orange-300/65 pl-4 sm:pl-6">
           <p className="text-sm leading-7 text-app/85">{project.aiRiskPulse}</p>
           <p className="text-sm leading-7 text-app/85">
             Execution pattern: {project.executionStatus}. Similar sequencing pressure appeared in {project.similarProjects[0] ?? "related regional journals"}.
@@ -211,7 +211,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           }}
         />
 
-        <div className="mt-14 rounded-2xl border border-dashed border-app/70 bg-subtle/30 p-6">
+        <div className="mt-14 rounded-2xl bg-subtle/30 p-6 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.28)]">
           <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Next Unwritten Page</p>
           <p className="mt-2 text-base text-app/85">Continue documenting this site&apos;s execution story.</p>
           <div className="mt-4">
@@ -229,7 +229,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </div>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-orange-200 bg-orange-50 p-5">
+        <div className="mt-8 rounded-2xl bg-orange-50/90 p-5 shadow-[inset_0_0_0_1px_rgba(251,146,60,0.25)]">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-orange-700">This Week • Field Summary</p>
           <ul className="mt-3 space-y-1 text-sm text-orange-900">
             {weeklySummary.map((line) => (
@@ -238,14 +238,14 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </ul>
         </div>
 
-        <details className="mt-10 rounded-2xl border border-app bg-surface p-5">
+        <details className="mt-10 rounded-2xl bg-surface p-5 shadow-[0_18px_46px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/60">
           <summary className="cursor-pointer select-none text-sm font-semibold text-app">Field Appendix (signals, memory, and related intelligence)</summary>
           <div className="mt-4 space-y-6">
             <section>
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Execution Health History</p>
               <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
                 {healthHistory.map((item) => (
-                  <div key={item.week} className={`rounded-xl border p-2 text-xs ${item.tone}`}>
+                  <div key={item.week} className={`rounded-xl p-2 text-xs shadow-[inset_0_0_0_1px_rgba(148,163,184,0.2)] ${item.tone}`}>
                     <p className="font-semibold">{item.week}</p>
                     <p className="mt-1">{item.state}</p>
                   </div>
@@ -254,11 +254,11 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
             </section>
 
             <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-app/70 bg-surface p-4">
+              <div className="rounded-2xl bg-surface p-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.2)]">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Active Risks</p>
                 <p className="mt-2 text-sm leading-7 text-muted">{project.aiRiskPulse}</p>
               </div>
-              <div className="rounded-2xl border border-app/70 bg-surface p-4">
+              <div className="rounded-2xl bg-surface p-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.2)]">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">AI Recommendations</p>
                 <div className="mt-2 space-y-1 text-sm text-muted">
                   {project.recommendations.map((item) => (
@@ -269,7 +269,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
             </section>
 
             <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-app/70 bg-surface p-4">
+              <div className="rounded-2xl bg-surface p-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.2)]">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Related Site Journals</p>
                 <div className="mt-2 space-y-1 text-sm text-muted">
                   {project.similarProjects.map((item) => (
@@ -277,7 +277,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                   ))}
                 </div>
               </div>
-              <div className="rounded-2xl border border-app/70 bg-surface p-4">
+              <div className="rounded-2xl bg-surface p-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.2)]">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Relevant Experts</p>
                 <div className="mt-2 space-y-1 text-sm text-muted">
                   {project.relatedExperts.map((item) => (
@@ -287,7 +287,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               </div>
             </section>
 
-            <section className="rounded-2xl border border-app/70 bg-surface p-4">
+            <section className="rounded-2xl bg-surface p-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.2)]">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Site Memory</p>
               <div className="mt-2 space-y-1 text-sm text-muted">
                 {(memoryInsights.length
@@ -303,7 +303,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               </div>
             </section>
 
-            <section className="rounded-2xl border border-app/70 bg-surface p-4">
+            <section className="rounded-2xl bg-surface p-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.2)]">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Related Intelligence Graph</p>
               <div className="mt-2 space-y-1 text-sm text-muted">
                 <p>- Related discussions: {project.timelineEntries.find((e) => e.linkedDiscussion)?.linkedDiscussion?.title ?? "Execution risk discussions"}</p>
@@ -314,7 +314,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </div>
         </details>
 
-        <div className="mt-10 space-y-3 border-l border-app/60 pl-6 text-sm text-muted">
+        <div className="mt-10 space-y-3 border-l border-slate-300/70 pl-6 text-sm text-muted">
           <p>Explore related intelligence from this journal:</p>
           <div className="flex flex-wrap gap-2">
             {askPrompts.map((prompt) => {
@@ -334,7 +334,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 intent: prompt,
               });
               return (
-                <Link key={prompt} href={`/ask?${askParams.toString()}`} className="rounded-full border border-app bg-surface px-3 py-1.5 text-xs text-app transition hover:bg-subtle">
+                <Link key={prompt} href={`/ask?${askParams.toString()}`} className="rounded-full bg-white px-3 py-1.5 text-xs text-app shadow-sm ring-1 ring-slate-200/70 transition hover:-translate-y-0.5 hover:bg-slate-50">
                   {prompt}
                 </Link>
               );

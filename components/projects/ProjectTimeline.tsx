@@ -5,17 +5,18 @@ import Link from "next/link";
 import type { ProjectTimelineEntry } from "@/data/siteJournals";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildAskHref } from "@/lib/askContext";
+import { EntryFieldNotes } from "@/components/projects/EntryFieldNotes";
 
 const typeToneMap: Record<ProjectTimelineEntry["type"], string> = {
-  "Progress Update": "text-emerald-700 border-emerald-200 bg-emerald-50",
-  "Procurement Decision": "text-amber-700 border-amber-200 bg-amber-50",
-  "Cost Change": "text-orange-700 border-orange-200 bg-orange-50",
-  "Issue Report": "text-rose-700 border-rose-200 bg-rose-50",
-  "Site Milestone": "text-sky-700 border-sky-200 bg-sky-50",
-  "Labor Update": "text-violet-700 border-violet-200 bg-violet-50",
-  "Vendor Note": "text-indigo-700 border-indigo-200 bg-indigo-50",
-  "AI Insight": "text-fuchsia-700 border-fuchsia-200 bg-fuchsia-50",
-  "Media Log": "text-cyan-700 border-cyan-200 bg-cyan-50",
+  "Progress Update": "text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200/70",
+  "Procurement Decision": "text-amber-700 bg-amber-50 ring-1 ring-amber-200/70",
+  "Cost Change": "text-orange-700 bg-orange-50 ring-1 ring-orange-200/70",
+  "Issue Report": "text-rose-700 bg-rose-50 ring-1 ring-rose-200/70",
+  "Site Milestone": "text-sky-700 bg-sky-50 ring-1 ring-sky-200/70",
+  "Labor Update": "text-violet-700 bg-violet-50 ring-1 ring-violet-200/70",
+  "Vendor Note": "text-indigo-700 bg-indigo-50 ring-1 ring-indigo-200/70",
+  "AI Insight": "text-fuchsia-700 bg-fuchsia-50 ring-1 ring-fuchsia-200/70",
+  "Media Log": "text-cyan-700 bg-cyan-50 ring-1 ring-cyan-200/70",
 };
 
 const toneFxMap: Record<ProjectTimelineEntry["type"], { tint: string; glow: string }> = {
@@ -178,9 +179,9 @@ function PressureArc({
   const total = Math.max(1, segments.reduce((acc, s) => acc + Math.max(1, s.toWeek - s.fromWeek + 1), 0));
 
   return (
-    <div className="mb-10 rounded-2xl border border-app bg-surface p-4">
+    <div className="mb-10 rounded-2xl bg-surface p-4 shadow-[0_10px_22px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60">
       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">Pressure Arc</p>
-      <div className="mt-3 overflow-hidden rounded-xl border border-app bg-subtle">
+      <div className="mt-3 overflow-hidden rounded-xl bg-subtle shadow-[inset_0_0_0_1px_rgba(148,163,184,0.25)]">
         <div className="flex h-9">
           {segments.map((s) => {
             const w = Math.max(1, s.toWeek - s.fromWeek + 1);
@@ -201,12 +202,70 @@ function PressureArc({
       </div>
       <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted">
         {segments.map((s) => (
-          <span key={`${s.label}-legend`} className="rounded-full border border-app bg-surface px-2.5 py-1">
+          <span key={`${s.label}-legend`} className="rounded-full bg-white px-2.5 py-1 shadow-sm ring-1 ring-slate-200/60">
             Weeks {s.fromWeek}-{s.toWeek} • {s.label}
           </span>
         ))}
       </div>
     </div>
+  );
+}
+
+function TinyIcon({ name }: { name: "risk" | "pattern" | "change" | "forecast" | "memory" | "cross" | "shift" }) {
+  const common = "h-3.5 w-3.5";
+  if (name === "risk") {
+    return (
+      <svg className={common} viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M12 3l10 18H2L12 3z" stroke="currentColor" strokeWidth="2" />
+        <path d="M12 9v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M12 17h.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (name === "pattern") {
+    return (
+      <svg className={common} viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M4 7h8M4 12h16M4 17h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (name === "change") {
+    return (
+      <svg className={common} viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M7 7h10v10H7V7z" stroke="currentColor" strokeWidth="2" />
+        <path d="M7 12h10" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    );
+  }
+  if (name === "forecast") {
+    return (
+      <svg className={common} viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M4 16l5-5 4 4 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M20 9V4h-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (name === "memory") {
+    return (
+      <svg className={common} viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M7 4h10v16H7V4z" stroke="currentColor" strokeWidth="2" />
+        <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (name === "cross") {
+    return (
+      <svg className={common} viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M7 12h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M12 7v10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg className={common} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" />
+    </svg>
   );
 }
 
@@ -236,7 +295,7 @@ export function ProjectTimeline({
 }) {
   if (entries.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-app/70 bg-subtle/40 p-8 text-sm text-muted">
+      <div className="rounded-2xl bg-subtle/40 p-8 text-sm text-muted shadow-[inset_0_0_0_1px_rgba(148,163,184,0.35)]">
         This site journal has not documented its first execution update yet.
       </div>
     );
@@ -407,7 +466,7 @@ export function ProjectTimeline({
 
   return (
     <div
-      className="relative rounded-3xl border border-app bg-surface px-6 py-10"
+      className="relative rounded-3xl bg-surface/92 px-4 py-8 shadow-[0_18px_46px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/60 sm:px-6 sm:py-10"
       style={
         {
           "--sj-tint": activeFx.tint,
@@ -420,10 +479,10 @@ export function ProjectTimeline({
       <PressureArc segments={pressureSegments} activeWeek={activeWeekNum} />
 
       {siteConditions?.length ? (
-        <div className="mb-10 flex flex-wrap items-center gap-2 border-l border-app/60 pl-6 text-xs text-muted">
+        <div className="mb-10 flex flex-wrap items-center gap-2 border-l border-slate-300/70 pl-4 text-xs text-muted sm:pl-6">
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app/70">Site Conditions</span>
           {siteConditions.map((c) => (
-            <span key={`${c.label}-${c.value}`} className="rounded-full border border-app bg-surface px-2.5 py-1">
+            <span key={`${c.label}-${c.value}`} className="rounded-full bg-white px-2.5 py-1 shadow-sm ring-1 ring-slate-200/60">
               {c.label}: {c.value}
             </span>
           ))}
@@ -431,7 +490,7 @@ export function ProjectTimeline({
       ) : null}
 
       {maxTimelineWeek > 0 ? (
-        <div className="mb-8 rounded-xl border border-app/70 bg-subtle/40 p-3">
+        <div className="mb-8 rounded-xl bg-subtle/40 p-3 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.3)]">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Week ledger</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {Array.from({ length: maxTimelineWeek }, (_, idx) => maxTimelineWeek - idx).map((week) => (
@@ -439,8 +498,8 @@ export function ProjectTimeline({
                 key={`week-ledger-${week}`}
                 className={
                   loggedWeeks.has(week)
-                    ? "rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] text-orange-700"
-                    : "rounded-full border border-app bg-surface px-2.5 py-1 text-[11px] text-muted"
+                    ? "rounded-full bg-orange-50 px-2.5 py-1 text-[11px] text-orange-700 shadow-[inset_0_0_0_1px_rgba(251,146,60,0.35)]"
+                    : "rounded-full bg-white px-2.5 py-1 text-[11px] text-muted shadow-sm ring-1 ring-slate-200/60"
                 }
               >
                 Week {week} {loggedWeeks.has(week) ? "• recorded on site" : "• backfilled from weekly records"}
@@ -450,10 +509,10 @@ export function ProjectTimeline({
         </div>
       ) : null}
 
-      <div className="relative space-y-16 pl-12">
+      <div className="relative space-y-12 pl-10 sm:space-y-16 sm:pl-12">
         <div
-          className="pointer-events-none absolute bottom-0 left-4 top-2 w-px bg-gradient-to-b from-orange-300/70 via-orange-400 to-amber-300/60 transition-all duration-700"
-          style={{ boxShadow: `0 0 18px var(--sj-glow)` }}
+          className="pointer-events-none absolute bottom-0 left-3 top-2 w-px bg-gradient-to-b from-orange-300/35 via-orange-400/60 to-amber-300/30 transition-all duration-700 sm:left-4"
+          style={{ boxShadow: `0 0 12px var(--sj-glow)` }}
         />
         {timelineRows.map((row, index) => {
           const entry = row.entry;
@@ -534,31 +593,33 @@ export function ProjectTimeline({
             sectionRefs.current[index] = el;
           }}
           data-index={index}
-          className="relative pb-2 transition-opacity duration-500"
+          className="relative pb-1 transition-opacity duration-500"
           style={{ opacity: index === activeIndex ? 1 : 0.94 }}
         >
           <span
-            className={`absolute -left-[35px] top-4 h-2.5 w-2.5 rounded-full bg-orange-400 shadow-[0_0_0_4px_rgba(251,146,60,0.16)] ${todayWeekLabel && entry.weekLabel === todayWeekLabel ? "animate-pulse" : ""}`}
+            className={`absolute -left-[30px] top-4 h-2 w-2 rounded-full bg-orange-400 shadow-[0_0_0_3px_rgba(251,146,60,0.14)] sm:-left-[35px] sm:h-2.5 sm:w-2.5 sm:shadow-[0_0_0_4px_rgba(251,146,60,0.16)] ${todayWeekLabel && entry.weekLabel === todayWeekLabel ? "animate-pulse" : ""}`}
           />
           <div className="mb-4">
             <p className="text-[13px] font-semibold uppercase tracking-[0.22em] text-orange-700">{entry.weekLabel}</p>
             <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted">{entry.createdAtLabel ?? "Execution Log"}</p>
           </div>
-          <article className={`relative space-y-5 ${density === "dense" ? "pb-2" : ""}`}>
+          <article
+            className={`relative space-y-4 rounded-2xl bg-white/70 p-3 shadow-[0_10px_26px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60 transition-[transform,box-shadow,background-color] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,23,42,0.08)] sm:space-y-5 sm:p-4 ${density === "dense" ? "pb-2" : ""}`}
+          >
             {shouldStamp ? (
               <div className="pointer-events-none absolute right-0 top-0 -rotate-6">
-                <span className="inline-flex rounded-md border border-rose-300/50 bg-rose-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-rose-700 shadow-sm">
+                <span className="inline-flex rounded-md bg-rose-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-rose-700 shadow-sm ring-1 ring-rose-200/80">
                   Critical
                 </span>
               </div>
             ) : null}
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
-              <span className={`rounded-full border px-2 py-0.5 uppercase tracking-wide ${typeToneMap[entry.type]}`}>{entry.type}</span>
+              <span className={`rounded-full px-2 py-0.5 uppercase tracking-wide ${typeToneMap[entry.type]}`}>{entry.type}</span>
               <span>{entry.contributorName ?? "Site Contributor"}</span>
               <span>{entry.createdAtLabel ?? "Site update"}</span>
             </div>
-            <h3 className="max-w-3xl text-2xl font-semibold leading-tight text-app">{entry.title}</h3>
-            <p className="max-w-3xl text-[15px] leading-8 text-app/85">
+            <h3 className="max-w-3xl text-xl font-semibold leading-snug text-app sm:text-2xl">{entry.title}</h3>
+            <p className="max-w-3xl text-[14px] leading-7 text-app/85 sm:text-[15px] sm:leading-8">
               {shouldMarker ? (
                 <span className="rounded-sm bg-[linear-gradient(transparent_60%,rgba(251,146,60,0.22)_60%,rgba(251,146,60,0.22)_92%,transparent_92%)]">
                   {entry.note}
@@ -569,7 +630,7 @@ export function ProjectTimeline({
             </p>
 
             {entry.aiSummary ? (
-              <div className="max-w-2xl border-l border-orange-300/80 pl-4">
+              <div className="max-w-2xl border-l-2 border-orange-300/70 pl-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-orange-700">Operational Note</p>
                 <p className="mt-1 text-sm leading-7 text-muted">{entry.aiSummary}</p>
               </div>
@@ -588,7 +649,7 @@ export function ProjectTimeline({
                     {asset.type === "video" ? (
                       <video
                         src={asset.url}
-                        className="h-44 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+                        className="h-40 w-full object-cover transition duration-500 group-hover:scale-[1.02] sm:h-44"
                         controls
                         preload="metadata"
                       />
@@ -596,7 +657,7 @@ export function ProjectTimeline({
                       <img
                         src={asset.url}
                         alt={asset.caption}
-                        className="h-44 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+                        className="h-40 w-full object-cover transition duration-500 group-hover:scale-[1.02] sm:h-44"
                       />
                     )}
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/78 via-black/28 to-transparent" />
@@ -621,45 +682,97 @@ export function ProjectTimeline({
 
             <div className="flex flex-wrap items-center gap-2">
               {entry.tags.map((tag) => (
-                <span key={tag} className="rounded-full bg-subtle px-2 py-0.5 text-[11px] text-muted">
+                <span key={tag} className="rounded-full bg-subtle px-2 py-0.5 text-[11px] text-muted ring-1 ring-slate-200/60">
                   #{tag}
                 </span>
               ))}
             </div>
 
             <div className="space-y-1 text-xs text-muted">
-              <p>{entry.commentsCount} discussion notes</p>
+              <p>{entry.commentsCount} field notes</p>
               {entry.linkedDiscussion ? <p>Related discussion: <Link href={entry.linkedDiscussion.href} className="text-orange-700 hover:text-orange-800">{entry.linkedDiscussion.title}</Link></p> : null}
             </div>
-            <div className="space-y-2 text-xs">
-              <p className={`rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 ${confidenceTone}`}>
-                <span className="font-semibold text-app/85">Operational Note</span> {confidenceLine}
-              </p>
-              <p className="rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 text-muted">
-                <span className="font-semibold text-app/85">Pattern:</span> {patternDetection}
-              </p>
-              <p className="rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 text-muted">
-                <span className="font-semibold text-app/85">Change:</span> {changeDetection}
-              </p>
-              <p className="rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 text-muted">
-                <span className="font-semibold text-app/85">Forecast:</span> {forecast}
-              </p>
-              <p className="rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 text-muted">
-                <span className="font-semibold text-app/85">Previously observed:</span> {previousObserved || "No prior recurrence signal captured yet."}
-              </p>
-              {crossJournalMemory ? (
-                <p className="rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 text-muted">
-                  <span className="font-semibold text-app/85">Cross-journal memory:</span> {crossJournalMemory}
+            <details className="rounded-xl bg-slate-50/80 p-3 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.2)]">
+              <summary className="cursor-pointer list-none">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-app/75">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-slate-200/60">
+                      <svg className="h-3.5 w-3.5 text-orange-700" viewBox="0 0 24 24" fill="none" aria-hidden>
+                        <path d="M12 3l10 18H2L12 3z" stroke="currentColor" strokeWidth="2" />
+                        <path d="M12 9v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M12 17h.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                      </svg>
+                    </span>
+                    AI Operational Insight
+                  </div>
+                  <span className="text-[11px] text-muted">Risk • Forecast • Memory</span>
+                </div>
+              </summary>
+              <div className="mt-3 space-y-2 text-xs">
+                <p className={`flex gap-2 rounded-lg bg-white px-3 py-2 shadow-sm ring-1 ring-slate-200/60 ${confidenceTone}`}>
+                  <span className="mt-0.5 text-orange-700">
+                    <TinyIcon name="risk" />
+                  </span>
+                  <span>
+                    <span className="font-semibold text-app/85">Risk:</span> {confidenceLine}
+                  </span>
                 </p>
-              ) : null}
-              {contradictionNote ? (
-                <p className="rounded-lg border border-app/70 bg-subtle/40 px-3 py-2 text-app/80">
-                  <span className="font-semibold text-app/90">Narrative shift:</span> {contradictionNote}
+                <p className="flex gap-2 rounded-lg border-l-2 border-orange-200 bg-white px-3 py-2 text-muted shadow-sm">
+                  <span className="mt-0.5 text-orange-700">
+                    <TinyIcon name="pattern" />
+                  </span>
+                  <span>
+                    <span className="font-semibold text-app/85">Pattern:</span> {patternDetection}
+                  </span>
                 </p>
-              ) : null}
-            </div>
+                <p className="flex gap-2 rounded-lg border-l-2 border-sky-200 bg-white px-3 py-2 text-muted shadow-sm">
+                  <span className="mt-0.5 text-sky-700">
+                    <TinyIcon name="change" />
+                  </span>
+                  <span>
+                    <span className="font-semibold text-app/85">Change:</span> {changeDetection}
+                  </span>
+                </p>
+                <p className="flex gap-2 rounded-lg border-l-2 border-violet-200 bg-white px-3 py-2 text-muted shadow-sm">
+                  <span className="mt-0.5 text-violet-700">
+                    <TinyIcon name="forecast" />
+                  </span>
+                  <span>
+                    <span className="font-semibold text-app/85">Forecast:</span> {forecast}
+                  </span>
+                </p>
+                <p className="flex gap-2 rounded-lg border-l-2 border-amber-200 bg-white px-3 py-2 text-muted shadow-sm">
+                  <span className="mt-0.5 text-amber-700">
+                    <TinyIcon name="memory" />
+                  </span>
+                  <span>
+                    <span className="font-semibold text-app/85">Memory:</span> {previousObserved || "No prior recurrence signal captured yet."}
+                  </span>
+                </p>
+                {crossJournalMemory ? (
+                  <p className="flex gap-2 rounded-lg border-l-2 border-indigo-200 bg-white px-3 py-2 text-muted shadow-sm">
+                    <span className="mt-0.5 text-indigo-700">
+                      <TinyIcon name="cross" />
+                    </span>
+                    <span>
+                      <span className="font-semibold text-app/85">Cross-journal:</span> {crossJournalMemory}
+                    </span>
+                  </p>
+                ) : null}
+                {contradictionNote ? (
+                  <p className="flex gap-2 rounded-lg border-l-2 border-rose-200 bg-white px-3 py-2 text-app/80 shadow-sm">
+                    <span className="mt-0.5 text-rose-700">
+                      <TinyIcon name="shift" />
+                    </span>
+                    <span>
+                      <span className="font-semibold text-app/90">Narrative shift:</span> {contradictionNote}
+                    </span>
+                  </p>
+                ) : null}
+              </div>
+            </details>
             {askContextBase ? (
-              <div className="flex flex-wrap gap-1.5 border-l border-app/60 pl-3 text-[11px]">
+              <div className="flex flex-wrap gap-1.5 border-l border-slate-300/80 pl-3 text-[11px]">
                 {[
                   { label: "Explain impact", prompt: `Explain operational impact for ${entry.weekLabel} (${entry.type}) in ${askContextBase.journalTitle}.`, aiMode: "site_analyst" as const },
                   { label: "Predict next issue", prompt: `Predict the next likely issue after ${entry.weekLabel} entry: ${entry.title}.`, aiMode: "planning_engineer" as const },
@@ -684,12 +797,27 @@ export function ProjectTimeline({
                       discussions: askContextBase.discussions,
                       expertise: askContextBase.expertise,
                     })}
-                    className="rounded-full border border-app/60 bg-subtle/70 px-2 py-0.5 text-[10px] tracking-wide text-muted transition hover:border-orange-200 hover:text-app hover:underline hover:decoration-orange-300 hover:shadow-[0_0_8px_rgba(251,146,60,0.14)]"
+                    className="rounded-full bg-white px-2.5 py-1 text-[10px] tracking-wide text-muted shadow-sm ring-1 ring-slate-200/70 transition hover:-translate-y-0.5 hover:text-app hover:shadow-[0_8px_14px_rgba(251,146,60,0.16)]"
                   >
                     {chip.label}
                   </Link>
                 ))}
               </div>
+            ) : null}
+            {askContextBase ? (
+              entry.id.startsWith("continuity-week-") ? (
+                <div className="rounded-xl bg-subtle/40 px-3 py-2 text-xs text-muted shadow-[inset_0_0_0_1px_rgba(148,163,184,0.35)]">
+                  Field notes are available on documented weekly entries. This continuity row preserves chronology only.
+                </div>
+              ) : (
+                <EntryFieldNotes
+                  slug={askContextBase.projectSlug}
+                  entryId={entry.id}
+                  entryTitle={entry.title}
+                  weekLabel={entry.weekLabel}
+                  cityRegion={askContextBase.cityRegion}
+                />
+              )
             ) : null}
           </article>
         </section>

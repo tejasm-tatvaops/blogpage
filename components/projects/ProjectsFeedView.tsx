@@ -55,16 +55,19 @@ export function ProjectsFeedView({
   }, [projects]);
 
   return (
-    <section className="mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-10 rounded-2xl border border-app bg-surface p-6 md:p-7">
+    <section className="mx-auto w-full max-w-[1240px] px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-10 rounded-3xl bg-gradient-to-b from-white to-slate-50/70 p-6 shadow-[0_18px_46px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/60 md:p-7">
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-600">Site Journals</p>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-semibold tracking-tight text-app md:text-5xl">Site Journals</h1>
           <div className="flex items-center gap-2">
-            <span className="rounded-full border border-app bg-subtle px-3 py-1 text-xs text-muted">
+            <span className="rounded-full bg-white px-3 py-1 text-xs text-muted shadow-sm ring-1 ring-slate-200/60">
               {pulse.totalActiveJournals} active journals
             </span>
-            <Link href="/projects/new" className="rounded-full border border-orange-300 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 transition hover:bg-orange-100">
+            <Link
+              href="/projects/new"
+              className="rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold !text-white shadow-sm transition-[transform,box-shadow,background-color] duration-200 ease-out hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-[0_12px_28px_rgba(251,146,60,0.25)]"
+            >
               Start Site Journal
             </Link>
           </div>
@@ -75,17 +78,17 @@ export function ProjectsFeedView({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Browse Site Journals by city, type, tags, updates..."
-            className="h-10 rounded-xl border border-app bg-white px-3 text-sm text-app placeholder:text-muted outline-none focus:border-orange-300"
+            className="h-10 rounded-xl bg-white px-3 text-sm text-app placeholder:text-muted outline-none ring-1 ring-slate-200/60 transition focus:ring-2 focus:ring-orange-300/60"
           />
-          <select value={city} onChange={(event) => setCity(event.target.value)} className="h-10 rounded-xl border border-app bg-white px-3 text-sm text-app outline-none">
+          <select value={city} onChange={(event) => setCity(event.target.value)} className="h-10 rounded-xl bg-white px-3 text-sm text-app outline-none ring-1 ring-slate-200/60 transition focus:ring-2 focus:ring-orange-300/60">
             <option value="all">All cities</option>
             {facets.cities.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
-          <select value={projectType} onChange={(event) => setProjectType(event.target.value)} className="h-10 rounded-xl border border-app bg-white px-3 text-sm text-app outline-none">
+          <select value={projectType} onChange={(event) => setProjectType(event.target.value)} className="h-10 rounded-xl bg-white px-3 text-sm text-app outline-none ring-1 ring-slate-200/60 transition focus:ring-2 focus:ring-orange-300/60">
             <option value="all">All site journal types</option>
             {facets.projectTypes.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
-          <select value={risk} onChange={(event) => setRisk(event.target.value as "all" | ProjectHealth)} className="h-10 rounded-xl border border-app bg-white px-3 text-sm text-app outline-none">
+          <select value={risk} onChange={(event) => setRisk(event.target.value as "all" | ProjectHealth)} className="h-10 rounded-xl bg-white px-3 text-sm text-app outline-none ring-1 ring-slate-200/60 transition focus:ring-2 focus:ring-orange-300/60">
             <option value="all">All risk levels</option>
             <option value="stable">Stable</option>
             <option value="watch">Watch Procurement</option>
@@ -94,17 +97,17 @@ export function ProjectsFeedView({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-7 lg:grid-cols-[1fr_300px]">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {filtered.map((project) => <ProjectJournalCard key={project.id} project={project} />)}
           {filtered.length === 0 ? (
-            <div className="rounded-2xl border border-app bg-surface p-8 text-sm text-muted md:col-span-2">
+            <div className="rounded-2xl bg-surface p-8 text-sm text-muted shadow-[inset_0_0_0_1px_rgba(148,163,184,0.25)] md:col-span-2">
               No Site Journals match these filters.
             </div>
           ) : null}
         </div>
         <aside className="space-y-3">
-          <div className="rounded-2xl border border-app bg-surface p-4">
+          <div className="rounded-2xl bg-white/90 p-4 shadow-[0_14px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60">
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">AI Construction Signals</h2>
             <div className="mt-3 space-y-2 text-xs text-muted">
               <p>{pulse.procurementWatchCount} site journals on procurement watch.</p>
@@ -112,7 +115,7 @@ export function ProjectsFeedView({
               <p>Labor availability and steel volatility are top cross-region drivers.</p>
             </div>
           </div>
-          <div className="rounded-2xl border border-app bg-surface p-4">
+          <div className="rounded-2xl bg-white/90 p-4 shadow-[0_14px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60">
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Trending Site Journal Types</h2>
             <div className="mt-3 space-y-2 text-xs text-app/80">
               {trendingTypes.map(([name, count]) => (
@@ -123,7 +126,7 @@ export function ProjectsFeedView({
               ))}
             </div>
           </div>
-          <div className="rounded-2xl border border-app bg-surface p-4">
+          <div className="rounded-2xl bg-white/90 p-4 shadow-[0_14px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60">
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Active Regions</h2>
             <div className="mt-3 space-y-2 text-xs text-app/80">
               {activeRegions.map(([name, count]) => (
@@ -134,7 +137,7 @@ export function ProjectsFeedView({
               ))}
             </div>
           </div>
-          <div className="rounded-2xl border border-app bg-surface p-4">
+          <div className="rounded-2xl bg-white/90 p-4 shadow-[0_14px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60">
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Top Contributors</h2>
             <div className="mt-3 space-y-2 text-xs text-app/80">
               {[...new Set(projects.map((p) => p.leadContributor.name))].slice(0, 4).map((name) => <p key={name}>{name}</p>)}
