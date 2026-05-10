@@ -19,6 +19,18 @@ const typeToneMap: Record<ProjectTimelineEntry["type"], string> = {
   "Media Log": "text-cyan-700 bg-cyan-50 ring-1 ring-cyan-200/70",
 };
 
+/** Used only so hooks always run with valid derived values before empty-state UI returns. */
+const EMPTY_TIMELINE_PLACEHOLDER: ProjectTimelineEntry = {
+  id: "__timeline_placeholder__",
+  weekLabel: "Week 0",
+  type: "Progress Update",
+  title: "",
+  note: "",
+  tags: [],
+  media: [],
+  commentsCount: 0,
+};
+
 const toneFxMap: Record<ProjectTimelineEntry["type"], { tint: string; glow: string }> = {
   "Progress Update": { tint: "rgba(16,185,129,0.06)", glow: "rgba(16,185,129,0.55)" },
   "Procurement Decision": { tint: "rgba(245,158,11,0.07)", glow: "rgba(245,158,11,0.62)" },
@@ -293,14 +305,6 @@ export function ProjectTimeline({
   totalWeeks?: number;
   timelineStarted?: string;
 }) {
-  if (entries.length === 0) {
-    return (
-      <div className="rounded-2xl bg-subtle/40 p-8 text-sm text-muted shadow-[inset_0_0_0_1px_rgba(148,163,184,0.35)]">
-        This site journal has not documented its first execution update yet.
-      </div>
-    );
-  }
-
   const sortedEntries = useMemo(() => {
     const list = [...entries];
     // Keep current ordering unless week parsing indicates otherwise.
@@ -402,9 +406,13 @@ export function ProjectTimeline({
   const activeEntry =
     timelineRows[activeIndex]?.entry ??
     timelineRows.find((row) => row.entry)?.entry ??
-    sortedEntries[0];
+    sortedEntries[0] ??
+    EMPTY_TIMELINE_PLACEHOLDER;
   const activeFx = toneFxMap[activeEntry.type] ?? toneFxMap["Procurement Decision"];
-  const activeWeekNum = parseWeekNumber(activeEntry.weekLabel) || initialActiveWeek || parseWeekNumber(sortedEntries[0].weekLabel);
+  const activeWeekNum =
+    parseWeekNumber(activeEntry.weekLabel) ||
+    initialActiveWeek ||
+    parseWeekNumber(sortedEntries[0]?.weekLabel ?? "0");
 
   const sectionRefs = useRef<Array<HTMLElement | null>>([]);
   const mediaRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -463,6 +471,14 @@ export function ProjectTimeline({
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  if (entries.length === 0) {
+    return (
+      <div className="rounded-2xl bg-subtle/40 p-8 text-sm text-muted shadow-[inset_0_0_0_1px_rgba(148,163,184,0.35)]">
+        This site journal has not documented its first execution update yet.
+      </div>
+    );
+  }
 
   return (
     <div
