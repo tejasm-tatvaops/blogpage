@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/db/mongodb";
 import { getFingerprintFromRequest } from "@/lib/fingerprint";
 import { UserProfileModel } from "@/models/UserProfile";
@@ -131,6 +132,25 @@ type UserActivityInput = {
   category?: string | null;
 };
 
+const toIsoStringSafe = (value: unknown, fallback: string): string => {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+  if (typeof value === "string" || typeof value === "number") {
+    const d = new Date(value);
+    if (!Number.isNaN(d.getTime())) return d.toISOString();
+  }
+  return fallback;
+};
+
+const toIsoStringSafeNullable = (value: unknown): string | null => {
+  if (value == null) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+  if (typeof value === "string" || typeof value === "number") {
+    const d = new Date(value);
+    if (!Number.isNaN(d.getTime())) return d.toISOString();
+  }
+  return null;
+};
+
 const toUserProfile = (doc: {
   _id: { toString(): string };
   identity_key?: string;
@@ -167,7 +187,7 @@ const toUserProfile = (doc: {
   forum_badges?: string[];
   forum_posting_streak_days?: number;
   forum_quality_streak_days?: number;
-  forum_last_posted_at?: Date | null;
+  forum_last_posted_at?: Date | string | null;
   interest_tags?: Record<string, number>;
   behavior_type?: UserBehaviorType;
   writing_tone?: UserWritingTone;
@@ -181,8 +201,8 @@ const toUserProfile = (doc: {
   frequent_peer_keys?: string[];
   topic_focus_history?: string[];
   topic_shift_count?: number;
-  created_at: Date;
-  last_seen_at: Date;
+  created_at: Date | string;
+  last_seen_at: Date | string;
 }): UserProfile => ({
   id: doc._id.toString(),
   identity_key: doc.identity_key ?? "",
@@ -229,7 +249,7 @@ const toUserProfile = (doc: {
   forum_badges: Array.isArray(doc.forum_badges) ? doc.forum_badges : [],
   forum_posting_streak_days: doc.forum_posting_streak_days ?? 0,
   forum_quality_streak_days: doc.forum_quality_streak_days ?? 0,
-  forum_last_posted_at: doc.forum_last_posted_at ? doc.forum_last_posted_at.toISOString() : null,
+  forum_last_posted_at: toIsoStringSafeNullable(doc.forum_last_posted_at),
   interest_tags: (doc.interest_tags as Record<string, number> | undefined) ?? {},
   behavior_type: doc.behavior_type ?? "casual",
   writing_tone: doc.writing_tone ?? "casual",
@@ -248,8 +268,8 @@ const toUserProfile = (doc: {
     doc.active_end_hour ?? 19,
     doc.weekend_activity_multiplier ?? 1,
   ),
-  created_at: doc.created_at.toISOString(),
-  last_seen_at: doc.last_seen_at.toISOString(),
+  created_at: toIsoStringSafe(doc.created_at, new Date(0).toISOString()),
+  last_seen_at: toIsoStringSafe(doc.last_seen_at, toIsoStringSafe(doc.created_at, new Date(0).toISOString())),
 });
 
 export const toPublicUserProfile = (profile: UserProfile): UserProfile => ({
@@ -269,7 +289,8 @@ export const resolveUserIdentities = async (profiles: UserProfile[]): Promise<Us
   const googleIds = profiles
     .map((profile) => profile.identity_key)
     .filter((identityKey) => identityKey.startsWith("google:"))
-    .map((identityKey) => identityKey.replace("google:", ""));
+    .map((identityKey) => identityKey.replace("google:", ""))
+    .filter((id) => mongoose.isValidObjectId(id));
   const anonymousIdentityKeys = profiles
     .map((profile) => profile.identity_key)
     .filter((identityKey) => identityKey.startsWith("fp:") || identityKey.startsWith("ip:"));

@@ -39,6 +39,7 @@ const formatDate = (iso: string): string =>
 const shortIdentityId = (identityKey: string): string => identityKey.slice(-6).toUpperCase();
 const formatRelative = (iso: string, nowMs: number): string => {
   const ts = new Date(iso).getTime();
+  if (!Number.isFinite(ts)) return "—";
   const diff = nowMs - ts;
   const mins = Math.max(1, Math.floor(diff / 60_000));
   if (mins < 60) return `${mins}m ago`;
@@ -87,8 +88,8 @@ function ReputationBadge({ tier, score }: { tier: string; score: number }) {
   );
 }
 
-function InterestTags({ tags }: { tags: Record<string, number> }) {
-  const top = Object.entries(tags)
+function InterestTags({ tags }: { tags: Record<string, number> | null | undefined }) {
+  const top = Object.entries(tags ?? {})
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4)
     .map(([tag]) => tag);
@@ -319,7 +320,10 @@ export function UserDirectory({ users, totals, userTotals, nowMs }: UserDirector
         return bForum - aForum;
       }
       if (sortBy === "reputation") return b.reputation_score - a.reputation_score;
-      return new Date(b.last_seen_at).getTime() - new Date(a.last_seen_at).getTime();
+      const bt = new Date(b.last_seen_at).getTime();
+      const at = new Date(a.last_seen_at).getTime();
+      if (Number.isFinite(bt) && Number.isFinite(at)) return bt - at;
+      return 0;
     });
     return sorted;
   }, [resolvedUsers, query, sortBy, photosOnly, userTypeFilter, activeOnly, gamifiedOnly]);
