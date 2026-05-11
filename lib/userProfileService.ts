@@ -427,6 +427,11 @@ const buildDisplayName = (identityKey: string): string => {
   return `TatvaOps User ${clean || "GUEST"}`;
 };
 
+const buildSystemUsername = (identityKey: string): string => {
+  const token = compactHash(identityKey).replace(/[^a-z0-9]/g, "").slice(0, 12) || "guest";
+  return `member_${token}`;
+};
+
 const sanitizeKey = (value: string): string =>
   value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
@@ -467,12 +472,15 @@ export const ensureUserProfileForIdentity = async ({
     "Member profile synchronized from authenticated session and platform activity.";
   const behavior = buildBehaviorSeed(safeIdentityKey, safeName);
   const derivedType = getUserType(safeIdentityKey);
+  const seededUsername = buildSystemUsername(safeIdentityKey);
 
   await UserProfileModel.findOneAndUpdate(
     { identity_key: safeIdentityKey },
     {
       $setOnInsert: {
         identity_key: safeIdentityKey,
+        username: seededUsername,
+        username_lower: seededUsername,
         avatar_url: buildAvatarUrl(avatarSeed ?? safeIdentityKey, safeName),
         about: safeAbout,
         reputation_score: 0,

@@ -180,7 +180,7 @@ export function EntryFieldNotes({ slug, entryId, entryTitle, weekLabel, cityRegi
   }, [cityRegion, entryTitle, slug, weekLabel]);
 
   const inputClass =
-    "w-full rounded-xl bg-white px-3 py-2 text-sm text-app outline-none ring-1 ring-slate-200/60 transition-[box-shadow,transform] duration-200 ease-out placeholder:text-muted focus:ring-2 focus:ring-orange-300/60";
+    "w-full rounded-xl bg-surface px-3 py-2 text-sm text-app outline-none ring-1 ring-app/70 transition-[box-shadow,transform] duration-200 ease-out placeholder:text-muted focus:ring-2 focus:ring-orange-300/60";
 
   return (
     <div className="mt-4 rounded-2xl bg-subtle/25 p-3 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.22)] sm:p-4">
@@ -194,7 +194,7 @@ export function EntryFieldNotes({ slug, entryId, entryTitle, weekLabel, cityRegi
         <button
           type="button"
           onClick={onToggleOpen}
-          className="rounded-full bg-white px-3 py-1 text-xs text-app shadow-sm ring-1 ring-slate-200/60 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_10px_22px_rgba(15,23,42,0.06)]"
+          className="rounded-full bg-surface px-3 py-1 text-xs text-app shadow-sm ring-1 ring-app/70 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_10px_22px_rgba(15,23,42,0.06)]"
         >
           {isOpen ? "Hide Notes" : "Open Notes"}
         </button>
@@ -203,14 +203,14 @@ export function EntryFieldNotes({ slug, entryId, entryTitle, weekLabel, cityRegi
       {isOpen ? (
         <div className="mt-4 space-y-4">
           {threadInsight ? (
-            <div className="rounded-xl bg-surface px-3 py-2 text-xs text-muted shadow-[0_10px_22px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60">
+            <div className="rounded-xl bg-surface px-3 py-2 text-xs text-muted shadow-[0_10px_22px_rgba(15,23,42,0.045)] ring-1 ring-app/70">
               <p>
                 <span className="font-semibold text-app/85">Thread Insight:</span> {threadInsight}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <Link
                   href={askHref}
-                  className="rounded-full bg-white px-2.5 py-1 text-[11px] text-muted shadow-sm ring-1 ring-slate-200/60 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:text-app hover:shadow-[0_10px_22px_rgba(15,23,42,0.06)]"
+                  className="rounded-full bg-surface px-2.5 py-1 text-[11px] text-muted shadow-sm ring-1 ring-app/70 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:text-app hover:shadow-[0_10px_22px_rgba(15,23,42,0.06)]"
                 >
                   Ask AI about this discussion
                 </Link>
@@ -220,7 +220,7 @@ export function EntryFieldNotes({ slug, entryId, entryTitle, weekLabel, cityRegi
 
           {error ? <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</p> : null}
 
-          <div className="rounded-xl bg-surface p-3 shadow-[0_10px_22px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60">
+          <div className="rounded-xl bg-surface p-3 shadow-[0_10px_22px_rgba(15,23,42,0.045)] ring-1 ring-app/70">
             <p className="text-xs font-medium text-app">Share an operational insight.</p>
             <textarea
               rows={3}
@@ -246,7 +246,7 @@ export function EntryFieldNotes({ slug, entryId, entryTitle, weekLabel, cityRegi
           {loading ? (
             <p className="text-xs text-muted">Loading field notes...</p>
           ) : rootNotes.length === 0 ? (
-            <p className="rounded-xl bg-white/70 p-4 text-sm text-muted shadow-[inset_0_0_0_1px_rgba(148,163,184,0.28)]">
+            <p className="rounded-xl bg-surface p-4 text-sm text-muted shadow-[inset_0_0_0_1px_rgba(148,163,184,0.28)]">
               No field notes yet. Add the first operational context for this weekly entry.
             </p>
           ) : (
@@ -256,7 +256,7 @@ export function EntryFieldNotes({ slug, entryId, entryTitle, weekLabel, cityRegi
                 const canDelete = Boolean(currentIdentityKey && note.identity_key && note.identity_key === currentIdentityKey && !note.is_deleted);
                 const isExpertPerspective = Boolean(note.expertise_badge || note.profession || note.expertise);
                 return (
-                  <article key={note.id} className="rounded-xl bg-surface p-3 shadow-[0_10px_22px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60">
+                  <article key={note.id} className="rounded-xl bg-surface p-3 shadow-[0_10px_22px_rgba(15,23,42,0.045)] ring-1 ring-app/70">
                     <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
                       <span className="font-semibold text-app">{displayName}</span>
                       {isExpertPerspective ? (
@@ -264,8 +264,8 @@ export function EntryFieldNotes({ slug, entryId, entryTitle, weekLabel, cityRegi
                           Expert Perspective
                         </span>
                       ) : null}
-                      {note.profession ? <span className="rounded-full bg-white px-2 py-0.5 shadow-sm ring-1 ring-slate-200/55">{note.profession}</span> : null}
-                      {note.expertise_badge ? <span className="rounded-full bg-white px-2 py-0.5 shadow-sm ring-1 ring-slate-200/55">{note.expertise_badge}</span> : null}
+                      {note.profession ? <span className="rounded-full bg-surface px-2 py-0.5 shadow-sm ring-1 ring-app/70">{note.profession}</span> : null}
+                      {note.expertise_badge ? <span className="rounded-full bg-surface px-2 py-0.5 shadow-sm ring-1 ring-app/70">{note.expertise_badge}</span> : null}
                       <span>{formatDate(note.created_at)}</span>
                     </div>
                     <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-app/90">{note.is_deleted ? "[deleted]" : note.content}</p>
@@ -274,7 +274,7 @@ export function EntryFieldNotes({ slug, entryId, entryTitle, weekLabel, cityRegi
                         <button
                           type="button"
                           onClick={() => setActiveReplyFor((prev) => (prev === note.id ? null : note.id))}
-                          className="rounded-md bg-white px-2 py-1 text-muted shadow-sm ring-1 ring-slate-200/55 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:text-app"
+                          className="rounded-md bg-surface px-2 py-1 text-muted shadow-sm ring-1 ring-app/70 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:text-app"
                         >
                           Reply
                         </button>
@@ -315,7 +315,7 @@ export function EntryFieldNotes({ slug, entryId, entryTitle, weekLabel, cityRegi
                     ) : null}
 
                     {note.replies.length > 0 ? (
-                      <div className="mt-3 space-y-2 border-l border-slate-300/80 pl-3">
+                      <div className="mt-3 space-y-2 border-l border-app/70 pl-3">
                         {note.replies.map((reply) => {
                           const replyName = String(reply.username ?? "").trim() || reply.author_name || "Contributor";
                           return (

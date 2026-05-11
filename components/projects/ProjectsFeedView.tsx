@@ -56,12 +56,12 @@ export function ProjectsFeedView({
 
   return (
     <section className="mx-auto w-full max-w-[1240px] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-10 rounded-3xl bg-gradient-to-b from-white to-slate-50/70 p-6 shadow-[0_18px_46px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/60 md:p-7">
+      <div className="mb-10 rounded-3xl bg-surface p-6 shadow-[0_18px_46px_rgba(15,23,42,0.06)] ring-1 ring-app/70 md:p-7">
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-600">Site Journals</p>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-semibold tracking-tight text-app md:text-5xl">Site Journals</h1>
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-white px-3 py-1 text-xs text-muted shadow-sm ring-1 ring-slate-200/60">
+            <span className="rounded-full bg-surface px-3 py-1 text-xs text-muted shadow-sm ring-1 ring-app/70">
               {pulse.totalActiveJournals} active journals
             </span>
             <Link
@@ -78,17 +78,17 @@ export function ProjectsFeedView({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Browse Site Journals by city, type, tags, updates..."
-            className="h-10 rounded-xl bg-white px-3 text-sm text-app placeholder:text-muted outline-none ring-1 ring-slate-200/60 transition focus:ring-2 focus:ring-orange-300/60"
+            className="h-10 rounded-xl bg-surface px-3 text-sm text-app placeholder:text-muted outline-none ring-1 ring-app/70 transition focus:ring-2 focus:ring-orange-300/60"
           />
-          <select value={city} onChange={(event) => setCity(event.target.value)} className="h-10 rounded-xl bg-white px-3 text-sm text-app outline-none ring-1 ring-slate-200/60 transition focus:ring-2 focus:ring-orange-300/60">
+          <select value={city} onChange={(event) => setCity(event.target.value)} className="h-10 rounded-xl bg-surface px-3 text-sm text-app outline-none ring-1 ring-app/70 transition focus:ring-2 focus:ring-orange-300/60">
             <option value="all">All cities</option>
             {facets.cities.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
-          <select value={projectType} onChange={(event) => setProjectType(event.target.value)} className="h-10 rounded-xl bg-white px-3 text-sm text-app outline-none ring-1 ring-slate-200/60 transition focus:ring-2 focus:ring-orange-300/60">
+          <select value={projectType} onChange={(event) => setProjectType(event.target.value)} className="h-10 rounded-xl bg-surface px-3 text-sm text-app outline-none ring-1 ring-app/70 transition focus:ring-2 focus:ring-orange-300/60">
             <option value="all">All site journal types</option>
             {facets.projectTypes.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
-          <select value={risk} onChange={(event) => setRisk(event.target.value as "all" | ProjectHealth)} className="h-10 rounded-xl bg-white px-3 text-sm text-app outline-none ring-1 ring-slate-200/60 transition focus:ring-2 focus:ring-orange-300/60">
+          <select value={risk} onChange={(event) => setRisk(event.target.value as "all" | ProjectHealth)} className="h-10 rounded-xl bg-surface px-3 text-sm text-app outline-none ring-1 ring-app/70 transition focus:ring-2 focus:ring-orange-300/60">
             <option value="all">All risk levels</option>
             <option value="stable">Stable</option>
             <option value="watch">Watch Procurement</option>
@@ -107,7 +107,7 @@ export function ProjectsFeedView({
           ) : null}
         </div>
         <aside className="space-y-3">
-          <div className="rounded-2xl bg-white/90 p-4 shadow-[0_14px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60">
+          <div className="rounded-2xl bg-surface p-4 shadow-[0_14px_32px_rgba(15,23,42,0.045)] ring-1 ring-app/70">
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">AI Construction Signals</h2>
             <div className="mt-3 space-y-2 text-xs text-muted">
               <p>{pulse.procurementWatchCount} site journals on procurement watch.</p>
@@ -115,7 +115,7 @@ export function ProjectsFeedView({
               <p>Labor availability and steel volatility are top cross-region drivers.</p>
             </div>
           </div>
-          <div className="rounded-2xl bg-white/90 p-4 shadow-[0_14px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60">
+          <div className="rounded-2xl bg-surface p-4 shadow-[0_14px_32px_rgba(15,23,42,0.045)] ring-1 ring-app/70">
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Trending Site Journal Types</h2>
             <div className="mt-3 space-y-2 text-xs text-app/80">
               {trendingTypes.map(([name, count]) => (
@@ -126,7 +126,7 @@ export function ProjectsFeedView({
               ))}
             </div>
           </div>
-          <div className="rounded-2xl bg-white/90 p-4 shadow-[0_14px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60">
+          <div className="rounded-2xl bg-surface p-4 shadow-[0_14px_32px_rgba(15,23,42,0.045)] ring-1 ring-app/70">
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Active Regions</h2>
             <div className="mt-3 space-y-2 text-xs text-app/80">
               {activeRegions.map(([name, count]) => (
@@ -137,7 +137,7 @@ export function ProjectsFeedView({
               ))}
             </div>
           </div>
-          <div className="rounded-2xl bg-white/90 p-4 shadow-[0_14px_32px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/60">
+          <div className="rounded-2xl bg-surface p-4 shadow-[0_14px_32px_rgba(15,23,42,0.045)] ring-1 ring-app/70">
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-app">Top Contributors</h2>
             <div className="mt-3 space-y-2 text-xs text-app/80">
               {[...new Set(projects.map((p) => p.leadContributor.name))].slice(0, 4).map((name) => <p key={name}>{name}</p>)}

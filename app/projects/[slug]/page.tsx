@@ -121,7 +121,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
 
   return (
     <main className="mx-auto w-full max-w-[1280px] px-3 pb-16 pt-4 sm:px-4 lg:px-6">
-      <section className="rounded-3xl bg-gradient-to-b from-white to-slate-50/75 px-3 py-5 shadow-[0_18px_46px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/60 sm:px-4 sm:py-6 lg:px-6">
+      <section className="rounded-3xl bg-surface px-3 py-5 shadow-[0_18px_46px_rgba(15,23,42,0.06)] ring-1 ring-app/70 sm:px-4 sm:py-6 lg:px-6">
         <div>
           <p className="text-[11px] uppercase tracking-[0.2em] text-orange-500">Living Site Journal</p>
           <h1 className="mt-2 max-w-3xl text-3xl font-semibold tracking-tight text-app sm:text-4xl md:text-5xl">{project.title}</h1>
@@ -141,7 +141,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-xs">
           {project.contributors.map((c) => (
-            <span key={`${c.name}-${c.badge}`} className="rounded-full bg-white px-3 py-1 text-muted shadow-sm ring-1 ring-slate-200/60">
+            <span key={`${c.name}-${c.badge}`} className="rounded-full bg-surface px-3 py-1 text-muted shadow-sm ring-1 ring-app/70">
               {c.name} • {c.badge}
             </span>
           ))}
@@ -229,7 +229,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </div>
         </div>
 
-        <div className="mt-8 rounded-2xl bg-orange-50/90 p-5 shadow-[inset_0_0_0_1px_rgba(251,146,60,0.25)]">
+        <div className="mt-8 rounded-2xl bg-orange-50 p-5 shadow-[inset_0_0_0_1px_rgba(251,146,60,0.25)]">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-orange-700">This Week • Field Summary</p>
           <ul className="mt-3 space-y-1 text-sm text-orange-900">
             {weeklySummary.map((line) => (
@@ -238,7 +238,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </ul>
         </div>
 
-        <details className="mt-10 rounded-2xl bg-surface p-5 shadow-[0_18px_46px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/60">
+        <details className="mt-10 rounded-2xl bg-surface p-5 shadow-[0_18px_46px_rgba(15,23,42,0.06)] ring-1 ring-app/70">
           <summary className="cursor-pointer select-none text-sm font-semibold text-app">Field Appendix (signals, memory, and related intelligence)</summary>
           <div className="mt-4 space-y-6">
             <section>
@@ -314,7 +314,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </div>
         </details>
 
-        <div className="mt-10 space-y-3 border-l border-slate-300/70 pl-6 text-sm text-muted">
+        <div className="mt-10 space-y-3 border-l border-app/70 pl-6 text-sm text-muted">
           <p>Explore related intelligence from this journal:</p>
           <div className="flex flex-wrap gap-2">
             {askPrompts.map((prompt) => {
@@ -334,7 +334,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 intent: prompt,
               });
               return (
-                <Link key={prompt} href={`/ask?${askParams.toString()}`} className="rounded-full bg-white px-3 py-1.5 text-xs text-app shadow-sm ring-1 ring-slate-200/70 transition hover:-translate-y-0.5 hover:bg-slate-50">
+                <Link key={prompt} href={`/ask?${askParams.toString()}`} className="rounded-full bg-surface px-3 py-1.5 text-xs text-app shadow-sm ring-1 ring-app/70 transition hover:-translate-y-0.5 hover:bg-subtle">
                   {prompt}
                 </Link>
               );

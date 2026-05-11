@@ -30,7 +30,7 @@ const userProfileSchema = new mongoose.Schema(
     identity_key: { type: String, required: true, unique: true, trim: true, index: true },
     username: {
       type: String,
-      default: null,
+      default: undefined,
       trim: true,
       minlength: 3,
       maxlength: 30,
@@ -38,7 +38,7 @@ const userProfileSchema = new mongoose.Schema(
     },
     username_lower: {
       type: String,
-      default: null,
+      default: undefined,
       trim: true,
       minlength: 3,
       maxlength: 30,
@@ -56,7 +56,7 @@ const userProfileSchema = new mongoose.Schema(
     expertise_badge: { type: String, default: null, trim: true, maxlength: 60 },
     expertise_badge_admin_override: { type: String, default: null, trim: true, maxlength: 60 },
     email: { type: String, default: null, trim: true, maxlength: 320 },
-    email_lower: { type: String, default: null, trim: true, maxlength: 320 },
+    email_lower: { type: String, default: undefined, trim: true, maxlength: 320 },
     email_verified: { type: Boolean, default: false },
     phone: { type: String, default: null, trim: true, maxlength: 20 },
     phone_verified: { type: Boolean, default: false },

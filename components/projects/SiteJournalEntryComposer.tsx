@@ -66,8 +66,8 @@ export function SiteJournalEntryComposer({
   );
   const suggestedTags = ["procurement", "RCC", "vendor", "steel", "execution", "delay-risk"];
   const sectionClass = "rounded-xl border border-app bg-surface p-3";
-  const controlClass = "h-10 rounded-lg border border-app bg-white px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.2)]";
-  const textAreaClass = "mt-2 min-h-[220px] w-full rounded-lg border border-app bg-white px-3 py-3 text-sm leading-7 text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.2)]";
+  const controlClass = "h-10 rounded-lg border border-app bg-surface px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.2)]";
+  const textAreaClass = "mt-2 min-h-[220px] w-full rounded-lg border border-app bg-surface px-3 py-3 text-sm leading-7 text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.2)]";
 
   const addTagChip = (value: string) => {
     const next = value.trim().replace(/^#/, "");
@@ -192,7 +192,7 @@ export function SiteJournalEntryComposer({
 
         <section className={sectionClass}>
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Tags</p>
-          <div className="rounded-lg border border-app bg-white p-2">
+          <div className="rounded-lg border border-app bg-surface p-2">
             <div className="mb-2 flex flex-wrap gap-2">
               {tagChips.map((tag) => (
                 <button key={tag} type="button" onClick={() => removeTagChip(tag)} className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs text-orange-700 transition hover:bg-orange-100">
@@ -226,7 +226,7 @@ export function SiteJournalEntryComposer({
           <button
             type="button"
             onClick={() => setShowOperationalContext((prev) => !prev)}
-            className="flex w-full items-center justify-between rounded-lg border border-app bg-white px-3 py-2 text-left text-sm font-medium text-app"
+            className="flex w-full items-center justify-between rounded-lg border border-app bg-surface px-3 py-2 text-left text-sm font-medium text-app"
           >
             <span>Attach operational context</span>
             <span>{showOperationalContext ? "−" : "+"}</span>
@@ -237,7 +237,7 @@ export function SiteJournalEntryComposer({
         </section>
 
         <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-          <button type="button" onClick={() => void submitForReview()} disabled={submittingReview} className="rounded-lg border border-orange-300 bg-white px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-50 disabled:opacity-60">
+          <button type="button" onClick={() => void submitForReview()} disabled={submittingReview} className="rounded-lg border border-orange-300 bg-surface px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-50 disabled:opacity-60">
             {submittingReview ? "Submitting..." : "Submit for Review"}
           </button>
           <button type="submit" disabled={loading} className="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2 text-sm font-semibold text-white transition hover:from-orange-400 hover:to-amber-400 disabled:opacity-60">

@@ -13,7 +13,7 @@ export function ProjectJournalCard({ project }: { project: SiteJournalProject })
   return (
     <Link
       href={`/projects/${project.slug}`}
-      className="group overflow-hidden rounded-2xl bg-surface/92 shadow-[0_10px_30px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/55 transition-[transform,box-shadow,background-color] duration-200 ease-out hover:-translate-y-0.5 hover:bg-surface hover:shadow-[0_16px_40px_rgba(15,23,42,0.075)]"
+      className="group overflow-hidden rounded-2xl bg-surface shadow-[0_10px_30px_rgba(15,23,42,0.045)] ring-1 ring-app/70 transition-[transform,box-shadow,background-color] duration-200 ease-out hover:-translate-y-0.5 hover:bg-surface hover:shadow-[0_16px_40px_rgba(15,23,42,0.075)]"
     >
       <div className="relative h-40 w-full overflow-hidden bg-subtle sm:h-44">
         <img
@@ -39,11 +39,11 @@ export function ProjectJournalCard({ project }: { project: SiteJournalProject })
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-xs text-app/75">
-          <div className="rounded-xl bg-white/80 p-2.5 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.18)]">
+          <div className="rounded-xl bg-surface p-2.5 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.18)]">
             <p className="text-[10px] uppercase tracking-wide text-muted">Budget</p>
             <p className="mt-1">{project.budgetRange}</p>
           </div>
-          <div className="rounded-xl bg-white/80 p-2.5 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.18)]">
+          <div className="rounded-xl bg-surface p-2.5 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.18)]">
             <p className="text-[10px] uppercase tracking-wide text-muted">Lead</p>
             <p className="mt-1">{project.leadContributor.name}</p>
           </div>
@@ -60,7 +60,7 @@ export function ProjectJournalCard({ project }: { project: SiteJournalProject })
             />
           </div>
         </div>
-        <div className="space-y-1 rounded-xl bg-slate-50/70 p-3 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.16)]">
+        <div className="space-y-1 rounded-xl bg-subtle p-3 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.16)]">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-700">AI Site Summary</p>
           <p className="text-sm leading-6 text-muted">{project.aiRiskPulse}</p>
         </div>

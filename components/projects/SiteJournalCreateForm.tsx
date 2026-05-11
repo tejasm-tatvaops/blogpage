@@ -108,27 +108,27 @@ export function SiteJournalCreateForm() {
         <section className="rounded-2xl border border-app bg-surface p-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Project Basics</p>
           <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <input required value={form.title} onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))} placeholder="Site Title" className="h-11 rounded-lg border border-app bg-white px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]" />
-            <input list="project-type-options" required value={form.project_type} onChange={(event) => setForm((prev) => ({ ...prev, project_type: event.target.value }))} placeholder="Project Type" className="h-11 rounded-lg border border-app bg-white px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]" />
+            <input required value={form.title} onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))} placeholder="Site Title" className="h-11 rounded-lg border border-app bg-surface px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]" />
+            <input list="project-type-options" required value={form.project_type} onChange={(event) => setForm((prev) => ({ ...prev, project_type: event.target.value }))} placeholder="Project Type" className="h-11 rounded-lg border border-app bg-surface px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]" />
             <datalist id="project-type-options">
               {PROJECT_TYPE_OPTIONS.map((option) => <option key={option} value={option} />)}
             </datalist>
-            <input list="city-options" required value={form.city} onChange={(event) => setForm((prev) => ({ ...prev, city: event.target.value }))} placeholder="City" className="h-11 rounded-lg border border-app bg-white px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]" />
+            <input list="city-options" required value={form.city} onChange={(event) => setForm((prev) => ({ ...prev, city: event.target.value }))} placeholder="City" className="h-11 rounded-lg border border-app bg-surface px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]" />
             <datalist id="city-options">
               {CITY_OPTIONS.map((option) => <option key={option} value={option} />)}
             </datalist>
-            <input required value={form.region} onChange={(event) => setForm((prev) => ({ ...prev, region: event.target.value }))} placeholder="Region" className="h-11 rounded-lg border border-app bg-white px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]" />
+            <input required value={form.region} onChange={(event) => setForm((prev) => ({ ...prev, region: event.target.value }))} placeholder="Region" className="h-11 rounded-lg border border-app bg-surface px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]" />
           </div>
         </section>
 
         <section className="rounded-2xl border border-app bg-surface p-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Budget + Timeline</p>
           <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <select value={form.budget_range} onChange={(event) => setForm((prev) => ({ ...prev, budget_range: event.target.value }))} className="h-11 rounded-lg border border-app bg-white px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]">
+            <select value={form.budget_range} onChange={(event) => setForm((prev) => ({ ...prev, budget_range: event.target.value }))} className="h-11 rounded-lg border border-app bg-surface px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]">
               <option value="">Select budget range</option>
               {BUDGET_PRESETS.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
-            <input type="date" required value={form.timeline_start_date} onChange={(event) => setForm((prev) => ({ ...prev, timeline_start_date: event.target.value }))} className="h-11 rounded-lg border border-app bg-white px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]" />
+            <input type="date" required value={form.timeline_start_date} onChange={(event) => setForm((prev) => ({ ...prev, timeline_start_date: event.target.value }))} className="h-11 rounded-lg border border-app bg-surface px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]" />
           </div>
         </section>
 
@@ -136,7 +136,7 @@ export function SiteJournalCreateForm() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Cover Media</p>
           <div className="mt-3 rounded-xl border border-dashed border-app bg-subtle/60 p-4">
             <p className="text-xs text-muted">Paste a site image, rendering, drone capture, or execution photo</p>
-            <input value={form.cover_media} onChange={(event) => setForm((prev) => ({ ...prev, cover_media: event.target.value }))} placeholder="Paste media URL" className="mt-3 h-11 w-full rounded-lg border border-app bg-white px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]" />
+            <input value={form.cover_media} onChange={(event) => setForm((prev) => ({ ...prev, cover_media: event.target.value }))} placeholder="Paste media URL" className="mt-3 h-11 w-full rounded-lg border border-app bg-surface px-3 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]" />
             {form.cover_media ? (
               <div className="mt-3 overflow-hidden rounded-lg border border-app bg-black/80">
                 <img src={form.cover_media} alt="Cover preview" className="h-40 w-full object-cover" />
@@ -147,7 +147,7 @@ export function SiteJournalCreateForm() {
 
         <section className="rounded-2xl border border-app bg-surface p-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Tags</p>
-          <div className="mt-3 rounded-lg border border-app bg-white p-2">
+          <div className="mt-3 rounded-lg border border-app bg-surface p-2">
             <div className="mb-2 flex flex-wrap gap-2">
               {form.tags.map((tag) => (
                 <button key={tag} type="button" onClick={() => removeTag(tag)} className="rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs text-orange-700 transition hover:bg-orange-100">
@@ -184,7 +184,7 @@ export function SiteJournalCreateForm() {
             onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
             placeholder="Tracking procurement volatility, labor coordination, and execution progress for a G+2 residential build in Miyapur."
             rows={5}
-            className="mt-3 w-full rounded-lg border border-app bg-white px-3 py-2 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]"
+            className="mt-3 w-full rounded-lg border border-app bg-surface px-3 py-2 text-sm text-app transition focus:border-orange-300 focus:shadow-[0_0_0_3px_rgba(251,146,60,0.18)]"
           />
           <p className="mt-2 text-xs text-muted">
             Example dimensions: {FIELD_NOTE_EXAMPLES.join(" • ")}
