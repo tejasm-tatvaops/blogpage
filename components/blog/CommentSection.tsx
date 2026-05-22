@@ -351,19 +351,19 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
 
   return (
     <section className="mt-14 border-t border-app pt-6">
-      <h2 className="mb-3 text-base font-semibold normal-case tracking-normal text-black dark:text-white">
+      <h2 className="mb-3 text-base font-semibold normal-case tracking-normal text-heading">
         Discuss this article
       </h2>
       {/* Discuss this article strip */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-100 bg-sky-50/60 px-4 py-3 transition hover:bg-sky-50/80">
-        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-600">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-app bg-subtle px-4 py-3 transition hover:bg-card">
+        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-info-soft bg-card text-orange-500">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-sky-800">Join the conversation</p>
-          <p className="text-sm text-sky-600/80">Share your thoughts, ask questions, or start a discussion below.</p>
+          <p className="font-medium text-info-soft">Join the conversation</p>
+          <p className="text-sm text-muted">Share your thoughts, ask questions, or start a discussion below.</p>
         </div>
         <button
           type="button"
@@ -371,7 +371,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
             commentTextareaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
             commentTextareaRef.current?.focus();
           }}
-          className="rounded-full border border-sky-200 bg-surface px-3 py-1.5 text-xs font-medium text-sky-700 transition hover:bg-sky-100"
+          className="rounded-full border border-app bg-surface px-3 py-1.5 text-xs font-medium text-app transition hover:bg-card"
         >
           Comment
         </button>
@@ -419,10 +419,10 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
 
       {/* Comment form */}
       <form onSubmit={onSubmit} className="mb-10 rounded-2xl border border-app bg-subtle p-5">
-        <p className="mb-4 text-sm font-semibold text-slate-700">Add a comment</p>
+        <p className="mb-4 text-sm font-semibold text-app">Add a comment</p>
 
         {!session && (
-          <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+          <p className="mb-4 rounded-xl border border-warning-soft bg-warning-soft px-4 py-3 text-sm font-medium text-warning-soft">
             You are commenting as Anonymous.
           </p>
         )}

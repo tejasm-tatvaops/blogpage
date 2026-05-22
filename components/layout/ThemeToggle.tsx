@@ -60,10 +60,10 @@ export function ThemeToggle() {
       title={`Theme: ${LABELS[preference]}. Click to cycle.`}
       aria-label={`Current theme: ${LABELS[preference]}. Click to change.`}
       className={[
-        "inline-flex items-center justify-center rounded-full border p-[7px] transition",
-        "hover:-translate-y-0.5 hover:shadow",
-        "ui-btn-secondary border-app text-muted shadow-sm hover:text-app",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1",
+        "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition",
+        "border-app bg-surface text-muted shadow-sm",
+        "hover:-translate-y-0.5 hover:border-orange-500/30 hover:text-app hover:shadow-md",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-bg)]",
       ].join(" ")}
     >
       {icon}

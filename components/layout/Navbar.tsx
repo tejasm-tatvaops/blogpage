@@ -20,7 +20,6 @@ const NAV_LINKS = [
   { href: "/supplier", label: "Suppliers", exact: false },
   { href: "/brand-profile", label: "Brands", exact: false },
   { href: "/ask", label: "Ask AI", exact: false },
-  { href: "/admin/login", label: "Admin", exact: false },
 ];
 
 /** Desktop chrome: fixed 50px-tall bar, 1100px cap, shifted for the 88px left rail. */
@@ -49,11 +48,7 @@ export function Navbar() {
       <header
         id="hdr"
         className={cn(
-          "z-40 border-[1px] border-[rgba(249,115,22,0.22)] bg-[rgba(244,245,251,0.97)] backdrop-saturate-150 dark:bg-[rgba(10,13,34,0.82)]",
-          "transition-[background-color,border-color,box-shadow] duration-200",
-          "shadow-[0_8px_32px_rgba(0,0,0,0.08),0_0_0_1px_rgba(249,115,22,0.06)]",
-          "dark:shadow-[0_8px_40px_rgba(4,6,18,0.55),0_0_0_1px_rgba(249,115,22,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]",
-          "backdrop-blur-[10px] md:backdrop-blur-[20px]",
+          "z-40 glass-nav transition-[background-color,border-color,box-shadow] duration-200",
           "sticky top-2 mx-2 mb-2 min-w-0 rounded-[14px]",
           "md:fixed md:top-[14px] md:mx-0 md:mb-0 md:h-[50px] md:min-w-[640px] md:w-[1100px] md:max-w-[calc(100%-160px)] md:rounded-[14px] md:px-[14px]",
           isAdmin

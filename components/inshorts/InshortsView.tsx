@@ -111,7 +111,6 @@ const navLinks = [
   { label: "Tutorials",     href: "/tutorials" },
   { label: "Ask AI",        href: "/ask", highlight: true },
   { label: "Saved",         href: "/saved" },
-  { label: "Admin",         href: "/admin/login" },
 ];
 
 type InshortsViewProps = {
@@ -513,7 +512,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-black text-white">
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-immersive text-white">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white" />
         <p className="mt-4 text-sm text-white/50">Loading Tatva Inshorts…</p>
       </div>
@@ -522,7 +521,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
 
   if (posts.length === 0) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-black text-white">
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-immersive text-white">
         <p className="text-lg font-semibold text-white/60">No insights available yet.</p>
         <p className="mt-2 text-sm text-white/40">Check back soon — content is added regularly.</p>
         <div className="mt-6 flex gap-3">
@@ -539,7 +538,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-10 h-screen w-screen bg-black text-white"
+      className="fixed inset-0 z-10 h-screen w-screen bg-immersive text-white"
       animate={{ scale: selectedPost ? 0.985 : 1 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
     >
@@ -836,7 +835,7 @@ export function InshortsView({ initialPosts }: InshortsViewProps) {
               className="mr-0 inline-block h-full min-w-full align-top snap-start"
             >
               {Math.abs(i - activeIndex) > 1 ? (
-                <div className="h-full w-full bg-black" />
+                <div className="h-full w-full bg-immersive" />
               ) : (
                 <motion.article
                   initial={{ opacity: 0.82, scale: 0.985, y: 18 }}

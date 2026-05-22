@@ -1020,6 +1020,26 @@ export const getAllForumTags = async (): Promise<string[]> => {
   return tags.filter(Boolean).sort((a, b) => a.localeCompare(b));
 };
 
+/** All forum thread slugs for sitemap generation (no 50-item feed cap). */
+export const getAllForumSlugsForSitemap = async (
+  limit = 5000,
+): Promise<Array<{ slug: string; updated_at: Date; created_at: Date }>> => {
+  await connectToDatabase();
+  const docs = (await ForumPostModel.find({ ...notDeleted })
+    .select("slug updated_at created_at")
+    .sort({ updated_at: -1 })
+    .limit(Math.min(Math.max(1, limit), 10_000))
+    .lean()) as unknown as Array<{ slug: string; updated_at: Date; created_at: Date }>;
+
+  return docs
+    .map((doc) => ({
+      slug: String(doc.slug ?? "").trim(),
+      updated_at: doc.updated_at ? new Date(doc.updated_at) : new Date(),
+      created_at: doc.created_at ? new Date(doc.created_at) : new Date(),
+    }))
+    .filter((doc) => doc.slug.length > 0);
+};
+
 export const getTrendingForumPosts = async (limit = 5): Promise<ForumPost[]> => {
   await connectToDatabase();
   const docs = (await ForumPostModel.find({ ...notDeleted, is_trending: true })

@@ -1,5 +1,27 @@
+import dns from "node:dns";
 import mongoose from "mongoose";
 import { validateEnv } from "@/lib/env";
+
+/**
+ * mongodb+srv:// resolves hostnames via DNS SRV. On some Windows networks the
+ * default resolver (often the router at a link-local IPv6 address) returns
+ * ECONNREFUSED for SRV while system tools still work. Use public DNS as fallback.
+ */
+function configureDnsForMongoSrv(): void {
+  const custom = process.env.MONGODB_DNS_SERVERS?.split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (custom?.length) {
+    dns.setServers(custom);
+    return;
+  }
+
+  if (process.platform === "win32" && process.env.MONGODB_URI?.startsWith("mongodb+srv://")) {
+    dns.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
+  }
+}
+
+configureDnsForMongoSrv();
 
 if (process.getMaxListeners() <= 50) {
   process.setMaxListeners(100);

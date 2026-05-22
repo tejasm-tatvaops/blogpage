@@ -39,6 +39,8 @@ export function useMe() {
     revalidateOnFocus: false,
     revalidateIfStale: false,
     refreshInterval: 45_000,
+    keepPreviousData: true,
+    errorRetryCount: 1,
   });
 }
 

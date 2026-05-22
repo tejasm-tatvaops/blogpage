@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { useTheme, type ThemePreference } from "@/hooks/useTheme";
 import type { ReactNode } from "react";
+
+const THEME_LABEL: Record<ThemePreference, string> = {
+  auto: "AUTO",
+  light: "LIGHT",
+  dark: "DARK",
+};
 
 // DO NOT MODIFY INTERNAL LOGIC OR JSX STRUCTURE
 // ONLY APPLY STYLING OR WRAPPING
@@ -104,10 +111,10 @@ function SidebarItem({
       href={href}
       title={label}
       className={[
-        "relative flex w-full flex-col items-center py-[14px] gap-[6px] rounded-xl transition-all duration-200",
+        "relative flex w-full flex-col items-center gap-[5px] rounded-xl py-3 transition-all duration-200",
         active
-          ? "text-orange-500 bg-white/40 dark:bg-white/[0.03]"
-          : "text-[#5A5E80] dark:text-[rgba(255,255,255,0.32)] hover:text-orange-500 dark:hover:text-orange-400 hover:bg-white/40 dark:hover:bg-white/5",
+          ? "text-orange-500 bg-subtle"
+          : "text-muted hover:text-orange-500 dark:hover:text-orange-400 hover:bg-subtle/80",
       ].join(" ")}
     >
       {active && (
@@ -121,30 +128,24 @@ function SidebarItem({
 
 export function FloatingSidebar() {
   const pathname = usePathname();
+  const { preference } = useTheme();
 
   // Don't render on admin pages — admin has its own sidebar
   if (pathname.startsWith("/admin")) return null;
 
   return (
-    <aside className="hidden fixed left-[14px] top-1/2 z-[150] -translate-y-1/2 w-[88px] h-[min(657px,calc(100vh-130px))] rounded-[28px] overflow-hidden md:block">
-      <div
-        className="absolute inset-0 flex flex-col items-center pt-7 pb-6 px-0 rounded-[28px]
-          bg-[rgba(236,238,248,0.82)] dark:bg-[rgba(8,11,28,0.82)]
-          backdrop-blur-xl
-          shadow-[0px_8px_40px_rgba(80,90,160,0.14),inset_0px_1px_0px_rgba(255,255,255,0.9)]
-          dark:shadow-[0_16px_56px_rgba(4,6,18,0.65),inset_0_1px_0_rgba(255,255,255,0.05)]
-          border border-[#F97316]/20 dark:border-[#F97316]/15"
-      >
+    <aside className="hidden fixed left-[14px] top-1/2 z-[150] -translate-y-1/2 w-[88px] max-h-[calc(100vh-24px)] md:block">
+      <div className="flex max-h-[calc(100vh-24px)] min-h-[min(520px,calc(100vh-24px))] flex-col items-center rounded-[28px] glass-sidebar px-0 pt-6 pb-4">
       {/* Brand strip */}
-      <div className="flex flex-col gap-[4px] pb-7">
+      <div className="flex shrink-0 flex-col gap-[4px] pb-4">
         <div className="w-9 h-2 bg-orange-500 rounded" />
         <div className="w-9 h-2 bg-orange-500/80 rounded" />
         <div className="w-9 h-2 bg-orange-500/80 rounded" />
         <div className="w-9 h-2 bg-orange-400/50 rounded" />
       </div>
 
-      {/* Nav items */}
-      <div className="flex w-full flex-1 flex-col items-center">
+      {/* Nav items — scroll when viewport is short so theme toggle stays visible */}
+      <nav className="flex w-full min-h-0 flex-1 flex-col items-center overflow-y-auto overflow-x-hidden overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {NAV_ITEMS.map(({ href, label, icon }) => {
           const isActive =
             href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -158,12 +159,12 @@ export function FloatingSidebar() {
             />
           );
         })}
-      </div>
+      </nav>
 
-      {/* Dark / Light toggle at bottom */}
-      <div className="mt-auto flex w-full flex-col items-center gap-1.5 pt-4 border-t border-black/10 dark:border-white/10">
-        <span className="text-[0.54rem] font-bold leading-none tracking-widest text-[#5A5E80] dark:text-white/45">
-          DARK
+      {/* Theme toggle — always pinned below nav */}
+      <div className="mt-2 flex w-full shrink-0 flex-col items-center gap-1.5 border-t border-app pt-3">
+        <span className="text-[0.54rem] font-bold leading-none tracking-widest text-muted">
+          {THEME_LABEL[preference]}
         </span>
         <ThemeToggle />
       </div>

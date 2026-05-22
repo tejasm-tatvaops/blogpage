@@ -3,19 +3,22 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "NEXT_DISABLE_DEVTOOLS=1 next dev",
-    "dev:clean": "rm -rf .next && NEXT_DISABLE_DEVTOOLS=1 next dev",
+    "dev": "cross-env NEXT_DISABLE_DEVTOOLS=1 next dev",
+    "dev:clean": "rimraf .next-dev .next && cross-env NEXT_DISABLE_DEVTOOLS=1 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/seedBlogs.ts",
-    "seed:reset": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/seedBlogs.ts --reset",
-    "scheduler:daily": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/dailyRandomBlogScheduler.ts",
-    "images:backfill": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/generateMissingImages.ts",
-    "generate:images": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/generateBlogImages.ts",
-    "users:fix-types": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/fixUserTypes.ts",
-    "identity:fix-drift": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/fixIdentityDrift.ts",
-    "test:reputation-concurrency": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/reputationConcurrencyTest.ts"
+    "seed": "cross-env DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/seedBlogs.ts",
+    "seed:reset": "cross-env DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/seedBlogs.ts --reset",
+    "scheduler:daily": "cross-env DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/dailyRandomBlogScheduler.ts",
+    "images:backfill": "cross-env DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/generateMissingImages.ts",
+    "generate:images": "cross-env DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/generateBlogImages.ts",
+    "users:fix-types": "cross-env DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/fixUserTypes.ts",
+    "identity:fix-drift": "cross-env DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/fixIdentityDrift.ts",
+    "test:reputation-concurrency": "cross-env DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/reputationConcurrencyTest.ts",
+    "db:sync": "cross-env DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/dbSync.ts",
+    "db:sync:confirm": "cross-env DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/dbSync.ts --confirm",
+    "sitemap:generate": "cross-env DOTENV_CONFIG_PATH=.env.local NEXT_PUBLIC_SITE_URL=https://withtatva.ai tsx -r dotenv/config scripts/generateSitemap.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -45,6 +48,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
+    "rimraf": "^6.0.1",
     "@tailwindcss/postcss": "^4.1.8",
     "@tailwindcss/typography": "^0.5.16",
     "@types/cookie": "^0.6.0",

@@ -1,7 +1,7 @@
 import { connectToDatabase } from "@/lib/db/mongodb";
 import { BlogModel } from "@/models/Blog";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://tatvaops.com";
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://withtatva.ai").replace(/\/+$/, "");
 const PUBLICATION_NAME = "TatvaOps Blog";
 const PUBLICATION_LANGUAGE = "en";
 
