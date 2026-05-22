@@ -155,7 +155,7 @@ export function BlogDetail({
             {/* ── Article header ── */}
             <header className="mb-8">
               {/* Category badge */}
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.13em] text-sky-600 ring-1 ring-inset ring-sky-100">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-info-soft px-3 py-1 text-[11px] font-bold uppercase tracking-[0.13em] text-info-soft ring-1 ring-inset ring-info-soft">
                 {post.category}
               </span>
 
@@ -262,16 +262,16 @@ export function BlogDetail({
             {/* ── Revision trust strip ── */}
             <div className="mb-5 space-y-2">
               {approvedRevisionCount > 0 && (
-                <div className="flex flex-wrap items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0 text-emerald-600" aria-hidden>
+                <div className="flex flex-wrap items-start gap-2 rounded-xl border border-success-soft bg-success-soft px-4 py-3">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0 text-success-soft" aria-hidden>
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="text-[12px] font-bold text-emerald-800">Community Reviewed</span>
+                      <span className="text-[12px] font-bold text-success-soft">Community Reviewed</span>
                       <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">✓ Verified</span>
                     </div>
-                    <p className="mt-0.5 text-[11px] text-emerald-700">
+                    <p className="mt-0.5 text-[11px] text-success-soft">
                       Verified by Expert contributor
                       {lastReviewer && <span className="font-medium"> · {lastReviewer}</span>}
                       {lastReviewedAt && <span className="opacity-70"> · Updated {relativeDate(lastReviewedAt)}</span>}
@@ -279,7 +279,7 @@ export function BlogDetail({
                   </div>
                   <Link
                     href={`/blog/${post.slug}/revisions`}
-                    className="flex-shrink-0 text-[11px] font-medium text-emerald-600 hover:underline"
+                    className="flex-shrink-0 text-[11px] font-medium text-success-soft hover:underline"
                   >
                     {approvedRevisionCount} revision{approvedRevisionCount !== 1 ? "s" : ""}
                   </Link>
@@ -289,7 +289,7 @@ export function BlogDetail({
                 {approvedRevisionCount === 0 && (
                   <Link
                     href={`/blog/${post.slug}/revisions`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] font-medium text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-app bg-subtle px-3 py-1 text-[11px] font-medium text-muted transition hover:border-info-soft hover:text-info-soft"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                       <polyline points="12 8 12 12 14 14" /><circle cx="12" cy="12" r="10" />
@@ -299,7 +299,7 @@ export function BlogDetail({
                 )}
                 <Link
                   href={`/blog/${post.slug}/suggest-edit`}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] font-medium text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-app bg-subtle px-3 py-1 text-[11px] font-medium text-muted transition hover:border-info-soft hover:text-info-soft"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -438,8 +438,8 @@ export function BlogDetail({
 
             {/* ── Related Discussions ── */}
             {relatedForumPosts.length > 0 && (
-              <section aria-labelledby="related-discussions-heading" className="mt-10 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-5">
-                <h2 id="related-discussions-heading" className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-indigo-700">
+              <section aria-labelledby="related-discussions-heading" className="mt-10 rounded-2xl border border-app bg-info-soft p-5">
+                <h2 id="related-discussions-heading" className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-info-soft">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
@@ -450,13 +450,13 @@ export function BlogDetail({
                     <li key={thread.id}>
                       <Link
                         href={`/forums/${thread.slug}`}
-                        className="group flex items-start gap-3 rounded-xl border border-indigo-100 bg-surface px-4 py-3 transition hover:border-indigo-300 hover:shadow-sm"
+                        className="group flex items-start gap-3 rounded-xl border border-app bg-surface px-4 py-3 transition hover:border-info-soft hover:shadow-sm"
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0 text-indigo-400" aria-hidden>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0 text-info-soft" aria-hidden>
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                         </svg>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold leading-snug text-slate-800 transition group-hover:text-indigo-700 line-clamp-2">
+                          <p className="text-sm font-semibold leading-snug text-app transition group-hover:text-primary line-clamp-2">
                             {thread.title}
                           </p>
                           {thread.tags[0] ? (
@@ -464,11 +464,11 @@ export function BlogDetail({
                               <ContextChip
                                 text={`Popular in ${thread.tags[0]} discussions`}
                                 keyword={thread.tags[0]}
-                                className="border-indigo-100/60 bg-indigo-100/30 text-slate-600 hover:text-slate-700"
+                                className="border-info-soft bg-info-soft text-muted hover:text-app"
                               />
                             </div>
                           ) : null}
-                          <p className="mt-0.5 text-xs text-slate-400">
+                          <p className="mt-0.5 text-xs text-muted">
                             {thread.comment_count} {thread.comment_count === 1 ? "reply" : "replies"}
                           </p>
                         </div>

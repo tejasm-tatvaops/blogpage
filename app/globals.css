@@ -163,6 +163,7 @@ main { width: 100%; }
   .bg-subtle { background-color: var(--color-bg-subtle); }
   .bg-surface { background-color: var(--color-surface); }
   .bg-card { background-color: var(--color-card); }
+  .ring-card { --tw-ring-color: var(--color-card); }
   .text-app { color: var(--color-text); }
   .text-muted { color: var(--color-text-muted); }
   .text-faint { color: var(--color-text-faint); }
@@ -172,18 +173,29 @@ main { width: 100%; }
   .bg-immersive { background-color: var(--color-immersive-bg); }
   .bg-info-soft { background-color: var(--color-info-bg-soft); }
   .border-info-soft { border-color: var(--color-info-border-soft); }
+  .hover\:border-info-soft:hover { border-color: var(--color-info-border-soft); }
+  .ring-info-soft { --tw-ring-color: var(--color-info-border-soft); }
   .text-info-soft { color: var(--color-info-text-soft); }
+  .bg-success-soft { background-color: var(--color-success-bg-soft); }
+  .border-success-soft { border-color: var(--color-success-border-soft); }
+  .text-success-soft { color: var(--color-success-text-soft); }
   .bg-warning-soft { background-color: var(--color-warning-bg-soft); }
   .border-warning-soft { border-color: var(--color-warning-border-soft); }
   .text-warning-soft { color: var(--color-warning-text-soft); }
+  .bg-danger-soft { background-color: var(--color-danger-bg-soft); }
+  .border-danger-soft { border-color: var(--color-danger-border-soft); }
+  .text-danger-soft { color: var(--color-danger-text-soft); }
 
   /* Theme bridge: force legacy hardcoded Tailwind palette classes onto semantic tokens. */
   .bg-white,
   .bg-slate-50,
   .bg-gray-50,
   .bg-slate-100,
-  .bg-gray-100 {
-    background-color: var(--color-surface);
+  .bg-gray-100,
+  .bg-white\/70,
+  .bg-white\/80,
+  .bg-white\/85 {
+    background-color: color-mix(in oklab, var(--color-surface) 92%, transparent);
   }
 
   .bg-slate-900,
@@ -375,6 +387,120 @@ main { width: 100%; }
   .border-red-200 {
     border-color: var(--color-danger-border-soft);
   }
+
+  /* ── Indigo palette bridge (missing from initial bridge) ──────────────────── */
+  .bg-indigo-50,
+  .bg-indigo-50\/40,
+  .bg-indigo-50\/60,
+  .bg-indigo-100,
+  .bg-indigo-100\/30,
+  .bg-indigo-100\/40 {
+    background-color: var(--color-info-bg-soft);
+  }
+
+  .hover\:bg-indigo-50:hover,
+  .hover\:bg-indigo-50\/60:hover,
+  .hover\:bg-indigo-50\/40:hover,
+  .hover\:bg-indigo-100:hover {
+    background-color: color-mix(in oklab, var(--color-info-bg-soft) 80%, var(--color-card-hover));
+  }
+
+  .text-indigo-700,
+  .text-indigo-600,
+  .text-indigo-500,
+  .text-indigo-400 {
+    color: var(--color-info-text-soft);
+  }
+
+  .hover\:text-indigo-700:hover,
+  .hover\:text-indigo-600:hover,
+  .group-hover\:text-indigo-700,
+  .group-hover\:text-indigo-600 {
+    color: var(--color-info-text-soft);
+  }
+
+  .group:hover .group-hover\:text-indigo-700,
+  .group:hover .group-hover\:text-indigo-600 {
+    color: var(--color-info-text-soft);
+  }
+
+  .border-indigo-300,
+  .border-indigo-400 {
+    border-color: var(--color-info-border-soft);
+  }
+
+  .hover\:border-indigo-300:hover,
+  .hover\:border-indigo-400:hover {
+    border-color: var(--color-info-border-soft);
+  }
+
+  .border-indigo-50,
+  .border-indigo-50\/60 {
+    border-color: color-mix(in oklab, var(--color-info-border-soft) 50%, transparent);
+  }
+
+  /* ── Orange palette bridge ────────────────────────────────────────────────── */
+  .bg-orange-50,
+  .bg-orange-100 {
+    background-color: var(--color-warning-bg-soft);
+  }
+
+  .hover\:bg-orange-50:hover,
+  .hover\:bg-orange-100:hover {
+    background-color: color-mix(in oklab, var(--color-warning-bg-soft) 80%, var(--color-card-hover));
+  }
+
+  .text-orange-700,
+  .text-orange-600 {
+    color: var(--color-warning-text-soft);
+  }
+
+  .border-orange-300,
+  .border-orange-200 {
+    border-color: var(--color-warning-border-soft);
+  }
+
+  /* ── Emerald text shades (additional) ────────────────────────────────────── */
+  .text-emerald-600 {
+    color: var(--color-success-text-soft);
+  }
+
+  .hover\:text-emerald-600:hover {
+    color: var(--color-success-text-soft);
+  }
+
+  /* ── Ring/focus color bridges ────────────────────────────────────────────── */
+  .ring-sky-100,
+  .ring-indigo-100 {
+    --tw-ring-color: var(--color-border);
+  }
+
+  .focus\:ring-indigo-100:focus,
+  .focus\:ring-indigo-200:focus {
+    --tw-ring-color: var(--color-info-border-soft);
+  }
+
+  .focus\:border-indigo-400:focus,
+  .focus\:border-indigo-300:focus {
+    border-color: var(--color-info-border-soft);
+  }
+
+  /* ── Divide color bridge (indigo) ────────────────────────────────────────── */
+  .divide-indigo-50 > :not([hidden]) ~ :not([hidden]),
+  .divide-indigo-100 > :not([hidden]) ~ :not([hidden]) {
+    border-color: color-mix(in oklab, var(--color-info-border-soft) 40%, transparent);
+  }
+
+  /* ── Gradient to/from bridges (additional) ───────────────────────────────── */
+  .from-indigo-50\/40 {
+    --tw-gradient-from: color-mix(in oklab, var(--color-surface) 75%, var(--color-info-bg-soft) 25%) var(--tw-gradient-from-position);
+    --tw-gradient-to: color-mix(in oklab, var(--color-surface) 0%, transparent) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  }
+
+  .to-sky-50\/40 {
+    --tw-gradient-to: color-mix(in oklab, var(--color-surface) 60%, var(--color-info-bg-soft) 40%) var(--tw-gradient-to-position);
+  }
 }
 
 @layer components {
@@ -405,13 +531,33 @@ main { width: 100%; }
     outline-offset: 1px;
   }
 
+  .ui-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .ui-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
   .ui-btn-primary {
     background: var(--color-primary);
     color: var(--color-primary-text);
+    border: 1px solid color-mix(in oklab, var(--color-primary) 85%, transparent);
+    box-shadow: 0 2px 12px color-mix(in oklab, var(--color-primary) 28%, transparent);
   }
 
-  .ui-btn-primary:hover {
+  .ui-btn-primary:hover:not(:disabled) {
     background: var(--color-primary-hover);
+    box-shadow: 0 4px 16px color-mix(in oklab, var(--color-primary) 36%, transparent);
   }
 
   .ui-btn-secondary {
@@ -420,8 +566,50 @@ main { width: 100%; }
     color: var(--color-text);
   }
 
-  .ui-btn-secondary:hover {
+  .ui-btn-secondary:hover:not(:disabled) {
     background: var(--color-card-hover);
+    border-color: var(--color-border-focus);
+  }
+
+  .ui-btn-ghost {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+  }
+
+  .ui-btn-ghost:hover:not(:disabled) {
+    background: var(--color-card-hover);
+    border-color: color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+    color: var(--color-text);
+  }
+
+  .ui-chip {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+  }
+
+  .ui-chip:hover:not(:disabled) {
+    background: var(--color-card-hover);
+    border-color: color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+    color: var(--color-primary);
+  }
+
+  .ui-chip-active {
+    background: var(--color-primary);
+    border-color: color-mix(in oklab, var(--color-primary) 80%, transparent);
+    color: var(--color-primary-text);
+    box-shadow: 0 0 12px color-mix(in oklab, var(--color-primary) 30%, transparent);
+  }
+
+  .ui-chip-active:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    color: var(--color-primary-text);
+  }
+
+  .ui-surface-glass {
+    background: color-mix(in oklab, var(--color-surface) 88%, transparent);
+    border-color: var(--color-border);
   }
 
   .ui-table {

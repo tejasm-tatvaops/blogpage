@@ -2,7 +2,15 @@ import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
 const notificationSchema = new mongoose.Schema(
   {
-    type: { type: String, enum: ["reply", "comment", "vote"], required: true, index: true },
+    type: {
+      type: String,
+      enum: [
+        "reply", "comment", "vote",
+        "story_reply", "story_reaction", "story_poll_vote",
+      ],
+      required: true,
+      index: true,
+    },
     post_id: { type: String, required: true },
     comment_id: { type: String, default: null, index: true },
     recipient_key: { type: String, required: true, index: true },

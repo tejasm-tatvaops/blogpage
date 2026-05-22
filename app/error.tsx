@@ -35,7 +35,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         <button
           type="button"
           onClick={reset}
-          className="mt-5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-slate-700"
+          className="ui-btn ui-btn-primary mt-5 rounded-lg px-4 py-2 text-sm font-semibold"
         >
           Retry
         </button>

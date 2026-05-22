@@ -10,6 +10,7 @@ import { useActivityPolling } from "@/lib/activityPolling";
 import { getUserAvatar } from "@/lib/identityUI";
 import { UserProfileQuickView } from "@/components/user/UserQuickView";
 import { FollowButton } from "@/components/user/FollowButton";
+import { btnPrimarySm, chipToggle } from "@/lib/ui/buttons";
 import { ExpertiseBadge } from "@/components/shared/ExpertiseBadge";
 
 type CommentSectionProps = {
@@ -398,20 +399,14 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
         <button
           type="button"
           onClick={() => setSortMode("top")}
-          className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-            sortMode === "top" ? "bg-slate-900 !text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-          }`}
+          className={chipToggle(sortMode === "top")}
         >
           Top
         </button>
         <button
           type="button"
           onClick={() => setSortMode("newest")}
-          className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-            sortMode === "newest"
-              ? "bg-slate-900 !text-white"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-          }`}
+          className={chipToggle(sortMode === "newest")}
         >
           Newest
         </button>
@@ -483,7 +478,7 @@ export function CommentSection({ slug, initialComments }: CommentSectionProps) {
           <button
             type="submit"
             disabled={submitting || !content.trim()}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-slate-700 disabled:opacity-50"
+            className={btnPrimarySm}
           >
             {submitting ? "Posting…" : "Post comment"}
           </button>

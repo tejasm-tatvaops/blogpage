@@ -39,8 +39,8 @@ export function Navbar() {
     [
       "rounded-lg px-[6px] py-[6px] text-[0.68rem] font-medium leading-none transition-all duration-200 whitespace-nowrap",
       isActive(href, exact)
-        ? "bg-orange-500 !text-white shadow-[0_0_12px_rgba(234,88,12,0.3)]"
-        : "text-muted hover:text-app hover:bg-black/[0.045] dark:hover:bg-white/5",
+        ? "bg-orange-500 text-white shadow-[0_0_12px_rgba(234,88,12,0.3)]"
+        : "text-muted hover:text-app hover:bg-subtle",
     ].join(" ");
 
   return (

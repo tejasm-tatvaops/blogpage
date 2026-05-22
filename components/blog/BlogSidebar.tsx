@@ -2,6 +2,7 @@ import Link from "next/link";
 import GithubSlugger from "github-slugger";
 import type { BlogPost } from "@/lib/blogService";
 import { NewsletterSignup } from "./NewsletterSignup";
+import { btnPrimarySm, chipToggle } from "@/lib/ui/buttons";
 import { TrendingWidget } from "./TrendingWidget";
 import { RecommendationPanel } from "./RecommendationPanel";
 
@@ -155,11 +156,7 @@ export function BlogSidebar({
               <Link
                 key={cat}
                 href={`/blog?category=${encodeURIComponent(cat)}`}
-                className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                  cat === post.category
-                    ? "bg-slate-900 !text-white shadow-sm"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-app"
-                }`}
+                className={chipToggle(cat === post.category)}
               >
                 {cat}
               </Link>
@@ -252,7 +249,7 @@ export function BlogSidebar({
           </p>
           <Link
             href="/blog"
-            className="mt-4 flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold !text-white transition hover:bg-slate-700"
+            className={`mt-4 ${btnPrimarySm}`}
           >
             Explore all articles
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

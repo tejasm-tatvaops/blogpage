@@ -82,11 +82,11 @@ export function AiAssistant({ slug }: AiAssistantProps) {
   };
 
   return (
-    <div className="mt-8 overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/60 via-white to-sky-50/40">
+    <div className="mt-8 overflow-hidden rounded-2xl border border-app bg-surface">
       {/* Header */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-indigo-50/60"
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-subtle"
         aria-expanded={open}
       >
         <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">

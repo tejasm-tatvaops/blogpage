@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { chipToggleSm } from "@/lib/ui/buttons";
 import { getTutorials, getLearningPaths } from "@/lib/tutorialService";
 import { extractVideoSource, getTutorialVideoSource, getYoutubeThumbnailUrlFromSourceUrl } from "@/lib/tutorialVideo";
 
@@ -123,17 +124,13 @@ export default async function TutorialsPage({
             <Link
               key={d}
               href={href}
-              className={`rounded-full px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.07em] transition ${
-                active
-                  ? "bg-orange-500 !text-white shadow-[0_0_12px_rgba(234,88,12,0.25)]"
-                  : "border border-black/10 bg-white text-slate-600 hover:border-orange-300 hover:text-orange-600 dark:border-[#1e2440] dark:bg-[#0d1128] dark:text-[#8b92a8] dark:hover:border-orange-500/30 dark:hover:text-orange-400"
-              }`}
+              className={`${chipToggleSm(active)} px-4 py-1.5 text-[10px] uppercase tracking-[0.07em]`}
             >
               {d === "all" ? "All" : d}
             </Link>
           );
         })}
-        <span className="ml-auto flex items-center gap-1.5 rounded-full border border-[#1e2440] bg-[#0d1128] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#8b92a8]">
+        <span className="ui-chip ml-auto flex items-center gap-1.5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-muted">
           <span className="h-1.5 w-1.5 rounded-full bg-orange-500" aria-hidden />
           {total} Tutorials
         </span>

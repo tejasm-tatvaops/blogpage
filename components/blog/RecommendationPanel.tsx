@@ -138,8 +138,8 @@ export function RecommendationPanel({ currentPost, allPosts, usePreRanked = fals
   if (!mounted || recs.length === 0) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-surface">
-      <div className="flex items-center gap-2 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 px-4 py-3.5">
+    <div className="overflow-hidden rounded-2xl border border-app bg-surface">
+      <div className="flex items-center gap-2 border-b border-app bg-subtle px-4 py-3.5">
         {usePreRanked ? (
           <>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500" aria-hidden>
@@ -157,12 +157,12 @@ export function RecommendationPanel({ currentPost, allPosts, usePreRanked = fals
         )}
       </div>
       {whyTags.length > 0 && (
-        <div className="border-b border-indigo-50 bg-indigo-50/40 px-4 py-2">
-          <p className="text-[10px] text-slate-500">
+        <div className="border-b border-app bg-subtle px-4 py-2">
+          <p className="text-[10px] text-muted">
             Because you read{" "}
             {whyTags.map((tag, i) => (
               <span key={tag}>
-                <span className="font-semibold text-indigo-600">#{tag}</span>
+                <span className="font-semibold text-info-soft">#{tag}</span>
                 {i < whyTags.length - 1 && <span className="text-slate-400">, </span>}
               </span>
             ))}
@@ -177,16 +177,16 @@ export function RecommendationPanel({ currentPost, allPosts, usePreRanked = fals
               onClick={() => {
                 void recordRecommendationClick(post, idx);
               }}
-              className="group flex items-start gap-3 px-4 py-3.5 transition hover:bg-indigo-50/40"
+              className="group flex items-start gap-3 px-4 py-3.5 transition hover:bg-subtle"
             >
-              <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 transition group-hover:bg-indigo-100">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-400 group-hover:text-indigo-600 transition" aria-hidden>
+              <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-info-soft transition group-hover:bg-info-soft">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-info-soft transition" aria-hidden>
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                 </svg>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-semibold leading-snug text-slate-800 transition group-hover:text-indigo-700 line-clamp-2">
+                <p className="text-[13px] font-semibold leading-snug text-app transition group-hover:text-primary line-clamp-2">
                   {post.title}
                 </p>
                 <p className="mt-0.5 text-[11px] text-slate-400 line-clamp-1">

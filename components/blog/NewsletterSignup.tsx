@@ -1,5 +1,7 @@
 "use client";
 
+import { btnPrimary } from "@/lib/ui/buttons";
+
 import { useState } from "react";
 
 export function NewsletterSignup() {
@@ -82,7 +84,7 @@ export function NewsletterSignup() {
           <button
             type="submit"
             disabled={status === "loading" || !email}
-            className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold !text-white shadow-sm transition hover:bg-sky-400 disabled:opacity-50"
+            className={btnPrimary}
           >
             {status === "loading" ? "Subscribing…" : "Subscribe"}
           </button>

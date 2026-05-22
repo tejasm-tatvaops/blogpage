@@ -32,7 +32,7 @@ export default function GlobalErrorPage({ error, reset }: GlobalErrorPageProps) 
             <button
               type="button"
               onClick={reset}
-              className="mt-6 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold !text-white transition hover:bg-slate-700"
+              className="ui-btn ui-btn-primary mt-6 rounded-lg px-4 py-2 text-sm font-semibold"
             >
               Retry
             </button>

@@ -13,6 +13,7 @@ import {
   getOrCreateFingerprint,
   recordTagClick,
 } from "@/lib/personalization";
+import { btnGhostSm, btnPrimary, chipToggleSm, fieldInput } from "@/lib/ui/buttons";
 
 const SORT_OPTIONS: { value: ForumFeedSort; label: string }[] = [
   { value: "hot",       label: "Trending" },
@@ -159,7 +160,7 @@ export default function ForumsPage() {
         </div>
         <Link
           href="/forums/new"
-          className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-[11.5px] font-semibold uppercase tracking-[0.06em] text-white shadow-[0_2px_12px_rgba(249,115,22,0.25)] transition hover:bg-orange-400 hover:shadow-[0_4px_16px_rgba(249,115,22,0.35)] sm:w-auto"
+          className={`${btnPrimary} w-full gap-1.5 px-4 py-2 text-[11.5px] uppercase tracking-[0.06em] sm:w-auto`}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -173,7 +174,7 @@ export default function ForumsPage() {
         {/* Filter icon button */}
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-500 transition hover:border-orange-300 hover:text-orange-600 dark:border-[#1e2440] dark:bg-[#0d1128] dark:text-[#8b92a8] dark:hover:border-orange-500/30 dark:hover:text-orange-400"
+          className={`${btnGhostSm} gap-1.5`}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
@@ -187,11 +188,7 @@ export default function ForumsPage() {
             key={value}
             type="button"
             onClick={() => setSort(value)}
-            className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] transition ${
-              sort === value
-                ? "bg-orange-500 !text-white shadow-[0_0_10px_rgba(234,88,12,0.25)]"
-                : "border border-black/10 bg-white text-slate-600 hover:border-orange-300 hover:text-orange-600 dark:border-[#1e2440] dark:bg-[#0d1128] dark:text-[#8b92a8] dark:hover:border-orange-500/30 dark:hover:text-orange-400"
-            }`}
+            className={chipToggleSm(sort === value)}
           >
             {label}
           </button>
@@ -202,7 +199,7 @@ export default function ForumsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search threads…"
-          className="w-full rounded-xl border border-black/10 bg-white/85 px-3 py-1.5 text-[13px] text-black outline-none ring-orange-500/60 placeholder:text-slate-400 transition focus:ring-2 dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.6)] dark:text-[#f0f2ff] dark:placeholder:text-[#4d5470] sm:ml-auto sm:w-64"
+          className={`${fieldInput} h-auto py-1.5 text-[13px] sm:ml-auto sm:w-64`}
         />
 
         {/* Active tag chip */}
@@ -212,7 +209,7 @@ export default function ForumsPage() {
             <button
               type="button"
               onClick={() => setActiveTag(null)}
-              className="rounded-full border border-[#1e2440] bg-[#0d1128] px-2 py-0.5 text-[10px] text-[#8b92a8] transition hover:border-orange-500/30 hover:text-orange-400"
+              className={`${chipToggleSm(false)} px-2 py-0.5`}
             >
               ✕
             </button>
@@ -237,7 +234,7 @@ export default function ForumsPage() {
                     type="button"
                     onClick={loadMore}
                     disabled={loadingMore}
-                    className="rounded-xl border border-black/10 bg-white px-6 py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.06em] text-slate-600 transition hover:border-orange-300 hover:text-orange-600 disabled:opacity-50 dark:border-[#1e2440] dark:bg-[#0d1128] dark:text-[#8b92a8] dark:hover:border-orange-500/30 dark:hover:text-orange-400"
+                    className={`${btnGhostSm} px-6 py-2.5 disabled:opacity-50`}
                   >
                     {loadingMore ? "Loading…" : "Load More"}
                   </button>
@@ -291,11 +288,7 @@ export default function ForumsPage() {
                     key={tag}
                     type="button"
                     onClick={() => handleTagClick(tag)}
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.05em] transition ${
-                      activeTag === tag
-                        ? "bg-orange-500 !text-white"
-                        : "border border-black/10 bg-white text-slate-600 hover:border-orange-300 hover:text-orange-600 dark:border-[#1e2440] dark:bg-[#0d1128] dark:text-[#8b92a8] dark:hover:border-orange-500/30 dark:hover:text-orange-400"
-                    }`}
+                    className={chipToggleSm(activeTag === tag)}
                   >
                     #{tag}
                   </button>

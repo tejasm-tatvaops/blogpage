@@ -19,37 +19,37 @@ export function TrendingWidget() {
   if (!loading && posts.length === 0) return null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-orange-100 bg-surface">
-      <div className="flex items-center gap-2 border-b border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-3.5">
-        <span className="text-base leading-none" aria-hidden>🔥</span>
-        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-orange-700">Trending now</span>
+    <div className="overflow-hidden rounded-2xl border border-app bg-surface">
+      <div className="flex items-center gap-2 border-b border-app bg-subtle px-4 py-3.5">
+        <span className="text-sm leading-none" aria-hidden>🔥</span>
+        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-app">Trending now</span>
       </div>
 
       {loading ? (
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-app">
           {[1, 2, 3].map((i) => (
             <li key={i} className="px-4 py-3.5">
-              <div className="h-3 w-3/4 animate-pulse rounded bg-slate-100" />
-              <div className="mt-1.5 h-2 w-1/2 animate-pulse rounded bg-slate-100" />
+              <div className="h-3 w-3/4 animate-pulse rounded bg-subtle" />
+              <div className="mt-1.5 h-2 w-1/2 animate-pulse rounded bg-subtle" />
             </li>
           ))}
         </ul>
       ) : (
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-app">
           {posts.map((post, idx) => (
             <li key={post.id}>
               <Link
                 href={`/blog/${post.slug}`}
-                className="group flex items-start gap-3 px-4 py-3.5 transition hover:bg-orange-50/40"
+                className="group flex items-start gap-3 px-4 py-3.5 transition hover:bg-subtle"
               >
-                <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md bg-orange-100 text-[11px] font-bold text-orange-600">
+                <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md bg-warning-soft text-[11px] font-bold text-warning-soft">
                   {idx + 1}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[13px] font-semibold leading-snug text-slate-800 transition group-hover:text-orange-700 line-clamp-2">
+                  <p className="text-[13px] font-semibold leading-snug text-app transition group-hover:text-primary line-clamp-2">
                     {post.title}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-slate-400">
+                  <p className="mt-0.5 text-[11px] text-muted">
                     {post.view_count.toLocaleString()} views · {post.upvote_count} upvotes
                   </p>
                 </div>

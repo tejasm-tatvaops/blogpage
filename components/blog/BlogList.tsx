@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { BlogPost } from "@/lib/blogService";
 import { BlogCard } from "./BlogCard";
 import { PersonalizationModal, PREFS_STORAGE_KEY, PREFS_DISMISSED_KEY } from "@/components/feed/PersonalizationModal";
+import { btnGhost, btnPrimary, chipToggleSm, fieldInput } from "@/lib/ui/buttons";
 
 type BlogListProps = {
   posts: BlogPost[];
@@ -294,12 +295,12 @@ export function BlogList({
               name="q"
               defaultValue={query ?? ""}
               placeholder="Search articles..."
-              className="h-10 min-h-10 w-full min-w-0 rounded-xl border border-black/10 bg-white/85 px-3 text-sm text-slate-800 outline-none ring-orange-500/60 transition focus:ring-2 dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.6)] dark:text-[#f0f2ff] dark:placeholder:text-[#4d5470]"
+              className={`${fieldInput} h-10 min-h-10`}
             />
             <select
               name="sort"
               defaultValue={sort}
-              className="h-10 min-h-10 w-full rounded-xl border border-black/10 bg-white/85 px-3 text-sm text-slate-700 outline-none ring-orange-500/60 transition focus:ring-2 dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.6)] dark:text-[#8b92a8] sm:w-full"
+              className={`${fieldInput} h-10 min-h-10 sm:w-full`}
             >
               <option value="latest">Latest</option>
               <option value="most_viewed">Most viewed</option>
@@ -307,14 +308,14 @@ export function BlogList({
             </select>
             <button
               type="submit"
-              className="h-10 min-h-10 shrink-0 rounded-xl bg-orange-500 px-3 text-[11.5px] font-semibold uppercase tracking-[0.06em] !text-white shadow-[0_2px_12px_rgba(249,115,22,0.25)] transition hover:bg-orange-400 hover:shadow-[0_4px_16px_rgba(249,115,22,0.35)] sm:px-4"
+              className={`${btnPrimary} h-10 min-h-10 shrink-0 px-3 text-[11.5px] uppercase tracking-[0.06em] sm:px-4`}
             >
               Search
             </button>
             <button
               type="button"
               onClick={() => setShowPersonalizationModal(true)}
-              className="inline-flex h-10 min-h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-black/10 bg-white/80 px-3 text-[11.5px] font-medium text-slate-600 transition hover:bg-slate-100 hover:text-app dark:border-[#1e2440] dark:bg-[rgba(13,17,40,0.4)] dark:text-[#8b92a8] dark:hover:bg-[rgba(13,17,40,0.7)] dark:hover:text-[#f0f2ff] sm:w-auto sm:shrink-0 sm:whitespace-nowrap"
+              className={`${btnGhost} h-10 min-h-10 w-full gap-1.5 px-3 text-[11.5px] font-medium sm:w-auto sm:shrink-0 sm:whitespace-nowrap`}
             >
               <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                 <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
@@ -349,33 +350,21 @@ export function BlogList({
               <button
                 type="button"
                 onClick={() => setFeedTab("for_you")}
-                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] transition ${
-                  feedTab === "for_you"
-                    ? "bg-orange-500 !text-white shadow-[0_0_12px_rgba(234,88,12,0.3)]"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#1e2440] dark:text-[#8b92a8] dark:hover:bg-[#2d3460] dark:hover:text-[#f0f2ff]"
-                }`}
+                className={`${chipToggleSm(feedTab === "for_you")} px-3 py-1.5 text-[11px] uppercase tracking-[0.05em]`}
               >
                 For You
               </button>
               <button
                 type="button"
                 onClick={() => setFeedTab("trending")}
-                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] transition ${
-                  feedTab === "trending"
-                    ? "bg-orange-500 !text-white shadow-[0_0_12px_rgba(234,88,12,0.3)]"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#1e2440] dark:text-[#8b92a8] dark:hover:bg-[#2d3460] dark:hover:text-[#f0f2ff]"
-                }`}
+                className={`${chipToggleSm(feedTab === "trending")} px-3 py-1.5 text-[11px] uppercase tracking-[0.05em]`}
               >
                 Trending
               </button>
               <button
                 type="button"
                 onClick={() => setFeedTab("explore")}
-                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] transition ${
-                  feedTab === "explore"
-                    ? "bg-orange-500 !text-white shadow-[0_0_12px_rgba(234,88,12,0.3)]"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#1e2440] dark:text-[#8b92a8] dark:hover:bg-[#2d3460] dark:hover:text-[#f0f2ff]"
-                }`}
+                className={`${chipToggleSm(feedTab === "explore")} px-3 py-1.5 text-[11px] uppercase tracking-[0.05em]`}
               >
                 Explore
               </button>
@@ -386,11 +375,7 @@ export function BlogList({
         <div className="flex flex-wrap gap-2 border-b border-black/10 pb-5 dark:border-[#1e2440]">
           <Link
             href={buildBlogHref({ query, sort })}
-            className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] transition ${
-              !activeCategory
-                ? "bg-orange-500 !text-white shadow-[0_0_10px_rgba(234,88,12,0.25)]"
-                : "border border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:text-orange-600 dark:border-[#1e2440] dark:bg-[#0d1128] dark:text-[#8b92a8] dark:hover:border-orange-500/30 dark:hover:text-orange-400"
-            }`}
+            className={chipToggleSm(!activeCategory)}
           >
             All
           </Link>
@@ -398,11 +383,7 @@ export function BlogList({
             <Link
               key={category}
               href={buildBlogHref({ category, query, sort })}
-              className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] transition ${
-                activeCategory === category
-                  ? "bg-orange-500 !text-white shadow-[0_0_10px_rgba(234,88,12,0.25)]"
-                  : "border border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:text-orange-600 dark:border-[#1e2440] dark:bg-[#0d1128] dark:text-[#8b92a8] dark:hover:border-orange-500/30 dark:hover:text-orange-400"
-              }`}
+              className={chipToggleSm(activeCategory === category)}
             >
               {category}
             </Link>

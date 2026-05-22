@@ -9,10 +9,10 @@ type TopicActiveUsersStripProps = {
 };
 
 const TIER_CONFIG: Record<string, { label: string; className: string }> = {
-  elite:       { label: "Elite",       className: "bg-purple-100 text-purple-700" },
-  expert:      { label: "Expert",      className: "bg-amber-100 text-amber-700" },
-  contributor: { label: "Contributor", className: "bg-sky-100 text-sky-700" },
-  member:      { label: "Member",      className: "bg-slate-100 text-slate-500" },
+  elite:       { label: "Elite",       className: "bg-purple-500/15 text-purple-600 dark:text-purple-300" },
+  expert:      { label: "Expert",      className: "bg-warning-soft text-warning-soft" },
+  contributor: { label: "Contributor", className: "bg-info-soft text-info-soft" },
+  member:      { label: "Member",      className: "bg-subtle text-muted" },
 };
 
 export function ActiveUsersStripBase({ title, users }: TopicActiveUsersStripProps) {
@@ -64,7 +64,7 @@ export function ActiveUsersStripBase({ title, users }: TopicActiveUsersStripProp
             <Link
               key={user.id}
               href={href}
-              className={`group flex flex-col gap-2.5 overflow-hidden rounded-xl border border-slate-100 bg-white p-3.5 shadow-sm transition hover:border-sky-200 hover:shadow-md ${
+              className={`group flex flex-col gap-2.5 overflow-hidden rounded-xl border border-app bg-card p-3.5 shadow-[var(--shadow-card)] transition hover:border-info-soft hover:shadow-[var(--shadow-card-hover)] ${
                 isLegacy ? "opacity-60" : ""
               }`}
             >
@@ -83,15 +83,15 @@ export function ActiveUsersStripBase({ title, users }: TopicActiveUsersStripProp
                     />
                   )}
                   {user.is_active_now && (
-                    <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-white" title="Active now" />
+                    <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-card" title="Active now" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold leading-tight text-slate-800 group-hover:text-sky-700">
+                  <p className="truncate text-sm font-semibold leading-tight text-app group-hover:text-primary">
                     {user.display_name}
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+                    <span className="rounded-full bg-subtle px-2 py-0.5 text-[10px] font-medium text-muted">
                       {identityLabel}
                     </span>
                     <span className={`text-[11px] font-semibold ${levelMeta.color}`}>
@@ -106,14 +106,14 @@ export function ActiveUsersStripBase({ title, users }: TopicActiveUsersStripProp
 
               {/* About */}
               {!isLegacy && user.about && !user.about.toLowerCase().startsWith("legacy") && (
-                <p className="line-clamp-2 text-xs leading-relaxed text-slate-600">
+                <p className="line-clamp-2 text-xs leading-relaxed text-muted">
                   {user.about}
                 </p>
               )}
 
               {/* Bottom: only meaningful stat */}
               {engagement > 0 && (
-                <div className="text-[11px] font-semibold text-sky-600">⚡ {Math.round(engagement * 10)} pts</div>
+                <div className="text-[11px] font-semibold text-info-soft">⚡ {Math.round(engagement * 10)} pts</div>
               )}
             </Link>
           );
